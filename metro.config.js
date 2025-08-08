@@ -1,0 +1,21 @@
+// // Learn more https://docs.expo.io/guides/customizing-metro
+// const { getDefaultConfig } = require('expo/metro-config');
+
+// /** @type {import('expo/metro-config').MetroConfig} */
+// const config = getDefaultConfig(__dirname);
+
+// module.exports = config;
+
+const { getDefaultConfig } = require("expo/metro-config");
+
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(__dirname);
+
+// Add your custom configurations
+config.resolver.sourceExts.push("cjs");
+
+// Supabase fix
+config.resolver.unstable_conditionNames = ["browser"];
+config.resolver.unstable_enablePackageExports = false;
+
+module.exports = config;

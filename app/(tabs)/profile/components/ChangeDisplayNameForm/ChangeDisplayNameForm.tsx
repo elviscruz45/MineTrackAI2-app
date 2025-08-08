@@ -1,0 +1,168 @@
+import React from "react";
+import { View, KeyboardAvoidingView } from "react-native";
+import { Input, Button } from "@rneui/themed";
+import { useFormik } from "formik";
+import { getAuth, updateProfile, User } from "firebase/auth";
+import Toast from "react-native-toast-message";
+import ChangeDisplayRulers from "./ChangeDisplayNameForm.data";
+
+import styles from "./ChangeDisplayNameForm.styles";
+import { connect } from "react-redux";
+import { db } from "@/firebaseConfig";
+// import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { update_firebaseProfile } from "../../../../../redux/actions/profile";
+import { update_firebaseUserName } from "../../../../../redux/actions/profile";
+import { userTypeList } from "../../../../../utils/userTypeList";
+import { usePushNotifications } from "@/usePushNotifications";
+
+interface ChangeDisplayNameFormProps {
+  currentLoginUser: User | null;
+}
+function ChangeDisplayNameForm(props: any) {
+  // const { expoPushToken, notification } = usePushNotifications();
+  const { onClose } = props;
+
+  const formik = useFormik({
+    initialValues: ChangeDisplayRulers.initialValues(),
+    validationSchema: ChangeDisplayRulers.validationSchema(),
+    validateOnChange: false,
+    onSubmit: async (formValue) => {
+      const newData = formValue;
+
+      try {
+        //Update of Authentication Firebase
+        const currentLoginUser: any = getAuth().currentUser;
+
+        await updateProfile(currentLoginUser, {
+          displayName: newData.displayNameform,
+        });
+
+        //checking up if there are data in users
+        const docRef = doc(db, "users", props.uid);
+
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap?.exists()) {
+          const updateDataLasEventPost = {
+            displayNameform: newData.displayNameform,
+            cargo: newData.cargo,
+            descripcion: newData.descripcion,
+            photoURL: props.user_photo,
+            // ExpoPushNotificationToken: expoPushToken?.data,
+          };
+          if (props.user_photo) {
+            updateDataLasEventPost.photoURL = props.user_photo;
+          }
+
+          await updateDoc(docRef, updateDataLasEventPost);
+
+          props.update_firebaseProfile(newData);
+          props.update_firebaseUserName(newData.displayNameform);
+          Toast.show({
+            type: "success",
+            position: "bottom",
+            text1: "Datos actualizados",
+          });
+        } else {
+          //sign up the users in Firestore Database
+          newData.photoURL = props.user_photo;
+          newData.email = props.email;
+
+          newData.companyName = props.email?.match(/@(.+?)\./i)?.[1] || "";
+          newData.userType = userTypeList.worker;
+          newData.uid = props.uid;
+          newData.EquipmentFavorities = [];
+
+          // newData.ExpoPushNotificationToken = expoPushToken?.data || "";
+          ///checking up if there are data in users
+          const docRef = doc(collection(db, "users"), newData.uid);
+          await setDoc(docRef, newData);
+        }
+
+        props.update_firebaseProfile(newData);
+        props.update_firebaseUserName(newData.displayNameform);
+        Toast.show({
+          type: "success",
+          position: "bottom",
+          text1: "Nombre y apellidos actualizados",
+        });
+      } catch (error) {
+        Toast.show({
+          type: "error",
+          position: "bottom",
+          text1: "Error al cambiar el nombre y apellidos",
+        });
+      }
+      onClose();
+    },
+  });
+
+  return (
+    <KeyboardAvoidingView>
+      <Input
+        testID="displayNameform"
+        value={formik.values.displayNameform}
+        placeholder="Nombre y apellidos"
+        multiline={true}
+        rightIcon={{
+          type: "material-community",
+          name: "account-circle-outline",
+          color: "#c2c2c2",
+        }}
+        onChangeText={(text) => formik.setFieldValue("displayNameform", text)}
+        errorMessage={formik.errors.displayNameform}
+      />
+      <Input
+        testID="cargo"
+        value={formik.values.cargo}
+        placeholder="Escribe tu cargo"
+        multiline={true}
+        rightIcon={{
+          type: "material-community",
+          name: "account-circle-outline",
+          color: "#c2c2c2",
+        }}
+        onChangeText={(text) => formik.setFieldValue("cargo", text)}
+        errorMessage={formik.errors.cargo}
+      />
+      {/* <Input
+        testID="descripcion"
+        value={formik.values.descripcion}
+        placeholder="Descripcion"
+        multiline={true}
+        rightIcon={{
+          type: "material-community",
+          name: "account-circle-outline",
+          color: "#c2c2c2",
+        }}
+        onChangeText={(text) => formik.setFieldValue("descripcion", text)}
+        errorMessage={formik.errors.descripcion}
+      /> */}
+      <Button
+        testID="submitButton"
+        title="Actualizar"
+        containerStyle={styles.btnContainer}
+        buttonStyle={styles.btn}
+        onPress={() => formik.handleSubmit()}
+        loading={formik.isSubmitting}
+      />
+    </KeyboardAvoidingView>
+  );
+}
+
+const mapStateToProps = (reducers: any) => {
+  return {
+    user_photo: reducers.profile.user_photo,
+    email: reducers.profile.email,
+    profile: reducers.profile.profile,
+    uid: reducers.profile.uid,
+  };
+};
+
+const ConnectedChangeDisplayNameForm = connect(mapStateToProps, {
+  update_firebaseProfile,
+  update_firebaseUserName,
+})(ChangeDisplayNameForm);
+
+export default ConnectedChangeDisplayNameForm;
