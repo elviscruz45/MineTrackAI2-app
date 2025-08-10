@@ -77,7 +77,9 @@
     "redux-thunk": "^3.1.0",
     "uuid": "^11.0.3",
     "xlsx": "^0.18.5",
-    "yup": "^1.4.0"
+    "yup": "^1.4.0",
+    "zingchart": "^2.9.16-1",
+    "zingchart-react": "^3.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

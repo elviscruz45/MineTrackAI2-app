@@ -10523,6 +10523,23 @@ yup@^1.4.0:
     toposort "^2.0.2"
     type-fest "^2.19.0"
 
+"zingchart-constants@github:zingchart/zingchart-constants#master":
+  version "1.0.5"
+  resolved "https://codeload.github.com/zingchart/zingchart-constants/tar.gz/37aaeb291bbaab2174d317c1182bbca6a8f70da5"
+
+zingchart-react@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/zingchart-react/-/zingchart-react-3.2.0.tgz#78ffaaada44e71fe2cc6bcd4062193d7aae2ddcf"
+  integrity sha512-VTGhSBIUbbf5dLpVHxyoFRYB7rkx4umlhXKa6zJR0YjVu5tUE4pvogHu9lX5LjeTTXbPRW8quMqs+f+5d9juKw==
+  dependencies:
+    zingchart latest
+    zingchart-constants "github:zingchart/zingchart-constants#master"
+
+zingchart@^2.9.16-1, zingchart@latest:
+  version "2.9.16-1"
+  resolved "https://registry.yarnpkg.com/zingchart/-/zingchart-2.9.16-1.tgz#1572e47f8e2dc6168aff07929c22d59e94cdccb1"
+  integrity sha512-7GQ+9N0wVpBwPP+k2CesDTf8hLDmfMVQoJNUt/kKDmi6zE0he7ZYgyabsJzT62pBdR2zBCqCfusdmep5YAe3lA==
+
 zip-stream@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/zip-stream/-/zip-stream-6.0.1.tgz#e141b930ed60ccaf5d7fa9c8260e0d1748a2bbfb"

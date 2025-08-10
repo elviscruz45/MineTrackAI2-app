@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import styles from "./index.styles";
 import PieChartView from "./components/Graphs/PieStatus";
 import BarChartMontoServicios from "./components/Graphs/BarChartMontoServicios";
 import BarChartProceso from "./components/Graphs/BarChartProceso";
+
+import AvanceProgressChart from "./webcomponents/ProgressChartweb";
 import ServiceList from "./components/Resources/ServiceList";
 // import { InactiveServiceList } from "../RecursosScreen/InactiveServiceList";
 import InactiveServiceList from "./components/Resources/InactiveServiceList";
@@ -37,6 +39,11 @@ import {
   ContributionGraph,
   StackedBarChart,
 } from "react-native-chart-kit";
+import ReportHeader from "./webcomponents/ReportHeader";
+import ReportNavbar from "./webcomponents/ReportNavbar";
+import ProjectSelector from "./webcomponents/ProjectSelector";
+import ActivityView from "./webcomponents/ActivityView";
+import OnePageView from "./webcomponents/OnePageView";
 const screenWidth = Dimensions.get("window").width;
 
 const chartConfig = {
@@ -67,6 +74,16 @@ const dataLineChart = {
   legend: ["Programado", "Real"], // optional
 };
 
+// Mock data for projects
+const AVAILABLE_PROJECTS = [
+  "CHANCADO PRIMARIO",
+  "CHANCADO SECUNDARIO",
+  "MOLIENDA",
+  "FLOTACIÓN",
+  "ESPESADORES",
+  "FILTRADO",
+];
+
 function ReportnoRedux(props: any) {
   const router = useRouter();
 
@@ -96,6 +113,8 @@ function ReportnoRedux(props: any) {
   const [montoServicios, setMontoServicios] = useState(false);
   const [montoEDP, setMontoEDP] = useState(false);
   const [comprometido, setComprometido] = useState(false);
+  const [activeTab, setActiveTab] = useState("Proyeccion");
+  const [selectedProject, setSelectedProject] = useState(AVAILABLE_PROJECTS[0]);
   //Data about the company belong this event
 
   const regex = /@(.+?)\./i;
@@ -131,6 +150,12 @@ function ReportnoRedux(props: any) {
     });
   };
 
+  const handleProjectChange = (project: string) => {
+    setSelectedProject(project);
+    // Here you would filter data based on the selected project
+    console.log(`Selected project: ${project}`);
+  };
+
   if (!data) {
     return (
       <div
@@ -147,256 +172,261 @@ function ReportnoRedux(props: any) {
     );
   } else {
     return (
-      <div
-        style={{ flex: 1, backgroundColor: "white", ...styles.AndroidSafeArea }}
-      >
+      <div style={{ ...styles.AndroidSafeArea }}>
+        <ReportHeader />
+        <ReportNavbar active={activeTab} onSelect={setActiveTab} />
         <div
           style={{
             backgroundColor: "white",
             overflowY: "auto",
-            height: "100vh",
+            height: "calc(100vh - 120px)",
+            padding: "0 24px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <button
-              onClick={update_Data}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-              }}
-            >
-              <img
-                src={require("../../../assets/pictures/empresa.png")}
-                style={styles.roundImageUpload}
-                alt="Empresa"
-              />
-            </button>
-          </div>
+          {/* Special layout for OnePage Mantención */}
+          {activeTab === "OnePage Mantención" ? (
+            <OnePageView selectedProject={selectedProject} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "row" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: 24,
+                  paddingTop: 24,
+                }}
+              >
+                <div style={{ flex: 3 }}>
+                  <h2
+                    style={{
+                      ...styles.company,
+                      fontSize: 24,
+                      marginBottom: 8,
+                      color: "#2A3B76",
+                    }}
+                  >
+                    EMPRESA MINERA ANTAPACCAY SA
+                  </h2>
+                  <h3
+                    style={{
+                      ...styles.company,
+                      fontSize: 18,
+                      marginTop: 0,
+                      color: "#555",
+                    }}
+                  >
+                    PARADA DE PLANTA JULIO 2025
+                  </h3>
 
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
+                  <div
+                    style={{
+                      marginTop: 32,
+                      backgroundColor: "#f8f9fa",
+                      padding: 20,
+                      borderRadius: 8,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 16,
+                      }}
+                    >
+                      <h4
+                        style={{
+                          margin: 0,
+                          fontSize: 18,
+                          color: "#2A3B76",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Avance Parada de Planta
+                      </h4>
 
-          <h2 style={styles.company}>EMPRESA MINERA ANTAPACCAY SA</h2>
-          <h3 style={styles.company}>PARADA DE PLANTA JULIO 2025</h3>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                        }}
+                      >
+                        <button
+                          style={{
+                            backgroundColor: "#2A3B76",
+                            color: "white",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "8px 16px",
+                            fontSize: 14,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M12 4V20M4 12H20"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          Exportar
+                        </button>
 
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
+                        <button
+                          style={{
+                            backgroundColor: "white",
+                            color: "#2A3B76",
+                            border: "1px solid #2A3B76",
+                            borderRadius: 4,
+                            padding: "8px 16px",
+                            fontSize: 14,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17M7 11L12 16M12 16L17 11M12 16V4"
+                              stroke="#2A3B76"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          Imprimir
+                        </button>
+                      </div>
+                    </div>
 
-          <div style={styles.iconMinMax}>
-            <div style={styles.container22}>
-              <h4 style={styles.titleText}>Avance Parada de Planta</h4>
-            </div>
-          </div>
-          <div style={{ height: 16 }} />
+                    {/* Show content based on active tab */}
+                    {activeTab === "Proyeccion" ? (
+                      <AvanceProgressChart data={data} />
+                    ) : activeTab === "Actividades" ? (
+                      <ActivityView selectedProject={selectedProject} />
+                    ) : activeTab === "OnePage Mantención" ? (
+                      <OnePageView selectedProject={selectedProject} />
+                    ) : (
+                      <AvanceProgressChart data={data} />
+                    )}
+                  </div>
+                </div>
 
-          <div style={{ height: 16 }} />
+                <div style={{ flex: 1 }}>
+                  <ProjectSelector
+                    currentProject={selectedProject}
+                    projects={AVAILABLE_PROJECTS}
+                    onSelectProject={handleProjectChange}
+                  />
 
-          <div style={styles.iconMinMax}>
-            <div style={styles.container22}>
-              <h4 style={styles.titleText}>Estado de Servicios de la Parada</h4>
-            </div>
-            <button
-              onClick={() => setEstadoServicios(true)}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-              }}
-            >
-              <img
-                src={require("../../../assets/pictures/plus3.png")}
-                style={styles.roundImageUploadmas}
-                alt="plus"
-              />
-            </button>
-            <button
-              onClick={() => setEstadoServicios(false)}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-              }}
-            >
-              <img
-                src={require("../../../assets/pictures/minus3.png")}
-                style={styles.roundImageUploadmas}
-                alt="minus"
-              />
-            </button>
-          </div>
-          {estadoServicios && <EstadoServiceList data={data} />}
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-          <PieChartView data={data} />
+                  <div
+                    style={{
+                      marginTop: 24,
+                      backgroundColor: "#f8f9fa",
+                      padding: 20,
+                      borderRadius: 8,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: 0,
+                        marginBottom: 16,
+                        fontSize: 18,
+                        color: "#2A3B76",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Resumen
+                    </h4>
 
-          {serviciosInactivos && (
-            <>
-              <div style={{ margin: 10 }}>
-                <BarInactiveServices
-                  data={data}
-                  titulo={"Stand by"}
-                  unidad={"servicios"}
-                />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
+                        <span style={{ color: "#555" }}>Avance Total:</span>
+                        <span style={{ fontWeight: 600 }}>35%</span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
+                        <span style={{ color: "#555" }}>Tiempo restante:</span>
+                        <span style={{ fontWeight: 600 }}>13.2 hrs</span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
+                        <span style={{ color: "#555" }}>Estado:</span>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: "#1976d2",
+                          }}
+                        >
+                          En ejecución
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                        }}
+                      >
+                        <span style={{ color: "#555" }}>Equipos:</span>
+                        <span style={{ fontWeight: 600 }}>3</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ marginLeft: 10 }}>
-                <BarInactiveServices
-                  data={data}
-                  titulo={"Cancelacion"}
-                  unidad={"servicios"}
-                />
-              </div>
-              <InactiveServiceList data={data} />
-            </>
+            </div>
           )}
-          <div style={{ height: 16 }} />
-
-          {(userType === "Gerente" ||
-            userType === "Planificador" ||
-            userType === "GerenteContratista" ||
-            userType === "SuperUsuario" ||
-            userType === "PlanificadorContratista") && (
-            <div style={styles.iconMinMax}>
-              <div style={styles.container22}>
-                <h4 style={styles.titleText}>Monto Servicios</h4>
-              </div>
-              <button
-                onClick={() => setMontoServicios(true)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={require("../../../assets/pictures/plus3.png")}
-                  style={styles.roundImageUploadmas}
-                  alt="plus"
-                />
-              </button>
-              <button
-                onClick={() => setMontoServicios(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={require("../../../assets/pictures/minus3.png")}
-                  style={styles.roundImageUploadmas}
-                  alt="minus"
-                />
-              </button>
-            </div>
-          )}
-          {montoServicios &&
-            (userType === "Gerente" ||
-              userType === "Planificador" ||
-              userType === "GerenteContratista" ||
-              userType === "SuperUsuario" ||
-              userType === "PlanificadorContratista") && (
-              <>
-                <BarChartMontoServicios data={data} />
-                <MontoServiceList data={data} />
-              </>
-            )}
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-          {(userType === "Gerente" ||
-            userType === "Planificador" ||
-            userType === "GerenteContratista" ||
-            userType === "SuperUsuario" ||
-            userType === "PlanificadorContratista") && (
-            <div style={styles.iconMinMax}>
-              <div style={styles.container22}>
-                <h4 style={styles.titleText}>Monto Estado de Pago</h4>
-              </div>
-              <button
-                onClick={() => setMontoEDP(true)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={require("../../../assets/pictures/plus3.png")}
-                  style={styles.roundImageUploadmas}
-                  alt="plus"
-                />
-              </button>
-              <button
-                onClick={() => setMontoEDP(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                }}
-              >
-                <img
-                  src={require("../../../assets/pictures/minus3.png")}
-                  style={styles.roundImageUploadmas}
-                  alt="minus"
-                />
-              </button>
-            </div>
-          )}
-
-          {montoEDP &&
-            (userType === "Gerente" ||
-              userType === "Planificador" ||
-              userType === "GerenteContratista" ||
-              userType === "SuperUsuario" ||
-              userType === "PlanificadorContratista") && (
-              <>
-                <BarChartProceso data={data} />
-                <MontoEDPList data={data} />
-              </>
-            )}
-
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-
-          <button
-            onClick={() => getExcelReportData(data)}
-            style={{
-              background: "none",
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-            }}
-          >
-            <img
-              src={require("../../../assets/pictures/excel2.png")}
-              style={styles.excel}
-              alt="excel"
-            />
-          </button>
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
-          <div style={{ height: 16 }} />
         </div>
-        {/* Modal logic for web */}
-        <Modal show={showModal} close={onCloseOpenModal}>
-          {renderComponent}
-        </Modal>
       </div>
     );
   }
