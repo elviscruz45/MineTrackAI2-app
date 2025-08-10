@@ -45,6 +45,8 @@ import ProjectSelector from "./webcomponents/ProjectSelector";
 import ActivityView from "./webcomponents/ActivityView";
 import OnePageView from "./webcomponents/OnePageView";
 import CriticalRouteView from "./webcomponents/CriticalRouteView";
+import SafetyView from "./webcomponents/SafetyView";
+import EnvironmentView from "./webcomponents/EnvironmentView";
 const screenWidth = Dimensions.get("window").width;
 
 const chartConfig = {
@@ -355,6 +357,10 @@ function ReportnoRedux(props: any) {
                   <OnePageView selectedProject={selectedProject} />
                 ) : activeTab === "Ruta Critica" ? (
                   <CriticalRouteView selectedProject={selectedProject} />
+                ) : activeTab === "Seguridad" ? (
+                  <SafetyView selectedProject={selectedProject} />
+                ) : activeTab === "Medio Ambiente" ? (
+                  <EnvironmentView selectedProject={selectedProject} />
                 ) : (
                   <AvanceProgressChart data={data} />
                 )}
