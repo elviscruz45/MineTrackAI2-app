@@ -219,150 +219,142 @@ function ReportnoRedux(props: any) {
           {activeTab === "OnePage Mantención" ? (
             <OnePageView selectedProject={selectedProject} />
           ) : (
-            <div style={{ display: "flex", flexDirection: "row" }}>
-              <div
+            <div style={{ width: "100%" }}>
+              <h2
                 style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: 24,
-                  paddingTop: 24,
+                  ...styles.company,
+                  fontSize: 24,
+                  marginBottom: 8,
+                  color: "#2A3B76",
+                  textAlign: "center",
                 }}
               >
-                <div style={{ flex: 3 }}>
-                  <h2
+                EMPRESA MINERA ANTAPACCAY SA
+              </h2>
+              <h3
+                style={{
+                  ...styles.company,
+                  fontSize: 18,
+                  marginTop: 0,
+                  color: "#555",
+                  textAlign: "center",
+                }}
+              >
+                PARADA DE PLANTA JULIO 2025
+              </h3>
+
+              <div
+                style={{
+                  marginTop: 32,
+                  backgroundColor: "#f8f9fa",
+                  padding: 20,
+                  borderRadius: 8,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                  width: "100%",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                  }}
+                >
+                  <h4
                     style={{
-                      ...styles.company,
-                      fontSize: 24,
-                      marginBottom: 8,
-                      color: "#2A3B76",
-                    }}
-                  >
-                    EMPRESA MINERA ANTAPACCAY SA
-                  </h2>
-                  <h3
-                    style={{
-                      ...styles.company,
+                      margin: 0,
                       fontSize: 18,
-                      marginTop: 0,
-                      color: "#555",
+                      color: "#2A3B76",
+                      fontWeight: 600,
                     }}
                   >
-                    PARADA DE PLANTA JULIO 2025
-                  </h3>
+                    Avance Parada de Planta
+                  </h4>
 
                   <div
                     style={{
-                      marginTop: 32,
-                      backgroundColor: "#f8f9fa",
-                      padding: 20,
-                      borderRadius: 8,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                      display: "flex",
+                      gap: 12,
                     }}
                   >
-                    <div
+                    <button
                       style={{
+                        backgroundColor: "#2A3B76",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 16,
+                        gap: 8,
+                        boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
                       }}
                     >
-                      <h4
-                        style={{
-                          margin: 0,
-                          fontSize: 18,
-                          color: "#2A3B76",
-                          fontWeight: 600,
-                        }}
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        Avance Parada de Planta
-                      </h4>
+                        <path
+                          d="M12 4V20M4 12H20"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Exportar
+                    </button>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                        }}
+                    <button
+                      style={{
+                        backgroundColor: "white",
+                        color: "#2A3B76",
+                        border: "1px solid #2A3B76",
+                        borderRadius: 4,
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
                       >
-                        <button
-                          style={{
-                            backgroundColor: "#2A3B76",
-                            color: "white",
-                            border: "none",
-                            borderRadius: 4,
-                            padding: "8px 16px",
-                            fontSize: 14,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
-                          }}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M12 4V20M4 12H20"
-                              stroke="white"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          Exportar
-                        </button>
-
-                        <button
-                          style={{
-                            backgroundColor: "white",
-                            color: "#2A3B76",
-                            border: "1px solid #2A3B76",
-                            borderRadius: 4,
-                            padding: "8px 16px",
-                            fontSize: 14,
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                          }}
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17M7 11L12 16M12 16L17 11M12 16V4"
-                              stroke="#2A3B76"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          Imprimir
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Show content based on active tab */}
-                    {activeTab === "Proyeccion" ? (
-                      <AvanceProgressChart data={data} />
-                    ) : activeTab === "Actividades" ? (
-                      <ActivityView selectedProject={selectedProject} />
-                    ) : activeTab === "OnePage Mantención" ? (
-                      <OnePageView selectedProject={selectedProject} />
-                    ) : (
-                      <AvanceProgressChart data={data} />
-                    )}
+                        <path
+                          d="M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17M7 11L12 16M12 16L17 11M12 16V4"
+                          stroke="#2A3B76"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Imprimir
+                    </button>
                   </div>
                 </div>
+
+                {/* Show content based on active tab */}
+                {activeTab === "Proyeccion" ? (
+                  <AvanceProgressChart data={data} />
+                ) : activeTab === "Actividades" ? (
+                  <ActivityView selectedProject={selectedProject} />
+                ) : activeTab === "OnePage Mantención" ? (
+                  <OnePageView selectedProject={selectedProject} />
+                ) : (
+                  <AvanceProgressChart data={data} />
+                )}
               </div>
             </div>
           )}
