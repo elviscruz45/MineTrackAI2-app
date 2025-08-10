@@ -89,49 +89,49 @@ const navItems = [
       </svg>
     ),
   },
+  //   {
+  //     label: "Secciones y Piezas",
+  //     icon: (active: boolean) => (
+  //       <svg
+  //         width="18"
+  //         height="18"
+  //         viewBox="0 0 24 24"
+  //         fill="none"
+  //         xmlns="http://www.w3.org/2000/svg"
+  //       >
+  //         <path
+  //           d="M17 3L21 7L7 21L3 17L17 3Z"
+  //           stroke={active ? "#1976d2" : "#555"}
+  //           strokeWidth="2"
+  //           strokeLinecap="round"
+  //           strokeLinejoin="round"
+  //         />
+  //         <path
+  //           d="M14 6L18 10"
+  //           stroke={active ? "#1976d2" : "#555"}
+  //           strokeWidth="2"
+  //           strokeLinecap="round"
+  //           strokeLinejoin="round"
+  //         />
+  //         <path
+  //           d="M9.5 12.5L5.5 16.5"
+  //           stroke={active ? "#1976d2" : "#555"}
+  //           strokeWidth="2"
+  //           strokeLinecap="round"
+  //           strokeLinejoin="round"
+  //         />
+  //         <path
+  //           d="M7 17L3 21"
+  //           stroke={active ? "#1976d2" : "#555"}
+  //           strokeWidth="2"
+  //           strokeLinecap="round"
+  //           strokeLinejoin="round"
+  //         />
+  //       </svg>
+  //     ),
+  //   },
   {
-    label: "Secciones y Piezas",
-    icon: (active: boolean) => (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M17 3L21 7L7 21L3 17L17 3Z"
-          stroke={active ? "#1976d2" : "#555"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M14 6L18 10"
-          stroke={active ? "#1976d2" : "#555"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M9.5 12.5L5.5 16.5"
-          stroke={active ? "#1976d2" : "#555"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M7 17L3 21"
-          stroke={active ? "#1976d2" : "#555"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    label: "Bitacora",
+    label: "Seguridad",
     icon: (active: boolean) => (
       <svg
         width="18"
@@ -150,7 +150,7 @@ const navItems = [
     ),
   },
   {
-    label: "Fotos",
+    label: "Medio Ambiente",
     icon: (active: boolean) => (
       <svg
         width="18"

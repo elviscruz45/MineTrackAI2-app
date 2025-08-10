@@ -44,6 +44,7 @@ import ReportNavbar from "./webcomponents/ReportNavbar";
 import ProjectSelector from "./webcomponents/ProjectSelector";
 import ActivityView from "./webcomponents/ActivityView";
 import OnePageView from "./webcomponents/OnePageView";
+import CriticalRouteView from "./webcomponents/CriticalRouteView";
 const screenWidth = Dimensions.get("window").width;
 
 const chartConfig = {
@@ -352,6 +353,8 @@ function ReportnoRedux(props: any) {
                   <ActivityView selectedProject={selectedProject} />
                 ) : activeTab === "OnePage Mantención" ? (
                   <OnePageView selectedProject={selectedProject} />
+                ) : activeTab === "Ruta Critica" ? (
+                  <CriticalRouteView selectedProject={selectedProject} />
                 ) : (
                   <AvanceProgressChart data={data} />
                 )}
