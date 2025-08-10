@@ -173,13 +173,45 @@ function ReportnoRedux(props: any) {
   } else {
     return (
       <div style={{ ...styles.AndroidSafeArea }}>
+        {/* Project Selector as a navigation bar */}
+        <div
+          style={{
+            backgroundColor: "#f8f9fa",
+            padding: "12px 24px",
+            borderBottom: "1px solid #eaeaea",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 16,
+              color: "#2A3B76",
+              fontWeight: 500,
+            }}
+          >
+            Proyecto Seleccionado:
+          </h3>
+          <div style={{ width: "300px" }}>
+            <ProjectSelector
+              currentProject={selectedProject}
+              projects={AVAILABLE_PROJECTS}
+              onSelectProject={handleProjectChange}
+              isNavbar={true}
+            />
+          </div>
+        </div>
         <ReportHeader />
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
+
         <div
           style={{
             backgroundColor: "white",
             overflowY: "auto",
-            height: "calc(100vh - 120px)",
+            height:
+              "calc(100vh - 170px)" /* Adjusted for the new project selector bar */,
             padding: "0 24px",
           }}
         >
@@ -329,98 +361,6 @@ function ReportnoRedux(props: any) {
                     ) : (
                       <AvanceProgressChart data={data} />
                     )}
-                  </div>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <ProjectSelector
-                    currentProject={selectedProject}
-                    projects={AVAILABLE_PROJECTS}
-                    onSelectProject={handleProjectChange}
-                  />
-
-                  <div
-                    style={{
-                      marginTop: 24,
-                      backgroundColor: "#f8f9fa",
-                      padding: 20,
-                      borderRadius: 8,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        margin: 0,
-                        marginBottom: 16,
-                        fontSize: 18,
-                        color: "#2A3B76",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Resumen
-                    </h4>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "8px 0",
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>Avance Total:</span>
-                        <span style={{ fontWeight: 600 }}>35%</span>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "8px 0",
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>Tiempo restante:</span>
-                        <span style={{ fontWeight: 600 }}>13.2 hrs</span>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "8px 0",
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>Estado:</span>
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            color: "#1976d2",
-                          }}
-                        >
-                          En ejecución
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          padding: "8px 0",
-                        }}
-                      >
-                        <span style={{ color: "#555" }}>Equipos:</span>
-                        <span style={{ fontWeight: 600 }}>3</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
