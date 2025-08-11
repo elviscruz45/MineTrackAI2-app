@@ -387,8 +387,26 @@ function ItemScreenNotRedux(props: any) {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+      Toast.show({
+        type: "success",
+        text1: "Reporte generado exitosamente",
+        text2: "El archivo se ha descargado correctamente",
+        visibilityTime: 3000,
+        autoHide: true,
+        topOffset: 30,
+        bottomOffset: 40,
+      });
     } catch (error) {
       console.error("Error creating report:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error al generar el reporte",
+        text2: "Por favor intente nuevamente",
+        visibilityTime: 3000,
+        autoHide: true,
+        topOffset: 30,
+        bottomOffset: 40,
+      });
     }
     setLoadingReport(false);
   };

@@ -76,257 +76,153 @@ const mockComponentes = ["Reductor de velocidad", "Lainas", "Aceite"];
 /**
  * Creates the header section with company info and title
  */
-// Define color constants for consistent styling
-// Define color constants for consistent styling
-const COLORS = {
-  primary: "2A3B76", // Deep blue
-  secondary: "164D8F", // Medium blue
-  accent: "E67E22", // Orange
-  lightGray: "F8F9FA", // Light background
-  mediumGray: "CED4DA", // Border color
-  darkGray: "495057", // Text color
-};
-
-/**
- * Creates a beautifully styled header section with company info and title
- */
 function createHeader(serviceInfo: any, catBlob: any) {
   return [
-    // Top border line with more subtle styling
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 300 },
-    }),
-
-    // Company logo with better positioning and sizing
-    new Paragraph({
-      children: [
-        new ImageRun({
-          data: catBlob,
-          transformation: {
-            width: 180,
-            height: 100,
-          },
-          type: "jpg",
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 150 },
-    }),
-
-    // Company name with larger text and accent color
+    // Company header
     new Paragraph({
       children: [
         new TextRun({
           text: "FH INGENIEROS Y CONTRATISTAS GENERALES SAC",
           bold: true,
-          size: 30,
-          color: COLORS.primary,
+          size: 24,
         }),
       ],
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
     }),
 
-    // Company info in a lighter style with better spacing
     new Paragraph({
       children: [
         new TextRun({
-          text: `RUC: 20564502546   |   `,
-          size: 22,
-          color: COLORS.darkGray,
-        }),
-        new TextRun({
-          text: `Teléfono: 054-574755`,
-          size: 22,
-          color: COLORS.darkGray,
+          text: `RUC: 20564502546`,
+          size: 20,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 70 },
+      spacing: { after: 50 },
     }),
 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Jr. María Parado de Bellido Grupo 18 Mz 2 Semirrural Pachacútec,`,
-          size: 22,
-          color: COLORS.darkGray,
+          text: `Dirección:  Jr. María Parado de Bellido Grupo18 Mz 2 Semirrural Pachacútec, Cerro Colorado - Arequipa`,
+          size: 20,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
+      spacing: { after: 50 },
     }),
 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Cerro Colorado - Arequipa   |   `,
-          size: 22,
-          color: COLORS.darkGray,
-        }),
-        new TextRun({
-          text: `ventas@fhingenieros.com.pe`,
-          size: 22,
-          color: COLORS.secondary,
-          underline: {
-            type: UnderlineType.SINGLE,
-          },
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
-    }),
-
-    // Divider line with more elegant styling
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.mediumGray,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 1,
-        },
-      },
-      spacing: { after: 350 },
-    }),
-
-    // Main title with large, attractive styling
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `${serviceInfo.EmpresaMinera} S.A.`,
-          bold: true,
-          size: 38,
-          color: COLORS.primary,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 180 },
-    }),
-
-    // Service name with eye-catching styling
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `"${serviceInfo.NombreServicio}"`,
-          bold: true,
-          size: 42,
-          color: COLORS.accent,
+          text: `Teléfonos: 054 - 574755  e-mail: ventas@fhingenieros.com.pe`,
+          size: 20,
         }),
       ],
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
     }),
 
-    // Informe Técnico styled as a subtitle
+    // Main title
     new Paragraph({
       children: [
         new TextRun({
-          text: "INFORME TÉCNICO",
+          text: `${serviceInfo.EmpresaMinera} S.A.`,
           bold: true,
-          size: 34,
-          color: COLORS.secondary,
+          size: 32,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 150 },
+      spacing: { after: 100 },
     }),
 
-    // Important info in a clean, organized layout with better spacing
+    // Fecha
     new Paragraph({
       children: [
         new TextRun({
-          text: `Orden de Servicio: `,
-          bold: true,
-          size: 26,
-          color: COLORS.darkGray,
-        }),
-        new TextRun({
-          text: `${serviceInfo.NumeroAIT}`,
-          size: 26,
-          color: COLORS.darkGray,
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 80 },
-    }),
-
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Fecha de Inicio: `,
-          bold: true,
-          size: 26,
-          color: COLORS.darkGray,
-        }),
-        new TextRun({
-          text: `${
+          text: `Fecha de Inicio: ${
+            // Handle Firestore Timestamp object
             serviceInfo?.FechaInicio?.seconds
               ? new Date(
                   serviceInfo.FechaInicio.seconds * 1000
                 ).toLocaleDateString("en-GB")
-              : new Date(serviceInfo?.FechaInicio)?.toLocaleDateString("en-GB")
+              : // Fallback for string dates or other formats
+                new Date(serviceInfo?.FechaInicio)?.toLocaleDateString("en-GB")
           }`,
-          size: 26,
-          color: COLORS.darkGray,
+          bold: true,
+          size: 24,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 80 },
+      spacing: { after: 100 },
     }),
 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Revisión: `,
+          text: `OS: ${serviceInfo.NumeroAIT}`,
           bold: true,
-          size: 26,
-          color: COLORS.darkGray,
-        }),
-        new TextRun({
-          text: `00`,
-          size: 26,
-          color: COLORS.darkGray,
+          size: 24,
         }),
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 250 },
+      spacing: { after: 100 },
     }),
 
-    // Decorative bottom border
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `"${serviceInfo.NombreServicio}"`,
+          bold: true,
+          size: 35,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+    }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: '"INFORME TÉCNICO"',
+          bold: true,
+          size: 28,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+    }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: 'Rev. "00"',
+          bold: true,
+          size: 24,
+        }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }),
+
     new Paragraph({
       children: [
         new TextRun({
           text: "",
+          bold: true,
+        }),
+
+        new ImageRun({
+          data: catBlob,
+          transformation: {
+            width: 300,
+            height: 300,
+          },
+          type: "jpg", // or "png", "gif", etc.
         }),
       ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
+      spacing: { after: 200 },
     }),
   ];
 }
@@ -494,22 +390,6 @@ function createProjectInfo(serviceInfo: any) {
     new Paragraph({
       children: [
         new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
           text: "PO: ",
           bold: true,
         }),
@@ -557,22 +437,6 @@ function createProjectInfo(serviceInfo: any) {
       ],
       spacing: { after: 200 },
     }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
   ];
 }
 
@@ -611,22 +475,6 @@ function createObjectiveAndScope(serviceInfo: any) {
         ),
       ],
       spacing: { after: 200 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
     }),
 
     // Personnel section
@@ -675,38 +523,6 @@ function createObjectiveAndScope(serviceInfo: any) {
       ],
       spacing: { after: 200 },
     }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
 
     // Scope section
     new Paragraph({
@@ -736,22 +552,6 @@ function createObjectiveAndScope(serviceInfo: any) {
         ),
       ],
       spacing: { after: 100 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
     }),
     // Title for activities
     new Paragraph({
@@ -1036,22 +836,6 @@ function createConclusionsSection() {
     new Paragraph({
       children: [
         new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
           text: "CONCLUSIONES Y RECOMENDACIONES",
           bold: true,
           underline: { type: UnderlineType.SINGLE },
@@ -1101,22 +885,6 @@ function createConclusionsSection() {
       ],
       spacing: { after: 100 },
     }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
   ];
 }
 
@@ -1125,22 +893,6 @@ async function createImagesSection(postData: any): Promise<Paragraph[]> {
   // Handle empty or invalid data
   if (!postData || !Array.isArray(postData) || postData.length === 0) {
     return [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: "",
-          }),
-        ],
-        border: {
-          bottom: {
-            color: COLORS.accent,
-            space: 1,
-            style: BorderStyle.SINGLE,
-            size: 3,
-          },
-        },
-        spacing: { after: 350 },
-      }),
       new Paragraph({
         children: [
           new TextRun({
@@ -1164,22 +916,6 @@ async function createImagesSection(postData: any): Promise<Paragraph[]> {
 
   // Start with a header for the photo section
   const paragraphs: Paragraph[] = [
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: "",
-        }),
-      ],
-      border: {
-        bottom: {
-          color: COLORS.accent,
-          space: 1,
-          style: BorderStyle.SINGLE,
-          size: 3,
-        },
-      },
-      spacing: { after: 350 },
-    }),
     new Paragraph({
       children: [
         new TextRun({

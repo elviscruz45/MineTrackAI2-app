@@ -210,14 +210,160 @@ function ProfileRaw(props: any) {
         <Text> </Text>
         <Text
           style={{
-            // marginLeft: 15,
             borderRadius: 5,
             fontWeight: "700",
             alignSelf: "center",
+            fontSize: 18,
+            color: "#2A3B76",
+            marginBottom: 15,
           }}
         >
-          Estadisticas de uso
+          Estadísticas de uso
         </Text>
+
+        <View style={styles.statsContainer}>
+          {/* Reports Stats */}
+          <View style={styles.statCard}>
+            <View
+              style={[styles.statIconContainer, { backgroundColor: "#E6F7FF" }]}
+            >
+              <Feather name="file-text" size={24} color="#1890FF" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statValue}>124</Text>
+              <Text style={styles.statLabel}>Informes generados</Text>
+            </View>
+          </View>
+
+          {/* Events Stats */}
+          <View style={styles.statCard}>
+            <View
+              style={[styles.statIconContainer, { backgroundColor: "#F6FFED" }]}
+            >
+              <Feather name="calendar" size={24} color="#52C41A" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statValue}>57</Text>
+              <Text style={styles.statLabel}>Eventos registrados</Text>
+            </View>
+          </View>
+
+          {/* Active Projects */}
+          <View style={styles.statCard}>
+            <View
+              style={[styles.statIconContainer, { backgroundColor: "#FFF7E6" }]}
+            >
+              <Feather name="briefcase" size={24} color="#FA8C16" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statValue}>8</Text>
+              <Text style={styles.statLabel}>Proyectos activos</Text>
+            </View>
+          </View>
+
+          {/* Completed Maintenance */}
+          <View style={styles.statCard}>
+            <View
+              style={[styles.statIconContainer, { backgroundColor: "#F9F0FF" }]}
+            >
+              <Feather name="check-circle" size={24} color="#722ED1" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statValue}>36</Text>
+              <Text style={styles.statLabel}>Mantenimientos completados</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Activity Summary */}
+        <View style={styles.activitySummary}>
+          <Text style={styles.sectionTitle}>Resumen de actividad</Text>
+
+          {/* Activity Bar Chart */}
+          <View style={styles.barChartContainer}>
+            {[65, 40, 85, 30, 60, 45, 75].map((value, index) => (
+              <View key={index} style={styles.barChartColumn}>
+                <View style={styles.barLabelContainer}>
+                  <Text style={styles.barValue}>{value}</Text>
+                </View>
+                <View
+                  style={[
+                    styles.bar,
+                    {
+                      height: value * 1.5,
+                      backgroundColor: index === 2 ? "#1890FF" : "#E6F7FF",
+                    },
+                  ]}
+                />
+                <Text style={styles.barLabel}>
+                  {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"][index]}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.recentActivityContainer}>
+          <Text style={styles.sectionTitle}>Actividad reciente</Text>
+
+          {/* Recent Activity Items */}
+          {[
+            {
+              type: "report",
+              title: "Informe de mantenimiento preventivo",
+              date: "12 Jul",
+            },
+            {
+              type: "event",
+              title: "Reparación bomba hidráulica",
+              date: "10 Jul",
+            },
+            {
+              type: "project",
+              title: "Ampliación planta procesadora",
+              date: "8 Jul",
+            },
+          ].map((item, index) => (
+            <View key={index} style={styles.activityItem}>
+              <View
+                style={[
+                  styles.activityIcon,
+                  {
+                    backgroundColor:
+                      item.type === "report"
+                        ? "#E6F7FF"
+                        : item.type === "event"
+                        ? "#F6FFED"
+                        : "#FFF7E6",
+                  },
+                ]}
+              >
+                <Feather
+                  name={
+                    item.type === "report"
+                      ? "file-text"
+                      : item.type === "event"
+                      ? "calendar"
+                      : "briefcase"
+                  }
+                  size={16}
+                  color={
+                    item.type === "report"
+                      ? "#1890FF"
+                      : item.type === "event"
+                      ? "#52C41A"
+                      : "#FA8C16"
+                  }
+                />
+              </View>
+              <View style={styles.activityDetails}>
+                <Text style={styles.activityTitle}>{item.title}</Text>
+                <Text style={styles.activityDate}>{item.date}</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="#CCC" />
+            </View>
+          ))}
+        </View>
 
         <Text> </Text>
         {/* <FlatList
