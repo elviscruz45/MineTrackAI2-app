@@ -42,18 +42,19 @@ const GanttHistorial = (props: any) => {
   const [searchResults, setSearchResults] = useState<any>(null);
   const [data, setData] = useState<any>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Use window dimensions hook for responsive layout
   const { width } = useWindowDimensions();
   const [numColumns, setNumColumns] = useState(getColumnCount(width));
-  
+
   // Function to determine number of columns based on screen width
   function getColumnCount(screenWidth: number) {
-    if (screenWidth > 1200) return 3;      // Large screens like MacBook (3 columns)
-    else if (screenWidth > 768) return 2;  // Medium screens like tablets (2 columns)
-    else return 1;                         // Small screens like phones (1 column)
+    if (screenWidth > 1200) return 3; // Large screens like MacBook (3 columns)
+    else if (screenWidth > 768)
+      return 2; // Medium screens like tablets (2 columns)
+    else return 1; // Small screens like phones (1 column)
   }
-  
+
   // Update column count when window size changes
   useEffect(() => {
     const updateLayout = () => {
@@ -150,7 +151,11 @@ const GanttHistorial = (props: any) => {
         data={searchResults}
         numColumns={numColumns}
         key={`flatlist-${numColumns}`} // Force re-render when columns change
-        columnWrapperStyle={numColumns > 1 ? { flexWrap: 'wrap', justifyContent: 'space-between' } : undefined}
+        columnWrapperStyle={
+          numColumns > 1
+            ? { flexWrap: "wrap", justifyContent: "space-between" }
+            : undefined
+        }
         ListHeaderComponent={
           <SearchBar
             placeholder="Buscar tipo de evento"
@@ -167,19 +172,21 @@ const GanttHistorial = (props: any) => {
         scrollEnabled={true}
         contentContainerStyle={[
           props.listViewContainerStyle,
-          numColumns > 1 ? { paddingHorizontal: 12 } : {}
+          numColumns > 1 ? { paddingHorizontal: 12 } : {},
         ]}
         renderItem={({ item, index }) => {
           const { formattedDate, fullDate } = formatDate(item.createdAt);
 
           return (
-            <View style={[
-              styles.cardContainer,
-              { 
-                width: numColumns > 1 ? `${100/numColumns - 2}%` : '100%',
-                margin: numColumns > 1 ? '1%' : undefined
-              }
-            ]}>
+            <View
+              style={[
+                styles.cardContainer,
+                {
+                  width: numColumns > 1 ? `${100 / numColumns - 2}%` : "100%",
+                  margin: numColumns > 1 ? "1%" : undefined,
+                },
+              ]}
+            >
               {/* Antamina badge */}
               <View
                 style={{

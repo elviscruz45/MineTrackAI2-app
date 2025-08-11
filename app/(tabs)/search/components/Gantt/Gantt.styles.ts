@@ -4,10 +4,10 @@ const windowHeight = Dimensions.get("window").height;
 
 // Antamina color palette based on screenshots
 const COLORS = {
-  primary: "#2e4d8c",       // Antamina dark blue
-  primaryLight: "#3e5fa0",  // Lighter blue for hover states
-  secondary: "#f8f9fa",     // Light background
-  accent: "#093e87",        // Accent blue
+  primary: "#2e4d8c", // Antamina dark blue
+  primaryLight: "#3e5fa0", // Lighter blue for hover states
+  secondary: "#f8f9fa", // Light background
+  accent: "#093e87", // Accent blue
   success: "#28a745",
   info: "#17a2b8",
   warning: "#ffc107",
@@ -17,19 +17,19 @@ const COLORS = {
   white: "#ffffff",
   black: "#212529",
   gray: "#6c757d",
-  grayLight: "#f0f2f5",     // Background gray
+  grayLight: "#f0f2f5", // Background gray
   grayDark: "#495057",
   transparent: "transparent",
   borderLight: "#dee2e6",
-  headerBg: "#2e4d8c",      // Header background blue
-  badgeBg: "#2e4d8c",       // Badge background blue
+  headerBg: "#2e4d8c", // Header background blue
+  badgeBg: "#2e4d8c", // Badge background blue
 };
 
 const styles = StyleSheet.create({
   dateInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   dateText: {
     color: COLORS.grayLight,
@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   userName: {
     color: COLORS.light,
@@ -47,13 +47,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.white,
     marginBottom: 6,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.white,
   },
   antaminaLogo: {
@@ -61,25 +61,25 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
     backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   antaminaText: {
     color: COLORS.white,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   antaminaBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     left: 10,
     backgroundColor: COLORS.badgeBg,
     borderRadius: 15,
     width: 30,
     height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
 
