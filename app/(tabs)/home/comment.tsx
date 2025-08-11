@@ -9,8 +9,9 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  Animated,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { connect } from "react-redux";
 import { Icon } from "@rneui/themed";
 import { styles } from "./_styles/comment.styles";
@@ -59,6 +60,16 @@ function CommentScreen(props: any) {
   const [postsComments, setPostsComments] = useState<any>([]);
   const [comment, setComment] = useState("");
   const [newImages, setNewImages] = useState([]);
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  // Animation effect when component mounts
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   // go to edit screen
   const goToEditEventScreen = () => {
@@ -199,225 +210,232 @@ function CommentScreen(props: any) {
   } else {
     return (
       <KeyboardAwareScrollView
-        style={{ backgroundColor: "white" }} // Add backgroundColor here
+        style={{ backgroundColor: "white" }}
         showsVerticalScrollIndicator={false}
-
-        // contentContainerStyle={{ flexGrow: 1 }} // Allow the content to grow inside the ScrollView
-        // keyboardShouldPersistTaps="handled" // Ensure taps are handled when the keyboard is open
+        bounces={true}
       >
-        <Text> </Text>
-        <View style={[styles.row5, styles.center, { marginHorizontal: "1%" }]}>
-          <Text style={{ margin: 5, color: "#5B5B5B" }}>
-            {"Fecha:  "}
-            {fechaPostFormato}
-          </Text>
-          {/* {(props.profile?.userType === "SuperUsuario" ||
-            props.email === emailPerfil) && (
-            <TouchableOpacity onPress={() => goToEditEventScreen()}>
-              <View style={{ marginRight: "2%" }}>
-                <ImageExpo
-                  source={require("../../../assets/pictures/editIcon2.png")}
-                  style={styles.editIcon}
-                />
+        <Animated.View style={{ opacity: fadeAnim }}>
+          {/* Header Section */}
+          <View style={styles.headerContainer}>
+            <View style={styles.headerInfo}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="calendar-outline" size={18} color="#3498db" />
+                <Text style={[styles.headerText, { marginLeft: 6 }]}>
+                  {fechaPostFormato}
+                </Text>
               </View>
-            </TouchableOpacity>
-          )} */}
-          {pdfPrincipal && (
-            <TouchableOpacity
-              onPress={() =>
-                uploadFile(pdfPrincipal.replace(/abcdefg/g, "%2F"))
-              }
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginRight: "2%",
-              }}
-            >
-              <Icon type="material-community" name="paperclip" />
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text style={{ margin: 5, color: "#5B5B5B", marginHorizontal: "2%" }}>
-          {"Visibilidad:  "}
-          {visibilidad}
-        </Text>
-        <ImageExpo
-          source={{ uri: fotoPrincipal?.replace(/abcdefg/g, "%2F") }}
-          style={styles.postPhoto}
-          cachePolicy={"memory-disk"}
-        />
-        <Text> </Text>
 
-        <Text
-          style={{
-            color: "black",
-            fontWeight: "700",
-            textAlign: "center",
-            // alignSelf: "center",
-
-            fontSize: 15,
-            paddingHorizontal: 30,
-          }}
-          onPress={() => goToServiceInfo()}
-        >
-          {AITNombreServicio}
-        </Text>
-        {/* {props.email === emailPerfil && (
-          <TouchableOpacity
-            onPress={() => docDelete(idDocFirestoreDB)}
-            style={{
-              marginRight: "2%",
-            }}
-          >
-            <ImageExpo
-              source={require("../../../assets/pictures/deleteIcon.png")}
-              style={styles.roundImage10}
-              cachePolicy={"memory-disk"}
-            />
-          </TouchableOpacity>
-        )} */}
-        <Text> </Text>
-        <Text
-          style={{
-            // color: "black",
-            fontWeight: "700",
-            // alignSelf: "center",
-            // fontSize: 20,
-            paddingHorizontal: 5,
-          }}
-        >
-          {titulo}
-        </Text>
-
-        <Text> </Text>
-
-        <Text
-          style={{
-            paddingHorizontal: 5,
-          }}
-        >
-          {comentarios}
-        </Text>
-
-        <View>
-          <Text> </Text>
-          {titulo === "Tareo" && (
-            <>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Total personal: {totalHH}{" "}
-              </Text>
-              <Text> </Text>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Cantidad supervisores : {supervisores}{" "}
-              </Text>
-              <Text style={styles.avanceNombre}> Cantidad HSE : {HSE} </Text>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Cantidad Lider Tecnico : {liderTecnico}{" "}
-              </Text>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Cantidad Soldador : {soldador}{" "}
-              </Text>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Cantidad Tecnico : {tecnico}{" "}
-              </Text>
-              <Text style={styles.avanceNombre}>
-                {" "}
-                Cantidad Ayudante : {ayudante}{" "}
-              </Text>
-            </>
-          )}
-        </View>
-
-        <Text> </Text>
-        <FlatList
-          style={{
-            backgroundColor: "white",
-            paddingTop: 10,
-            paddingVertical: 10,
-          }}
-          horizontal={true}
-          showsHorizontalScrollIndicator={false}
-          data={newImages}
-          renderItem={({ item }) => {
-            return (
-              <View>
-                <ImageExpo
-                  source={{ uri: item }}
-                  style={styles.postPhoto2}
-                  cachePolicy={"memory-disk"}
-                />
-              </View>
-            );
-          }}
-          keyExtractor={(index) => `${index}`}
-        />
-        <Text> </Text>
-
-        <View style={styles.commentContainer}>
-          <ImageExpo
-            source={{ uri: props.user_photo }}
-            style={styles.roundImage}
-            cachePolicy={"memory-disk"}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Ingresa tu comentario"
-            value={comment}
-            onChangeText={handleCommentChange}
-          />
-          <TouchableOpacity
-            onPress={() => handleSendComment(comment)}
-            style={styles.sendButton}
-          >
-            <Feather name="send" size={16} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={postsComments}
-          scrollEnabled={false}
-          renderItem={({ item, index }) => {
-            const options = {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              hour12: false,
-            };
-
-            return (
-              <View style={{ paddingHorizontal: 10 }}>
-                <Text> </Text>
-                <View style={[styles.row, styles.center]}>
-                  <View style={[styles.row, styles.center]}>
-                    <ImageExpo
-                      source={{
-                        uri: item?.commenterPhoto,
-                      }}
-                      style={styles.roundImage}
-                      cachePolicy={"memory-disk"}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                {pdfPrincipal && (
+                  <TouchableOpacity
+                    onPress={() =>
+                      uploadFile(pdfPrincipal.replace(/abcdefg/g, "%2F"))
+                    }
+                    style={{ marginHorizontal: 8 }}
+                  >
+                    <MaterialIcons
+                      name="attach-file"
+                      size={20}
+                      color="#3498db"
                     />
-                    <Text style={styles.center2}>{item.commenterName}</Text>
-                  </View>
+                  </TouchableOpacity>
+                )}
 
-                  <Text style={styles.center2}>
-                    {new Date(item.date).toLocaleString(undefined)}
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialIcons name="visibility" size={18} color="#3498db" />
+                  <Text style={[styles.headerText, { marginLeft: 4 }]}>
+                    {visibilidad}
                   </Text>
                 </View>
-                <Text> </Text>
-                <View style={styles.center3}>
-                  <Text style={styles.center4}>{item.comment}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Main Image */}
+          <ImageExpo
+            source={{ uri: fotoPrincipal?.replace(/abcdefg/g, "%2F") }}
+            style={styles.postPhoto}
+            cachePolicy={"memory-disk"}
+            contentFit="cover"
+            transition={300}
+          />
+
+          {/* Title Section */}
+          <Text style={styles.titleText}>{AITNombreServicio}</Text>
+
+          {/* Content Description */}
+          <Text style={styles.detailText}>{titulo}</Text>
+          <Text style={styles.detailText}>{comentarios}</Text>
+
+          {/* Tareo Details Section (if applicable) */}
+          {titulo === "Tareo" && (
+            <View
+              style={{
+                backgroundColor: "#f8f9fa",
+                borderRadius: 12,
+                margin: 16,
+                padding: 16,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: "#2c3e50",
+                  marginBottom: 10,
+                }}
+              >
+                Detalles de Personal
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>
+                    Total personal: {totalHH}
+                  </Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>
+                    Supervisores: {supervisores}
+                  </Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>HSE: {HSE}</Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>
+                    Lider Técnico: {liderTecnico}
+                  </Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>Soldador: {soldador}</Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>Técnico: {tecnico}</Text>
+                </View>
+                <View style={{ width: "48%", marginBottom: 8 }}>
+                  <Text style={styles.avanceNombre}>Ayudante: {ayudante}</Text>
                 </View>
               </View>
-            );
-          }}
-        />
+            </View>
+          )}
+
+          {/* Gallery Section */}
+          {newImages && newImages.length > 0 && (
+            <View style={styles.galleryContainer}>
+              <Text style={styles.sectionTitle}>Galería</Text>
+              <FlatList
+                style={{ backgroundColor: "white" }}
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                data={newImages}
+                renderItem={({ item }) => (
+                  <TouchableOpacity>
+                    <ImageExpo
+                      source={{ uri: item }}
+                      style={styles.postPhoto2}
+                      cachePolicy={"memory-disk"}
+                      contentFit="cover"
+                      transition={300}
+                    />
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(index) => `${index}`}
+              />
+            </View>
+          )}
+
+          {/* Comment Input Section */}
+          <View style={styles.commentContainer}>
+            <ImageExpo
+              source={{ uri: props.user_photo }}
+              style={styles.roundImage}
+              cachePolicy={"memory-disk"}
+              contentFit="cover"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Ingresa tu comentario"
+              value={comment}
+              onChangeText={handleCommentChange}
+              placeholderTextColor="#9ca3af"
+            />
+            <TouchableOpacity
+              onPress={() => handleSendComment(comment)}
+              style={styles.sendButton}
+              activeOpacity={0.7}
+            >
+              <Feather name="send" size={18} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Comments Section */}
+          {postsComments && postsComments.length > 0 ? (
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.sectionTitle}>
+                Comentarios ({postsComments.length})
+              </Text>
+              <FlatList
+                data={postsComments}
+                scrollEnabled={false}
+                renderItem={({ item, index }) => {
+                  const commentDate = new Date(item.date);
+                  const formattedDate = commentDate.toLocaleDateString(
+                    undefined,
+                    {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    }
+                  );
+                  const formattedTime = commentDate.toLocaleTimeString(
+                    undefined,
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  );
+
+                  return (
+                    <View style={styles.commentCard}>
+                      <View style={styles.commentHeader}>
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
+                          <ImageExpo
+                            source={{ uri: item?.commenterPhoto }}
+                            style={styles.roundImage}
+                            cachePolicy={"memory-disk"}
+                            contentFit="cover"
+                          />
+                          <Text style={[styles.userName, { marginLeft: 10 }]}>
+                            {item.commenterName}
+                          </Text>
+                        </View>
+                        <Text style={styles.dateText}>
+                          {formattedDate} • {formattedTime}
+                        </Text>
+                      </View>
+                      <Text style={styles.commentText}>{item.comment}</Text>
+                    </View>
+                  );
+                }}
+              />
+            </View>
+          ) : (
+            <View style={{ alignItems: "center", marginVertical: 30 }}>
+              <Feather name="message-circle" size={40} color="#d1d5db" />
+              <Text style={{ color: "#6b7280", marginTop: 10, fontSize: 16 }}>
+                No hay comentarios. ¡Sé el primero!
+              </Text>
+            </View>
+          )}
+        </Animated.View>
       </KeyboardAwareScrollView>
     );
   }
