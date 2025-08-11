@@ -130,6 +130,7 @@ const GanttHistorial = (props: any) => {
             <View style={[styles.circle]}>
               <ImageExpo
                 // source={require("../../../../assets/smcv2.jpeg")}
+                // source={require("../../../../../assets/assetpics/userIcon.png")}
                 source={item.icon}
                 style={{ width: 20, height: 20 }}
                 cachePolicy={"memory-disk"}
@@ -141,7 +142,8 @@ const GanttHistorial = (props: any) => {
 
                 <View style={styles.row}>
                   <ImageExpo
-                    source={{ uri: item.imageUrl }}
+                    // source={{ uri: item.imageUrl }}
+                    source={require("../../../../../assets/assetpics/userIcon.png")}
                     cachePolicy={"memory-disk"}
                     style={{
                       width: 50,

@@ -327,7 +327,8 @@ function HomeScreenRaw(props: any) {
                     </TouchableOpacity>
 
                     <ImageExpo
-                      source={{ uri: item.fotoUsuarioPerfil }}
+                      source={require("../../../assets/assetpics/userIcon.png")}
+                      // source={{ uri: item.fotoUsuarioPerfil }}
                       style={styles.roundImage}
                       cachePolicy={"memory-disk"}
                     />

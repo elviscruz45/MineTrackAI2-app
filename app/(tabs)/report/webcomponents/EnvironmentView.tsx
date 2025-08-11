@@ -1,28 +1,28 @@
 import React from "react";
 
-// Define types for environmental data
-interface EnvironmentIncident {
+// Define tipos para datos ambientales
+interface IncidenteAmbiental {
   id: string;
-  date: string;
-  type: "Spill" | "Emission" | "Waste" | "Water" | "Other";
-  severity: "Critical" | "Major" | "Minor";
-  location: string;
-  status: "Active" | "Contained" | "Resolved";
-  description: string;
-  impactArea: string[];
-  mitigationActions: string[];
-  responsibleTeam: string;
+  fecha: string;
+  tipo: "Derrame" | "Emisión" | "Residuo" | "Agua" | "Otro";
+  gravedad: "Crítico" | "Mayor" | "Menor";
+  ubicacion: string;
+  estado: "Activo" | "Contenido" | "Resuelto";
+  descripcion: string;
+  areaImpacto: string[];
+  accionesMitigacion: string[];
+  equipoResponsable: string;
 }
 
-interface EnvironmentKPI {
-  category: string;
-  metrics: {
-    label: string;
-    current: number;
-    target: number;
-    unit: string;
-    trend: "improving" | "declining" | "stable";
-    compliance: "within" | "near" | "exceeded";
+interface KPIAmbiental {
+  categoria: string;
+  metricas: {
+    etiqueta: string;
+    actual: number;
+    meta: number;
+    unidad: string;
+    tendencia: "mejorando" | "declinando" | "estable";
+    cumplimiento: "dentro" | "cerca" | "excedido";
   }[];
 }
 
@@ -31,172 +31,177 @@ interface Props {
 }
 
 const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
-  // Mock environmental KPIs
-  const environmentKPIs: EnvironmentKPI[] = [
+  // KPIs ambientales de ejemplo
+  const kpisAmbientales: KPIAmbiental[] = [
     {
-      category: "Water Management",
-      metrics: [
+      categoria: "Gestión del Agua",
+      metricas: [
         {
-          label: "Water Consumption",
-          current: 850,
-          target: 1000,
-          unit: "m³/day",
-          trend: "improving",
-          compliance: "within",
+          etiqueta: "Consumo de Agua",
+          actual: 850,
+          meta: 1000,
+          unidad: "m³/día",
+          tendencia: "mejorando",
+          cumplimiento: "dentro",
         },
         {
-          label: "Water Recycling Rate",
-          current: 85,
-          target: 80,
-          unit: "%",
-          trend: "improving",
-          compliance: "within",
+          etiqueta: "Tasa de Reciclaje de Agua",
+          actual: 85,
+          meta: 80,
+          unidad: "%",
+          tendencia: "mejorando",
+          cumplimiento: "dentro",
         },
         {
-          label: "pH Level",
-          current: 7.2,
-          target: 7.0,
-          unit: "pH",
-          trend: "stable",
-          compliance: "within",
+          etiqueta: "Nivel de pH",
+          actual: 7.2,
+          meta: 7.0,
+          unidad: "pH",
+          tendencia: "estable",
+          cumplimiento: "dentro",
         },
       ],
     },
     {
-      category: "Air Quality",
-      metrics: [
+      categoria: "Calidad del Aire",
+      metricas: [
         {
-          label: "Dust Emissions",
-          current: 48,
-          target: 45,
-          unit: "µg/m³",
-          trend: "declining",
-          compliance: "near",
+          etiqueta: "Emisiones de Polvo",
+          actual: 48,
+          meta: 45,
+          unidad: "µg/m³",
+          tendencia: "declinando",
+          cumplimiento: "cerca",
         },
         {
-          label: "CO2 Emissions",
-          current: 95,
-          target: 100,
-          unit: "tons/day",
-          trend: "improving",
-          compliance: "within",
-        },
-      ],
-    },
-    {
-      category: "Waste Management",
-      metrics: [
-        {
-          label: "Solid Waste Recycling",
-          current: 75,
-          target: 80,
-          unit: "%",
-          trend: "improving",
-          compliance: "near",
-        },
-        {
-          label: "Hazardous Waste",
-          current: 3.2,
-          target: 4.0,
-          unit: "tons/day",
-          trend: "improving",
-          compliance: "within",
+          etiqueta: "Emisiones de CO2",
+          actual: 95,
+          meta: 100,
+          unidad: "ton/día",
+          tendencia: "mejorando",
+          cumplimiento: "dentro",
         },
       ],
     },
     {
-      category: "Energy Efficiency",
-      metrics: [
+      categoria: "Gestión de Residuos",
+      metricas: [
         {
-          label: "Energy Consumption",
-          current: 280,
-          target: 300,
-          unit: "MWh/day",
-          trend: "improving",
-          compliance: "within",
+          etiqueta: "Reciclaje de Residuos Sólidos",
+          actual: 75,
+          meta: 80,
+          unidad: "%",
+          tendencia: "mejorando",
+          cumplimiento: "cerca",
         },
         {
-          label: "Renewable Energy Usage",
-          current: 28,
-          target: 30,
-          unit: "%",
-          trend: "improving",
-          compliance: "near",
+          etiqueta: "Residuos Peligrosos",
+          actual: 3.2,
+          meta: 4.0,
+          unidad: "ton/día",
+          tendencia: "mejorando",
+          cumplimiento: "dentro",
+        },
+      ],
+    },
+    {
+      categoria: "Eficiencia Energética",
+      metricas: [
+        {
+          etiqueta: "Consumo de Energía",
+          actual: 280,
+          meta: 300,
+          unidad: "MWh/día",
+          tendencia: "mejorando",
+          cumplimiento: "dentro",
+        },
+        {
+          etiqueta: "Uso de Energía Renovable",
+          actual: 28,
+          meta: 30,
+          unidad: "%",
+          tendencia: "mejorando",
+          cumplimiento: "cerca",
         },
       ],
     },
   ];
 
-  // Mock environmental incidents
-  const environmentIncidents: EnvironmentIncident[] = [
+  // Incidentes ambientales de ejemplo
+  const incidentesAmbientales: IncidenteAmbiental[] = [
     {
       id: "ENV-001",
-      date: "2025-08-09",
-      type: "Water",
-      severity: "Minor",
-      location: "Primary Crushing Area - Drainage System",
-      status: "Resolved",
-      description: "Elevated sediment levels detected in water discharge",
-      impactArea: ["Local watershed", "Settling ponds"],
-      mitigationActions: [
-        "Increased settling time in retention ponds",
-        "Additional filtration system installed",
-        "Daily water quality monitoring implemented",
+      fecha: "2025-08-09",
+      tipo: "Agua",
+      gravedad: "Menor",
+      ubicacion: "Área de Chancado Primario - Sistema de Drenaje",
+      estado: "Resuelto",
+      descripcion:
+        "Niveles elevados de sedimentos detectados en la descarga de agua",
+      areaImpacto: ["Cuenca local", "Pozas de sedimentación"],
+      accionesMitigacion: [
+        "Incremento del tiempo de sedimentación en pozas de retención",
+        "Sistema de filtración adicional instalado",
+        "Monitoreo diario de calidad de agua implementado",
       ],
-      responsibleTeam: "Environmental Management",
+      equipoResponsable: "Gestión Ambiental",
     },
     {
       id: "ENV-002",
-      date: "2025-08-08",
-      type: "Emission",
-      severity: "Major",
-      location: "Crusher Dust Collection System",
-      status: "Active",
-      description:
-        "Dust suppression system malfunction leading to increased particulate emissions",
-      impactArea: ["Air quality", "Worker safety", "Local community"],
-      mitigationActions: [
-        "Emergency repair of dust collection system",
-        "Temporary operation reduction",
-        "Community notification issued",
+      fecha: "2025-08-08",
+      tipo: "Emisión",
+      gravedad: "Mayor",
+      ubicacion: "Sistema de Colección de Polvo del Chancador",
+      estado: "Activo",
+      descripcion:
+        "Mal funcionamiento del sistema de supresión de polvo que lleva a mayores emisiones de partículas",
+      areaImpacto: [
+        "Calidad del aire",
+        "Seguridad del trabajador",
+        "Comunidad local",
       ],
-      responsibleTeam: "Maintenance & Environmental",
+      accionesMitigacion: [
+        "Reparación de emergencia del sistema de colección de polvo",
+        "Reducción temporal de operaciones",
+        "Notificación emitida a la comunidad",
+      ],
+      equipoResponsable: "Mantenimiento y Medio Ambiente",
     },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
+  const getStatusColor = (estado: string) => {
+    switch (estado) {
+      case "Activo":
         return "#dc3545";
-      case "Contained":
+      case "Contenido":
         return "#ffc107";
-      case "Resolved":
+      case "Resuelto":
         return "#198754";
       default:
         return "#6c757d";
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "Critical":
+  const getSeverityColor = (gravedad: string) => {
+    switch (gravedad) {
+      case "Crítico":
         return "#dc3545";
-      case "Major":
+      case "Mayor":
         return "#ffc107";
-      case "Minor":
+      case "Menor":
         return "#198754";
       default:
         return "#6c757d";
     }
   };
 
-  const getComplianceColor = (compliance: string) => {
-    switch (compliance) {
-      case "within":
+  const getComplianceColor = (cumplimiento: string) => {
+    switch (cumplimiento) {
+      case "dentro":
         return "#198754";
-      case "near":
+      case "cerca":
         return "#ffc107";
-      case "exceeded":
+      case "excedido":
         return "#dc3545";
       default:
         return "#6c757d";
@@ -205,7 +210,7 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Project Title */}
+      {/* Título del Proyecto */}
       {selectedProject && (
         <h1
           style={{
@@ -216,14 +221,14 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
             paddingBottom: "10px",
           }}
         >
-          Environmental Monitoring: {selectedProject}
+          Monitoreo Ambiental: {selectedProject}
         </h1>
       )}
 
-      {/* Environmental KPIs Grid */}
+      {/* Cuadrícula de KPIs Ambientales */}
       <div style={{ marginBottom: "40px" }}>
-        {environmentKPIs.map((category) => (
-          <div key={category.category} style={{ marginBottom: "30px" }}>
+        {kpisAmbientales.map((categoria) => (
+          <div key={categoria.categoria} style={{ marginBottom: "30px" }}>
             <h2
               style={{
                 marginBottom: "20px",
@@ -234,7 +239,7 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                 gap: "10px",
               }}
             >
-              <span>{category.category}</span>
+              <span>{categoria.categoria}</span>
             </h2>
             <div
               style={{
@@ -243,36 +248,36 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                 gap: "20px",
               }}
             >
-              {category.metrics.map((metric) => (
+              {categoria.metricas.map((metrica) => (
                 <div
-                  key={metric.label}
+                  key={metrica.etiqueta}
                   style={{
                     background: "white",
                     padding: "20px",
                     borderRadius: "8px",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                     border: `1px solid ${getComplianceColor(
-                      metric.compliance
+                      metrica.cumplimiento
                     )}`,
                   }}
                 >
                   <div style={{ fontSize: "14px", color: "#666" }}>
-                    {metric.label}
+                    {metrica.etiqueta}
                   </div>
                   <div
                     style={{
                       fontSize: "24px",
                       fontWeight: "bold",
-                      color: getComplianceColor(metric.compliance),
+                      color: getComplianceColor(metrica.cumplimiento),
                       marginTop: "8px",
                       display: "flex",
                       alignItems: "baseline",
                       gap: "5px",
                     }}
                   >
-                    {metric.current}
+                    {metrica.actual}
                     <span style={{ fontSize: "14px", color: "#666" }}>
-                      {metric.unit}
+                      {metrica.unidad}
                     </span>
                   </div>
                   <div
@@ -282,15 +287,15 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                       marginTop: "4px",
                     }}
                   >
-                    Target: {metric.target} {metric.unit}
+                    Meta: {metrica.meta} {metrica.unidad}
                   </div>
                   <div
                     style={{
                       fontSize: "12px",
                       color:
-                        metric.trend === "improving"
+                        metrica.tendencia === "mejorando"
                           ? "#198754"
-                          : metric.trend === "declining"
+                          : metrica.tendencia === "declinando"
                           ? "#dc3545"
                           : "#666",
                       marginTop: "4px",
@@ -299,13 +304,13 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                       gap: "4px",
                     }}
                   >
-                    {metric.trend === "improving"
+                    {metrica.tendencia === "mejorando"
                       ? "▲"
-                      : metric.trend === "declining"
+                      : metrica.tendencia === "declinando"
                       ? "▼"
                       : "►"}
-                    {metric.trend.charAt(0).toUpperCase() +
-                      metric.trend.slice(1)}
+                    {metrica.tendencia.charAt(0).toUpperCase() +
+                      metrica.tendencia.slice(1)}
                   </div>
                 </div>
               ))}
@@ -314,7 +319,7 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
         ))}
       </div>
 
-      {/* Environmental Incidents Section */}
+      {/* Sección de Incidentes Ambientales */}
       <div>
         <h2
           style={{
@@ -323,12 +328,12 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
             fontSize: "18px",
           }}
         >
-          Environmental Incidents & Actions
+          Incidentes y Acciones Ambientales
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {environmentIncidents.map((incident) => (
+          {incidentesAmbientales.map((incidente) => (
             <div
-              key={incident.id}
+              key={incidente.id}
               style={{
                 background: "white",
                 padding: "20px",
@@ -357,26 +362,26 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                       padding: "4px 8px",
                       borderRadius: "4px",
                       fontSize: "12px",
-                      backgroundColor: getStatusColor(incident.status),
+                      backgroundColor: getStatusColor(incidente.estado),
                       color: "white",
                     }}
                   >
-                    {incident.status}
+                    {incidente.estado}
                   </div>
                   <div
                     style={{
                       padding: "4px 8px",
                       borderRadius: "4px",
                       fontSize: "12px",
-                      backgroundColor: getSeverityColor(incident.severity),
+                      backgroundColor: getSeverityColor(incidente.gravedad),
                       color: "white",
                     }}
                   >
-                    {incident.severity}
+                    {incidente.gravedad}
                   </div>
                 </div>
                 <div style={{ color: "#666", fontSize: "14px" }}>
-                  {incident.id}
+                  {incidente.id}
                 </div>
               </div>
 
@@ -387,23 +392,23 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                   fontWeight: "bold",
                 }}
               >
-                {incident.type} Incident
+                Incidente de {incidente.tipo}
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Date:</strong> {incident.date}
+                <strong>Fecha:</strong> {incidente.fecha}
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Location:</strong> {incident.location}
+                <strong>Ubicación:</strong> {incidente.ubicacion}
               </div>
 
               <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                <strong>Description:</strong> {incident.description}
+                <strong>Descripción:</strong> {incidente.descripcion}
               </div>
 
               <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                <strong>Impact Areas:</strong>
+                <strong>Áreas de Impacto:</strong>
                 <div
                   style={{
                     display: "flex",
@@ -411,7 +416,7 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                     marginTop: "4px",
                   }}
                 >
-                  {incident.impactArea.map((area, index) => (
+                  {incidente.areaImpacto.map((area, index) => (
                     <span
                       key={index}
                       style={{
@@ -429,7 +434,7 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Mitigation Actions:</strong>
+                <strong>Acciones de Mitigación:</strong>
                 <ul
                   style={{
                     margin: "8px 0 0 20px",
@@ -437,14 +442,15 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
                     fontSize: "13px",
                   }}
                 >
-                  {incident.mitigationActions.map((action, index) => (
-                    <li key={index}>{action}</li>
+                  {incidente.accionesMitigacion.map((accion, index) => (
+                    <li key={index}>{accion}</li>
                   ))}
                 </ul>
               </div>
 
               <div style={{ fontSize: "14px", color: "#666" }}>
-                <strong>Responsible Team:</strong> {incident.responsibleTeam}
+                <strong>Equipo Responsable:</strong>{" "}
+                {incidente.equipoResponsable}
               </div>
             </div>
           ))}

@@ -59,6 +59,8 @@ function parseCustomDate(dateStr: string) {
 
 function ItemScreenNotRedux(props: any) {
   const router = useRouter();
+  const [loadingReport, setLoadingReport] = useState(false);
+
   //global state management for the user_uid
   const { Item }: any = useLocalSearchParams();
 
@@ -373,57 +375,27 @@ function ItemScreenNotRedux(props: any) {
     });
   };
 
-  // //Changing the value to activate again the filter to rende the posts
-  // const filter = (start: any, end: any) => {
-  //   setStartDate(start);
-  //   setEndDate(end);
-  // };
-
-  // const quitfilter = () => {
-  //   // Subtract 30 days from the current date
-  //   const datewithNoFilter = new Date();
-  //   datewithNoFilter.setDate(currentDate.getDate() - 30);
-  //   setRemoveFilter((prev) => !prev);
-  //   setStartDate(datewithNoFilter);
-  //   setEndDate(new Date());
-  // };
-
-  // const createReport = async (post: any, serviceInfo: any) => {
-  //   console.log("post", post);
-  //   console.log("service", serviceInfo);
-
-  //   const blob = await createDocxReport(post, serviceInfo);
-
-  //   // Create a download link and trigger it
-  //   const url = window.URL.createObjectURL(blob);
-  //   const a = document.createElement("a");
-  //   console.log("888===>");
-
-  //   a.href = url;
-  //   a.download = "report.docx";
-  //   document.body.appendChild(a);
-  //   a.click();
-  //   document.body.removeChild(a);
-  //   window.URL.revokeObjectURL(url);
-  // };
   const createReport = async (post: any, serviceInfo: any) => {
-    console.log("post", post);
-    console.log("service", serviceInfo);
-    const blob = await createEnhancedDocxReport(post, serviceInfo);
-
-    // Create a download link and trigger it
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = "report.docx";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    setLoadingReport(true);
+    try {
+      const blob = await createEnhancedDocxReport(post, serviceInfo);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "report.docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error creating report:", error);
+    }
+    setLoadingReport(false);
   };
   // serviceInfo
   if (!serviceInfo || !post) {
+    return <LoadingSpinner />;
+  } else if (loadingReport) {
     return <LoadingSpinner />;
   } else {
     return (

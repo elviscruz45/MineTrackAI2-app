@@ -1,24 +1,24 @@
 import React from "react";
 
-// Define types for our safety data
-interface SafetyIncident {
+// Define tipos para nuestros datos de seguridad
+interface IncidenteSeguridad {
   id: string;
-  date: string;
-  type: string;
-  severity: "High" | "Medium" | "Low";
-  description: string;
-  location: string;
-  status: "Open" | "Closed" | "In Progress";
-  actions: string[];
-  responsibleParty: string;
+  fecha: string;
+  tipo: string;
+  gravedad: "Alta" | "Media" | "Baja";
+  descripcion: string;
+  ubicacion: string;
+  estado: "Abierto" | "Cerrado" | "En Progreso";
+  acciones: string[];
+  responsable: string;
 }
 
-interface SafetyKPI {
-  label: string;
-  value: number;
-  target: number;
-  unit: string;
-  trend: "up" | "down" | "stable";
+interface KPISeguridad {
+  etiqueta: string;
+  valor: number;
+  meta: number;
+  unidad: string;
+  tendencia: "subiendo" | "bajando" | "estable";
 }
 
 interface Props {
@@ -26,92 +26,92 @@ interface Props {
 }
 
 const SafetyView: React.FC<Props> = ({ selectedProject }) => {
-  // Mock KPI data
-  const safetyKPIs: SafetyKPI[] = [
+  // Datos KPI de ejemplo
+  const kpisSeguridad: KPISeguridad[] = [
     {
-      label: "Total Recordable Incident Rate (TRIR)",
-      value: 0.45,
-      target: 0.5,
-      unit: "incidents per 200,000 hours",
-      trend: "down",
+      etiqueta: "Tasa Total de Incidentes Registrables (TTIR)",
+      valor: 0.45,
+      meta: 0.5,
+      unidad: "incidentes por 200,000 horas",
+      tendencia: "bajando",
     },
     {
-      label: "Lost Time Injury Frequency Rate (LTIFR)",
-      value: 0.12,
-      target: 0.2,
-      unit: "incidents per 1,000,000 hours",
-      trend: "down",
+      etiqueta: "Tasa de Frecuencia de Lesiones con Tiempo Perdido (LTIFR)",
+      valor: 0.12,
+      meta: 0.2,
+      unidad: "incidentes por 1,000,000 horas",
+      tendencia: "bajando",
     },
     {
-      label: "Near Miss Reports",
-      value: 24,
-      target: 20,
-      unit: "reports this month",
-      trend: "up",
+      etiqueta: "Reportes de Casi Accidentes",
+      valor: 24,
+      meta: 20,
+      unidad: "reportes este mes",
+      tendencia: "subiendo",
     },
     {
-      label: "Safety Training Completion",
-      value: 95,
-      target: 100,
-      unit: "%",
-      trend: "up",
+      etiqueta: "Cumplimiento de Capacitación en Seguridad",
+      valor: 95,
+      meta: 100,
+      unidad: "%",
+      tendencia: "subiendo",
     },
   ];
 
-  // Mock incident data
-  const safetyIncidents: SafetyIncident[] = [
+  // Datos de incidentes de ejemplo
+  const incidentesSeguridad: IncidenteSeguridad[] = [
     {
       id: "INC-001",
-      date: "2025-08-09",
-      type: "Near Miss",
-      severity: "Medium",
-      description: "Loose equipment noticed during routine inspection",
-      location: "Section 1 - Primary Crusher",
-      status: "Closed",
-      actions: [
-        "Equipment secured immediately",
-        "Inspection protocol updated",
-        "Staff briefing conducted",
+      fecha: "2025-08-09",
+      tipo: "Casi Accidente",
+      gravedad: "Media",
+      descripcion: "Equipo suelto detectado durante inspección rutinaria",
+      ubicacion: "Sección 1 - Chancadora Primaria",
+      estado: "Cerrado",
+      acciones: [
+        "Equipo asegurado inmediatamente",
+        "Protocolo de inspección actualizado",
+        "Reunión informativa realizada con el personal",
       ],
-      responsibleParty: "Maintenance Team",
+      responsable: "Equipo de Mantenimiento",
     },
     {
       id: "INC-002",
-      date: "2025-08-08",
-      type: "Safety Observation",
-      severity: "Low",
-      description: "PPE compliance issue observed during shift change",
-      location: "Main Access Point",
-      status: "Closed",
-      actions: [
-        "Reminder sent to all staff",
-        "Additional PPE stations installed",
+      fecha: "2025-08-08",
+      tipo: "Observación de Seguridad",
+      gravedad: "Baja",
+      descripcion:
+        "Problema de cumplimiento de EPP observado durante cambio de turno",
+      ubicacion: "Punto de Acceso Principal",
+      estado: "Cerrado",
+      acciones: [
+        "Recordatorio enviado a todo el personal",
+        "Estaciones adicionales de EPP instaladas",
       ],
-      responsibleParty: "Safety Department",
+      responsable: "Departamento de Seguridad",
     },
-    // Add more incidents as needed
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Open":
+  const getColorEstado = (estado: string) => {
+    switch (estado) {
+      case "Abierto":
         return "#dc3545";
-      case "In Progress":
+      case "En Progreso":
         return "#ffc107";
-      case "Closed":
+      case "Cerrado":
         return "#198754";
       default:
         return "#6c757d";
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "High":
+  const getColorGravedad = (gravedad: string) => {
+    switch (gravedad) {
+      case "Alta":
         return "#dc3545";
-      case "Medium":
+      case "Media":
         return "#ffc107";
-      case "Low":
+      case "Baja":
         return "#198754";
       default:
         return "#6c757d";
@@ -120,9 +120,11 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* KPI Section */}
+      {/* Sección de KPIs */}
       <div style={{ marginBottom: "40px" }}>
-        <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>Safety KPIs</h2>
+        <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>
+          KPIs de Seguridad
+        </h2>
         <div
           style={{
             display: "grid",
@@ -130,9 +132,9 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
             gap: "20px",
           }}
         >
-          {safetyKPIs.map((kpi) => (
+          {kpisSeguridad.map((kpi) => (
             <div
-              key={kpi.label}
+              key={kpi.etiqueta}
               style={{
                 background: "white",
                 padding: "20px",
@@ -140,16 +142,18 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
               }}
             >
-              <div style={{ fontSize: "14px", color: "#666" }}>{kpi.label}</div>
+              <div style={{ fontSize: "14px", color: "#666" }}>
+                {kpi.etiqueta}
+              </div>
               <div
                 style={{
                   fontSize: "24px",
                   fontWeight: "bold",
-                  color: kpi.value <= kpi.target ? "#198754" : "#dc3545",
+                  color: kpi.valor <= kpi.meta ? "#198754" : "#dc3545",
                   marginTop: "8px",
                 }}
               >
-                {kpi.value} {kpi.unit}
+                {kpi.valor} {kpi.unidad}
               </div>
               <div
                 style={{
@@ -158,31 +162,31 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   marginTop: "4px",
                 }}
               >
-                Target: {kpi.target} {kpi.unit}
+                Meta: {kpi.meta} {kpi.unidad}
               </div>
               <div
                 style={{
                   fontSize: "12px",
-                  color: kpi.trend === "up" ? "#198754" : "#dc3545",
+                  color: kpi.tendencia === "subiendo" ? "#198754" : "#dc3545",
                   marginTop: "4px",
                 }}
               >
-                {kpi.trend === "up" ? "▲" : "▼"} Trend
+                {kpi.tendencia === "subiendo" ? "▲" : "▼"} Tendencia
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Safety Incidents Section */}
+      {/* Sección de Incidentes de Seguridad */}
       <div>
         <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>
-          Recent Safety Events
+          Eventos Recientes de Seguridad
         </h2>
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {safetyIncidents.map((incident) => (
+          {incidentesSeguridad.map((incidente) => (
             <div
-              key={incident.id}
+              key={incidente.id}
               style={{
                 background: "white",
                 padding: "20px",
@@ -197,46 +201,46 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   marginBottom: "12px",
                 }}
               >
-                <div style={{ fontWeight: "bold" }}>{incident.type}</div>
+                <div style={{ fontWeight: "bold" }}>{incidente.tipo}</div>
                 <div
                   style={{
                     padding: "4px 8px",
                     borderRadius: "4px",
                     fontSize: "12px",
-                    backgroundColor: getStatusColor(incident.status),
+                    backgroundColor: getColorEstado(incidente.estado),
                     color: "white",
                   }}
                 >
-                  {incident.status}
+                  {incidente.estado}
                 </div>
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Date:</strong> {incident.date}
+                <strong>Fecha:</strong> {incidente.fecha}
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Location:</strong> {incident.location}
+                <strong>Ubicación:</strong> {incidente.ubicacion}
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Severity:</strong>{" "}
+                <strong>Gravedad:</strong>{" "}
                 <span
                   style={{
-                    color: getSeverityColor(incident.severity),
+                    color: getColorGravedad(incidente.gravedad),
                     fontWeight: "bold",
                   }}
                 >
-                  {incident.severity}
+                  {incidente.gravedad}
                 </span>
               </div>
 
               <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                <strong>Description:</strong> {incident.description}
+                <strong>Descripción:</strong> {incidente.descripcion}
               </div>
 
               <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                <strong>Actions Taken:</strong>
+                <strong>Acciones Tomadas:</strong>
                 <ul
                   style={{
                     margin: "8px 0 0 20px",
@@ -244,14 +248,14 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                     fontSize: "13px",
                   }}
                 >
-                  {incident.actions.map((action, index) => (
-                    <li key={index}>{action}</li>
+                  {incidente.acciones.map((accion, index) => (
+                    <li key={index}>{accion}</li>
                   ))}
                 </ul>
               </div>
 
               <div style={{ fontSize: "14px" }}>
-                <strong>Responsible Party:</strong> {incident.responsibleParty}
+                <strong>Responsable:</strong> {incidente.responsable}
               </div>
             </div>
           ))}
