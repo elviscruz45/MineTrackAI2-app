@@ -1,0 +1,391 @@
+import React, { useState, useEffect } from "react";
+
+// Mock data for companies and project types
+const COMPANIES = [
+  "Antapaccay",
+  "Tintaya",
+  "Cerro Verde",
+  "Las Bambas",
+  "Antamina",
+];
+const PROJECT_TYPES = [
+  "Parada de Planta",
+  "Mantenimiento",
+  "Expansión",
+  "Optimización",
+];
+
+interface ProjectFilterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectProject: (
+    project: string,
+    company?: string,
+    type?: string,
+    date?: string
+  ) => void;
+  availableProjects: string[];
+  currentProject: string;
+}
+
+const ProjectFilterModal = ({
+  isOpen,
+  onClose,
+  onSelectProject,
+  availableProjects,
+  currentProject,
+}: ProjectFilterModalProps) => {
+  // Filter states
+  const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
+  const [selectedType, setSelectedType] = useState("Parada de Planta");
+  const [selectedDate, setSelectedDate] = useState("14/07/2025");
+  const [filteredProjects, setFilteredProjects] = useState(availableProjects);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // For demonstration, we'll simulate filtering projects based on criteria
+  useEffect(() => {
+    let filtered = availableProjects;
+
+    if (searchTerm) {
+      filtered = filtered.filter((project) =>
+        project.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredProjects(filtered);
+  }, [searchTerm, availableProjects]);
+
+  // Select project and close modal
+  const handleProjectSelection = (project: string) => {
+    onSelectProject(project, selectedCompany, selectedType, selectedDate);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        zIndex: 1000,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: 8,
+          width: "90%",
+          maxWidth: 800,
+          maxHeight: "90vh",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            backgroundColor: "#2A3B76",
+            padding: "16px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            color: "white",
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 20 }}>Seleccionar Proyecto</h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              fontSize: 24,
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            &times;
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div
+          style={{
+            padding: "20px 24px",
+            borderBottom: "1px solid #eee",
+          }}
+        >
+          <h4 style={{ margin: "0 0 16px 0", color: "#555" }}>Filtros</h4>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: "16px",
+            }}
+          >
+            {/* Company dropdown */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 8,
+                  fontSize: 14,
+                  color: "#666",
+                }}
+              >
+                Empresa
+              </label>
+              <select
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                  fontSize: 14,
+                }}
+              >
+                {COMPANIES.map((company) => (
+                  <option key={company} value={company}>
+                    {company}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Project Type dropdown */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 8,
+                  fontSize: 14,
+                  color: "#666",
+                }}
+              >
+                Tipo de Proyecto
+              </label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                  fontSize: 14,
+                }}
+              >
+                {PROJECT_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date picker */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 8,
+                  fontSize: 14,
+                  color: "#666",
+                }}
+              >
+                Fecha
+              </label>
+              <input
+                type="date"
+                value="2025-07-14" // Format for input type="date"
+                onChange={(e) => {
+                  // Convert from YYYY-MM-DD to DD/MM/YYYY for display
+                  const parts = e.target.value.split("-");
+                  if (parts.length === 3) {
+                    setSelectedDate(`${parts[2]}/${parts[1]}/${parts[0]}`);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: 4,
+                  fontSize: 14,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Search box */}
+          <div style={{ marginTop: 16 }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: 8,
+                fontSize: 14,
+                color: "#666",
+              }}
+            >
+              Buscar Proyecto
+            </label>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre..."
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: 4,
+                fontSize: 14,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Projects list */}
+        <div
+          style={{
+            padding: "0 24px",
+            overflow: "auto",
+            maxHeight: "50vh",
+          }}
+        >
+          <h4 style={{ margin: "16px 0", color: "#555" }}>
+            Proyectos Disponibles
+          </h4>
+
+          {filteredProjects.length === 0 ? (
+            <p
+              style={{ color: "#888", textAlign: "center", padding: "20px 0" }}
+            >
+              No se encontraron proyectos con estos filtros.
+            </p>
+          ) : (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
+              {filteredProjects.map((project) => (
+                <div
+                  key={project}
+                  onClick={() => handleProjectSelection(project)}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: 4,
+                    backgroundColor:
+                      currentProject === project ? "#f0f5ff" : "white",
+                    border: `1px solid ${
+                      currentProject === project ? "#2A3B76" : "#eee"
+                    }`,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{ fontWeight: 500, color: "#333", fontSize: 15 }}
+                    >
+                      {project}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>
+                      {`${selectedCompany} - ${selectedType} - ${selectedDate}`}
+                    </div>
+                  </div>
+                  {currentProject === project && (
+                    <div style={{ color: "#2A3B76" }}>
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="M20 6L9 17L4 12"
+                          stroke="#2A3B76"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid #eee",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: "white",
+              border: "1px solid #ddd",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Cancelar
+          </button>
+
+          <button
+            onClick={() => {
+              // Apply the filters and select the first matching project if available
+              const projectName =
+                filteredProjects.length > 0
+                  ? filteredProjects[0]
+                  : currentProject;
+              onSelectProject(
+                projectName,
+                selectedCompany,
+                selectedType,
+                selectedDate
+              );
+              onClose();
+            }}
+            style={{
+              backgroundColor: "#2A3B76",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProjectFilterModal;

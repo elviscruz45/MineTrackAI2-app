@@ -42,6 +42,7 @@ import {
 import ReportHeader from "./webcomponents/ReportHeader";
 import ReportNavbar from "./webcomponents/ReportNavbar";
 import ProjectSelector from "./webcomponents/ProjectSelector";
+import ProjectFilterModal from "./webcomponents/ProjectFilterModal";
 import ActivityView from "./webcomponents/ActivityView";
 import OnePageView from "./webcomponents/OnePageView";
 import CriticalRouteView from "./webcomponents/CriticalRouteView";
@@ -85,27 +86,33 @@ const AVAILABLE_PROJECTS = [
   "FLOTACIÓN",
   "ESPESADORES",
   "FILTRADO",
+  "CHANCADO TERCIARIO",
+  "SISTEMA DE FAJAS",
+  "ALMACENAMIENTO DE CONCENTRADO",
+  "PLANTA DE CAL",
+  "SISTEMA DE BOMBEO",
 ];
 
 function ReportnoRedux(props: any) {
   const router = useRouter();
 
-  const [showModal, setShowModal] = useState(false);
+  // const [showModal, setShowModal] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
   const [renderComponent, setRenderComponent] = useState<any>(null);
   const [company, setCompany] = useState("TOTAL CONTRATISTAS");
   const [companyList, setCompanyList] = useState<any>();
-  const onCloseOpenModal = () => setShowModal((prevState) => !prevState);
+  // const onCloseOpenModal = () => setShowModal((prevState) => !prevState);
   const userType = props.profile?.userType;
-  const update_Data = () => {
-    setRenderComponent(
-      <ChangeDisplayCompany
-        onClose={onCloseOpenModal}
-        setCompany={setCompany}
-        companyList={companyList}
-      />
-    );
-    setShowModal(true);
-  };
+  // const update_Data = () => {
+  //   setRenderComponent(
+  //     <ChangeDisplayCompany
+  //       onClose={onCloseOpenModal}
+  //       setCompany={setCompany}
+  //       companyList={companyList}
+  //     />
+  //   );
+  //   setShowModal(true);
+  // };
   //real time updates
   const [data, setData] = useState();
 
@@ -118,6 +125,9 @@ function ReportnoRedux(props: any) {
   const [comprometido, setComprometido] = useState(false);
   const [activeTab, setActiveTab] = useState("Proyeccion");
   const [selectedProject, setSelectedProject] = useState(AVAILABLE_PROJECTS[0]);
+  const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
+  const [selectedType, setSelectedType] = useState("Parada de Planta");
+  const [selectedDate, setSelectedDate] = useState("14/07/2025");
   //Data about the company belong this event
 
   const regex = /@(.+?)\./i;
@@ -155,8 +165,13 @@ function ReportnoRedux(props: any) {
 
   const handleProjectChange = (project: string) => {
     setSelectedProject(project);
-    // Here you would filter data based on the selected project
+    // Here you would typically fetch or filter data based on the selected project
     console.log(`Selected project: ${project}`);
+  };
+
+  // Format the project title in the desired format
+  const getFormattedProjectTitle = () => {
+    return `${selectedCompany} - ${selectedType} - ${selectedDate}`;
   };
 
   if (!data) {
@@ -176,7 +191,7 @@ function ReportnoRedux(props: any) {
   } else {
     return (
       <div style={{ ...styles.AndroidSafeArea }}>
-        {/* Project Selector as a navigation bar */}
+        {/* Enhanced Project Selector with Modal Filter */}
         <div
           style={{
             backgroundColor: "#f8f9fa",
@@ -187,24 +202,85 @@ function ReportnoRedux(props: any) {
             alignItems: "center",
           }}
         >
-          <h3
+          <div
             style={{
-              margin: 0,
-              fontSize: 16,
-              color: "#2A3B76",
-              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
             }}
           >
-            Proyecto Seleccionado:
-          </h3>
-          <div style={{ width: "300px" }}>
-            <ProjectSelector
-              currentProject={selectedProject}
-              projects={AVAILABLE_PROJECTS}
-              onSelectProject={handleProjectChange}
-              isNavbar={true}
-            />
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 16,
+                color: "#2A3B76",
+                fontWeight: 500,
+              }}
+            >
+              PROYECTO:
+            </h3>
+            <h3
+              style={{
+                ...styles.company,
+                margin: 0,
+                fontSize: 18,
+                color: "#555",
+                // fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              {`${selectedProject} (${getFormattedProjectTitle()})`}
+            </h3>
           </div>
+          <button
+            onClick={() => setShowProjectModal(true)}
+            style={{
+              backgroundColor: "#2A3B76",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Cambiar Proyecto
+          </button>
+
+          {/* Project Filter Modal */}
+          {showProjectModal && (
+            <ProjectFilterModal
+              isOpen={showProjectModal}
+              onClose={() => setShowProjectModal(false)}
+              onSelectProject={(project, company, type, date) => {
+                handleProjectChange(project);
+                if (company) setSelectedCompany(company);
+                if (type) setSelectedType(type);
+                if (date) setSelectedDate(date);
+              }}
+              availableProjects={AVAILABLE_PROJECTS}
+              currentProject={selectedProject}
+            />
+          )}
         </div>
         <ReportHeader />
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
@@ -223,7 +299,7 @@ function ReportnoRedux(props: any) {
             <OnePageView selectedProject={selectedProject} />
           ) : (
             <div style={{ width: "100%" }}>
-              <h2
+              {/* <h2
                 style={{
                   ...styles.company,
                   fontSize: 24,
@@ -233,8 +309,8 @@ function ReportnoRedux(props: any) {
                 }}
               >
                 EMPRESA MINERA ANTAPACCAY SA
-              </h2>
-              <h3
+              </h2> */}
+              {/* <h3
                 style={{
                   ...styles.company,
                   fontSize: 18,
@@ -244,7 +320,7 @@ function ReportnoRedux(props: any) {
                 }}
               >
                 PARADA DE PLANTA JULIO 2025
-              </h3>
+              </h3> */}
 
               <div
                 style={{
