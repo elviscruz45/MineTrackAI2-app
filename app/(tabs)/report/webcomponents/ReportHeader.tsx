@@ -95,7 +95,7 @@ const ReportHeader: React.FC = () => (
         <span style={{ fontSize: 12 }}>DELTA WORK</span>
       </span>
     </div>
-    <div
+    {/* <div
       style={{
         marginLeft: "auto",
         color: "#888",
@@ -107,7 +107,7 @@ const ReportHeader: React.FC = () => (
       }}
     >
       ID: 4924
-    </div>
+    </div> */}
   </div>
 );
 
