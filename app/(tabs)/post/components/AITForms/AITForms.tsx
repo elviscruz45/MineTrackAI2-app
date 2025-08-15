@@ -320,17 +320,17 @@ function AITForms(props: any) {
 
           // errorMessage={formik.errors.NumeroAIT}
         />
-        {/* <Input
+        <Input
           value={formik.values.AreaServicio}
           label="Area del Servicio a Realizar"
           editable={false}
-          errorMessage={formik.errors.AreaServicio}
+          // errorMessage={formik.errors.AreaServicio}
           rightIcon={{
             type: "material-community",
             name: "arrow-right-circle-outline",
             onPress: () => selectComponent("AreaServicio"),
           }}
-        /> */}
+        />
         <Text style={styles.subtitleForm}>Detalles del Servicio</Text>
         <Text> </Text>
 

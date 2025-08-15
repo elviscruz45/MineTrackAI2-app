@@ -16,7 +16,6 @@ import { screen } from "../../../utils";
 import * as ImagePicker from "expo-image-picker";
 import { savePhotoUri } from "../../../redux/actions/post";
 import * as ImageManipulator from "expo-image-manipulator";
-import ProjectUploadModal from "./components/ProjectUploadModal";
 import { areaLists } from "../../../utils/areaList";
 import { saveActualAITServicesFirebaseGlobalState } from "../../../redux/actions/post";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -77,7 +76,6 @@ function PublishRaw(props: any) {
   const [isLoading, setIsLoading] = useState(false);
   const [flatlistData, setFlatlistData] = useState(false);
   const [idServiciosAIT, setIdServiciosAIT] = useState("");
-  const [showProjectModal, setShowProjectModal] = useState(false);
   // const [codes4, setCodes4] = useState<CSVRow[]>([]);
   // const [codes5, setCodes5] = useState<CSVRow[]>([]);
   const router = useRouter();
@@ -228,47 +226,41 @@ function PublishRaw(props: any) {
     onSubmit: async (formValue) => {},
   });
 
-  const msProject = () => {
-    // Open the project upload modal instead of directly handling file upload
-    setShowProjectModal(true);
-  };
-
-  const handleProjectFileUpload = async (
-    projectName: string,
-    projectType: string,
-    fileAsset: any,
-    newProjectDocID: any
-  ) => {
-    console.log("55555 sabe que su plata es lo mismo y el profe");
+  const msProject = async () => {
     try {
       setIsLoading(true);
-      console.log("66666 sabe que su plata es lo mismo y el profe");
+      // 1️⃣ Seleccionar archivo CSV
+      const file: any = await DocumentPicker.getDocumentAsync({
+        type: "text/comma-separated-values",
+      });
 
-      // Get file content
+      if (!file || !file.assets || file.assets.length === 0) {
+        console.warn("No se seleccionó ningún archivo");
+        setIsLoading(false);
+        return;
+      }
       let fileContent = "";
 
       if (Platform.OS === "web") {
         // Web: use FileReader
-        const webFile = fileAsset.file;
+        const webFile = file.assets[0].file;
         fileContent = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (event) => resolve(event.target?.result as string);
           reader.onerror = (e) => reject(e);
           reader.readAsText(webFile);
         });
-
-        console.log("77777 sabe que su plata es lo mismo y el profe");
       } else {
         // Native: use FileSystem
-        const fileUri = fileAsset.uri;
+        const fileUri = file.assets[0].uri;
         fileContent = await FileSystem.readAsStringAsync(fileUri, {
           encoding: FileSystem.EncodingType.UTF8,
         });
       }
-      console.log("88888 sabe que su plata es lo mismo y el profe");
 
-      // 2️⃣ Parse CSV and filter activities
+      // 3️⃣ Convertir CSV a JSON
       const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
+      // 4️⃣ Filtrar códigos de 4 y 5 niveles
       const list4 = data?.filter((row) => row.Codigo?.split(".")?.length === 4);
       const list5 = data
         ?.filter((row) => row.Codigo?.split(".")?.length === 5)
@@ -276,8 +268,7 @@ function PublishRaw(props: any) {
           ...row,
           parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
         }));
-      console.log("0000000 sabe que su plata es lo mismo y el profe");
-      // 3️⃣ Upload only new activities, referencing the new project
+      //----------------------------------------------------------------------------------------------------------------------------
 
       //----------------------------------------------------------------------------------------------------------------------------
       for (const item of list4) {
@@ -312,8 +303,10 @@ function PublishRaw(props: any) {
         // Create a new data object with all required fields
         const newData = {
           ...formik.values, // Include current form values
-          NombreServicio: NombreServicio || projectName,
-          NumeroAIT: OrdenCompra || `PROJ-${Date.now().toString().slice(-6)}`,
+          NombreServicio,
+          NumeroAIT: OrdenCompra,
+          // FechaInicio: parseToTimestamp(FechaInicio),
+          // FechaFin: parseToTimestamp(FechaFin!!),
           EmpresaMinera: EmpresaMinera,
           Moneda: Moneda || "Soles",
           Monto: Monto || "0",
@@ -322,17 +315,13 @@ function PublishRaw(props: any) {
           Tecnicos: NumeroTecnicos || "0",
           Lider: NumeroLider || "0",
           Soldador: NumeroSoldador || "0",
-          TipoServicio: TipoServicio || projectType,
+          TipoServicio: TipoServicio,
           NumeroCotizacion: NumeroCotizacion,
           FechaInicio: FechaInicio,
           FechaFin: FechaFin,
+
           ResponsableEmpresaUsuario3: SupervisorMina,
           ResponsableEmpresaContratista3: SupervisorEECC,
-          // Global project properties
-          isGlobalProject: true,
-          projectName: projectName,
-          projectType: projectType,
-          projectId: newProjectDocID, // Reference to the global project
           // Include all required fields from your formik onSubmit function
           emailPerfil: props.email || "Anonimo",
           nombrePerfil: props.firebase_user_name || "Anonimo",
@@ -341,31 +330,20 @@ function PublishRaw(props: any) {
             .substring(2, 9)}`,
           activities: filterNamesActivities,
           activitiesData: filteredData,
-          createdAt: Timestamp.now(),
         };
 
-        // Directly submit to Firebase
+        // setIdServiciosAIT(newData.idServiciosAIT)
+
+        // // Directly submit to Firebase
         await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
 
         // Optional: Add a small delay
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
-
-      Toast.show({
-        type: "success",
-        text1: "Proyecto global creado exitosamente",
-        visibilityTime: 3000,
-      });
-
+      //----------------------------------------------------------------------------------------------------------------------------
       setIsLoading(false);
     } catch (error) {
-      console.error("Error al procesar el archivo:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error al procesar el archivo",
-        text2: error instanceof Error ? error.message : "Error desconocido",
-      });
-      setIsLoading(false);
+      console.error("Error al procesar el CSV:", error);
     }
   };
 
@@ -433,113 +411,49 @@ function PublishRaw(props: any) {
               backgroundColor: "white",
               justifyContent: "space-between",
               paddingHorizontal: 20,
-              marginTop: 10,
-              marginBottom: 10,
+
+              // paddingHorizontal: 150,
             }}
           >
             <TouchableOpacity
+              // style={styles.btnContainer2}
               onPress={() => pickImage(AIT?.TipoServicio)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
             >
               <Image
                 source={require("../../../assets/pictures/AddImage.png")}
                 style={styles.roundImageUpload}
               />
-              <Text
-                style={{
-                  fontSize: 10,
-                  marginTop: 2,
-                  textAlign: "center",
-                  color: "#555",
-                }}
-              >
-                Galería
-              </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              // style={styles.btnContainer3}
               onPress={() => camera(AIT?.TipoServicio)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
             >
               <Image
                 source={require("../../../assets/pictures/TakePhoto2.png")}
                 style={styles.roundImageUpload}
               />
-              <Text
-                style={{
-                  fontSize: 10,
-                  marginTop: 2,
-                  textAlign: "center",
-                  color: "#555",
-                }}
-              >
-                Cámara
-              </Text>
             </TouchableOpacity>
-            {/* <TouchableOpacity
+            <TouchableOpacity
+              // style={styles.btnContainer4}
               onPress={() => addAIT()}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
             >
               <Image
                 source={require("../../../assets/pictures/newService7.png")}
                 style={styles.roundImageUpload}
               />
-              <Text
-                style={{
-                  fontSize: 10,
-                  marginTop: 2,
-                  textAlign: "center",
-                  color: "#555",
-                }}
-              >
-                Nuevo Servicio
-              </Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
             <TouchableOpacity
+              // style={styles.btnContainer4}
               onPress={() => msProject()}
-              style={{
-                // style={styles.btnContainer4}
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
             >
               <Image
                 source={require("../../../assets/pictures/projectlogo.png")}
                 style={styles.roundImageUpload}
               />
-              <Text
-                style={{
-                  fontSize: 10,
-                  marginTop: 2,
-                  textAlign: "center",
-                  color: "#2A3B76",
-                }}
-              >
-                Proyecto Global
-              </Text>
             </TouchableOpacity>
           </View>
         )}
         <Text> </Text>
-
-        {/* Project Upload Modal */}
-        <ProjectUploadModal
-          isVisible={showProjectModal}
-          onClose={() => setShowProjectModal(false)}
-          onUploadFile={handleProjectFileUpload}
-        />
 
         <FlatList
           data={searchResults}

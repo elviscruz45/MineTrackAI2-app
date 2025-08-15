@@ -14,6 +14,7 @@ export default function initialValues() {
     NuevaFechaEstimada: null,
     HHModificado: "",
     tipoFile: "",
+    projectId: "",
     //adicional
     fechaPostFormato: "",
     AITidServicios: "",

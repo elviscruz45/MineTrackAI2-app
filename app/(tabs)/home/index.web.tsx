@@ -22,6 +22,8 @@ import {
   limit,
   where,
   orderBy,
+  Timestamp,
+  setDoc,
 } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { saveTotalEventServiceAITList } from "../../../redux/actions/home";
@@ -38,16 +40,67 @@ import styles from "./_styles/index.styles";
 import { Image as ImageExpo } from "expo-image";
 import { Icon } from "@rneui/themed";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ProjectFilterModal from "./components/ProjectFilterModal";
+import ProjectUploadModal from "./components/ProjectUploadModal";
+import * as FileSystem from "expo-file-system";
+import Papa from "papaparse";
+import { useFormik } from "formik";
+import { initialValues, validationSchema } from "./index.data";
+
+interface CSVRow {
+  Codigo: string;
+  NombreServicio: string;
+  FechaInicio: string;
+  FechaFin?: string;
+  OrdenCompra?: string;
+  SupervisorMina?: string;
+  SupervisorEECC?: string;
+  parentCode?: string;
+  EmpresaMinera?: string;
+  TipoServicio?: string;
+  NumeroCotizacion?: string;
+  Moneda?: string;
+  Monto?: string;
+  NumeroSupervisorSeguridad?: string;
+  NumeroSupervisor?: string;
+  NumeroTecnicos?: string;
+  NumeroLider?: string;
+  NumeroSoldador?: string;
+  HorasTotales?: any;
+}
+
 const windowWidth = Dimensions.get("window").width;
 const numColumns = windowWidth > 1000 ? 3 : 1; // 2 columns for Mac/large screens, 1 for mobile
-function HomeScreenRaw(props: any) {
-  // let expoPushToken: any;
-  // let notification: any;
+// Mock data for projects
+const AVAILABLE_PROJECTS = [
+  "CHANCADO PRIMARIO",
+  "CHANCADO SECUNDARIO",
+  "MOLIENDA",
+  "FLOTACIÓN",
+  "ESPESADORES",
+  "FILTRADO",
+  "CHANCADO TERCIARIO",
+  "SISTEMA DE FAJAS",
+  "ALMACENAMIENTO DE CONCENTRADO",
+  "PLANTA DE CAL",
+  "SISTEMA DE BOMBEO",
+];
 
+function HomeScreenRaw(props: any) {
   const router = useRouter();
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [companyName, setCompanyName] = useState("");
+  const [selectedProject, setSelectedProject] = useState(AVAILABLE_PROJECTS[0]);
+  const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
+  const [selectedType, setSelectedType] = useState("Parada de Planta");
+  const [selectedDate, setSelectedDate] = useState("14/07/2025");
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [idproyecto, setIdProyecto] = useState("");
+
+  console.log("idproyectoidproyectoidproyecto", idproyecto);
+
   // const navigation = useNavigation();
   //Data about the company belong this event
   function capitalizeFirstLetter(str: string) {
@@ -69,6 +122,8 @@ function HomeScreenRaw(props: any) {
         queryRef = query(
           collection(db, "events"),
           limit(20),
+          where("projectId", "==", idproyecto),
+
           // where("visibilidad", "==", "Todos"),
           // where(
           //   "AITEmpresaMinera",
@@ -95,7 +150,7 @@ function HomeScreenRaw(props: any) {
         setIsLoading(false);
       }
 
-      fetchData();
+      idproyecto && fetchData();
 
       return () => {
         if (unsubscribe) {
@@ -103,7 +158,7 @@ function HomeScreenRaw(props: any) {
         }
       };
     }
-  }, [props.email]);
+  }, [props.email, idproyecto]);
 
   useEffect(() => {
     let unsubscribe: any;
@@ -136,6 +191,151 @@ function HomeScreenRaw(props: any) {
     props.resetPostPerPageHome(props.postPerPage);
   };
 
+  const formik = useFormik({
+    initialValues: initialValues(),
+    validationSchema: validationSchema(),
+    validateOnChange: false,
+    onSubmit: async (formValue) => {},
+  });
+
+  const handleProjectFileUpload = async (
+    projectName: string,
+    projectType: string,
+    fileAsset: any,
+    newProjectDocID: any
+  ) => {
+    console.log("55555 sabe que su plata es lo mismo y el profe");
+    try {
+      setIsLoading(true);
+      console.log("66666 sabe que su plata es lo mismo y el profe");
+
+      // Get file content
+      let fileContent = "";
+
+      if (Platform.OS === "web") {
+        // Web: use FileReader
+        const webFile = fileAsset.file;
+        fileContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target?.result as string);
+          reader.onerror = (e) => reject(e);
+          reader.readAsText(webFile);
+        });
+
+        console.log("77777 sabe que su plata es lo mismo y el profe");
+      } else {
+        // Native: use FileSystem
+        const fileUri = fileAsset.uri;
+        fileContent = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+      }
+      console.log("88888 sabe que su plata es lo mismo y el profe");
+
+      // 2️⃣ Parse CSV and filter activities
+      const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
+      const list4 = data?.filter((row) => row.Codigo?.split(".")?.length === 4);
+      const list5 = data
+        ?.filter((row) => row.Codigo?.split(".")?.length === 5)
+        .map((row) => ({
+          ...row,
+          parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
+        }));
+      console.log("0000000 sabe que su plata es lo mismo y el profe");
+      // 3️⃣ Upload only new activities, referencing the new project
+
+      //----------------------------------------------------------------------------------------------------------------------------
+      for (const item of list4) {
+        const {
+          Codigo,
+          NombreServicio,
+          FechaInicio,
+          FechaFin,
+          SupervisorMina,
+          SupervisorEECC,
+          OrdenCompra,
+          EmpresaMinera,
+          TipoServicio,
+          NumeroCotizacion,
+          Moneda,
+          Monto,
+          NumeroSupervisorSeguridad,
+          NumeroSupervisor,
+          NumeroTecnicos,
+          NumeroLider,
+          NumeroSoldador,
+          HorasTotales,
+        } = item;
+
+        console.log("se esta guardando", item);
+
+        const filteredData =
+          list5?.filter((item: any) => item.parentCode === Codigo) ?? [];
+
+        const filterNamesActivities = filteredData.map(
+          (item: any) => item.NombreServicio
+        );
+
+        // Create a new data object with all required fields
+        const newData = {
+          ...formik.values, // Include current form values
+          NombreServicio: NombreServicio || projectName,
+          NumeroAIT: OrdenCompra || `PROJ-${Date.now().toString().slice(-6)}`,
+          EmpresaMinera: EmpresaMinera,
+          Moneda: Moneda || "Soles",
+          Monto: Monto || "0",
+          SupervisorSeguridad: NumeroSupervisorSeguridad || "0",
+          Supervisor: NumeroSupervisor || "0",
+          Tecnicos: NumeroTecnicos || "0",
+          Lider: NumeroLider || "0",
+          Soldador: NumeroSoldador || "0",
+          TipoServicio: TipoServicio || projectType,
+          NumeroCotizacion: NumeroCotizacion,
+          FechaInicio: FechaInicio,
+          FechaFin: FechaFin,
+          ResponsableEmpresaUsuario3: SupervisorMina,
+          ResponsableEmpresaContratista3: SupervisorEECC,
+          // Global project properties
+          isGlobalProject: true,
+          projectName: projectName,
+          projectType: projectType,
+          projectId: newProjectDocID, // Reference to the global project
+          // Include all required fields from your formik onSubmit function
+          emailPerfil: props.email || "Anonimo",
+          nombrePerfil: props.firebase_user_name || "Anonimo",
+          idServiciosAIT: `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 9)}`,
+          activities: filterNamesActivities,
+          activitiesData: filteredData,
+          createdAt: Timestamp.now(),
+        };
+
+        // Directly submit to Firebase
+        await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
+
+        // Optional: Add a small delay
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Proyecto global creado exitosamente",
+        visibilityTime: 3000,
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error al procesar el archivo:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error al procesar el archivo",
+        text2: error instanceof Error ? error.message : "Error desconocido",
+      });
+      setIsLoading(false);
+    }
+  };
+
   //---This is used to get the attached file in the post that contain an attached file---
   const uploadFile = useCallback(async (uri: any) => {
     try {
@@ -158,6 +358,16 @@ function HomeScreenRaw(props: any) {
     }
   }, []);
 
+  // Format the project title in the desired format
+  const getFormattedProjectTitle = () => {
+    return `${selectedCompany} - ${selectedType} - Chancado Primario - ${selectedDate}`;
+  };
+
+  const handleProjectChange = (project: string) => {
+    setSelectedProject(project);
+    // Here you would typically fetch or filter data based on the selected project
+    console.log(`Selected project: ${project}`);
+  };
   //---activate like/unlike Post using useCallback--------
   const likePost = useCallback(
     async (item: any) => {
@@ -176,6 +386,11 @@ function HomeScreenRaw(props: any) {
     [props.email]
   );
 
+  const msProject = () => {
+    console.log("111111 msProject");
+    // Open the project upload modal instead of directly handling file upload
+    setShowNewProjectModal(true);
+  };
   //--To goes to comment screen using callBack-----
   const commentPost = useCallback((data: any) => {
     router.push({
@@ -221,11 +436,11 @@ function HomeScreenRaw(props: any) {
     }, 100); // Adjust the delay as needed
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  // if (isLoading) {
+  //   return <LoadingSpinner />;
+  // }
   if (
-    posts?.length === 0 ||
+    // posts?.length === 0 ||
     !props.email ||
     !props.user_photo ||
     !companyName
@@ -237,9 +452,135 @@ function HomeScreenRaw(props: any) {
           backgroundColor: "#f8f9fa",
         }}
       >
-        <View style={{ alignItems: "center", marginTop: 24, marginBottom: 24 }}>
-          <HeaderScreen />
-        </View>
+        {/* <View style={{ alignItems: "center", marginTop: 24, marginBottom: 24 }}>
+          <HeaderScreen idproyecto={idproyecto} />
+        </View> */}
+        <div
+          style={{
+            backgroundColor: "white",
+            padding: "12px 24px",
+            borderBottom: "1px solid #eaeaeaff",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0px",
+            }}
+          >
+            {/* <h3
+              style={{
+                margin: 0,
+                fontSize: 16,
+                color: "#2A3B76",
+                fontWeight: 500,
+              }}
+            >
+              PROYECTO:
+            </h3> */}
+            <h3
+              style={{
+                ...styles.company,
+                margin: 0,
+                fontSize: 18,
+                color: "black",
+                // fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              {`${getFormattedProjectTitle()}`}
+            </h3>
+          </div>
+          <button
+            onClick={() => msProject()}
+            style={{
+              backgroundColor: "green",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: 6 }}
+            >
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <path
+                d="M12 8V16M8 12H16"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Crear Nuevo Proyecto
+          </button>
+          <button
+            onClick={() => setShowProjectModal(true)}
+            style={{
+              backgroundColor: "#2A3B76",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Cambiar Proyecto
+          </button>
+
+          {/* Project Filter Modal */}
+          {showProjectModal && (
+            <ProjectFilterModal
+              isOpen={showProjectModal}
+              setIdProyecto={setIdProyecto}
+              onClose={() => setShowProjectModal(false)}
+              onSelectProject={(project, company, type, date) => {
+                handleProjectChange(project);
+                if (company) setSelectedCompany(company);
+                if (type) setSelectedType(type);
+                if (date) setSelectedDate(date);
+              }}
+              availableProjects={AVAILABLE_PROJECTS}
+              currentProject={selectedProject}
+            />
+          )}
+        </div>
         <View
           style={{
             // flex: 1,
@@ -372,7 +713,7 @@ function HomeScreenRaw(props: any) {
           </View>
 
           {/* CTA Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={{
               backgroundColor: "#2A3B76",
               paddingVertical: 16,
@@ -394,7 +735,7 @@ function HomeScreenRaw(props: any) {
             >
               Empezar ahora
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     );
@@ -404,14 +745,145 @@ function HomeScreenRaw(props: any) {
         style={[
           {
             flex: 1,
-            backgroundColor: "#f8f9fa",
+            backgroundColor: "white",
             height: "100%",
           },
         ]}
       >
-        <View style={{ marginTop: 24, marginBottom: 24 }}>
-          <HeaderScreen />
+        <div
+          style={{
+            backgroundColor: "white",
+            padding: "12px 24px",
+            borderBottom: "1px solid #eaeaeaff",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0px",
+            }}
+          >
+            {/* <h3
+              style={{
+                margin: 0,
+                fontSize: 16,
+                color: "#2A3B76",
+                fontWeight: 500,
+              }}
+            >
+              PROYECTO:
+            </h3> */}
+            <h3
+              style={{
+                ...styles.company,
+                margin: 0,
+                fontSize: 18,
+                color: "black",
+                // fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              {`${getFormattedProjectTitle()}`}
+            </h3>
+          </div>
+          <button
+            onClick={() => msProject()}
+            style={{
+              backgroundColor: "green",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: 6 }}
+            >
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <path
+                d="M12 8V16M8 12H16"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Crear Nuevo Proyecto
+          </button>
+          <button
+            onClick={() => setShowProjectModal(true)}
+            style={{
+              backgroundColor: "#2A3B76",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Cambiar Proyecto
+          </button>
+
+          {/* Project Filter Modal */}
+          {showProjectModal && (
+            <ProjectFilterModal
+              isOpen={showProjectModal}
+              setIdProyecto={setIdProyecto}
+              onClose={() => setShowProjectModal(false)}
+              onSelectProject={(project, company, type, date) => {
+                handleProjectChange(project);
+                if (company) setSelectedCompany(company);
+                if (type) setSelectedType(type);
+                if (date) setSelectedDate(date);
+              }}
+              availableProjects={AVAILABLE_PROJECTS}
+              currentProject={selectedProject}
+            />
+          )}
+        </div>
+        <View style={{ marginTop: 0, marginBottom: 0 }}>
+          <HeaderScreen idproyecto={idproyecto} />
         </View>
+        <ProjectUploadModal
+          isVisible={showNewProjectModal}
+          onClose={() => setShowNewProjectModal(false)}
+          onUploadFile={handleProjectFileUpload}
+        />
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
@@ -427,144 +899,6 @@ function HomeScreenRaw(props: any) {
             }}
           >
             {/* Dashboard Header with Search and Quick Actions */}
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 12,
-                padding: 20,
-                marginBottom: 24,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: windowWidth > 800 ? "row" : "column",
-                  justifyContent: "space-between",
-                  alignItems: windowWidth > 800 ? "center" : "flex-start",
-                  marginBottom: 16,
-                }}
-              >
-                <View>
-                  <Text
-                    style={{
-                      fontSize: 24,
-                      fontWeight: "700",
-                      color: "#2A3B76",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Dashboard de Operaciones
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: "#666",
-                    }}
-                  >
-                    {new Date().toLocaleDateString("es-ES", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </View>
-
-                {/* Search Bar */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "#f5f5f5",
-                    borderRadius: 8,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    marginTop: windowWidth > 800 ? 0 : 16,
-                    width: windowWidth > 800 ? 300 : "100%",
-                  }}
-                >
-                  <Icon
-                    name="search"
-                    type="feather"
-                    size={18}
-                    color="#666"
-                    style={{ marginRight: 8 }}
-                  />
-                  <TextInput
-                    placeholder="Buscar eventos o servicios..."
-                    placeholderTextColor="#999"
-                    style={{
-                      flex: 1,
-                      fontSize: 14,
-                      color: "#333",
-                      padding: 0,
-                      height: 24,
-                    }}
-                  />
-                </View>
-              </View>
-
-              {/* Quick Action Buttons */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  marginTop: 8,
-                }}
-              >
-                {[
-                  {
-                    label: "Crear informe",
-                    icon: "file-plus",
-                    color: "#4CAF50",
-                  },
-                  {
-                    label: "Añadir evento",
-                    icon: "plus-circle",
-                    color: "#2196F3",
-                  },
-                  { label: "Mantenimientos", icon: "tool", color: "#FF9800" },
-                  {
-                    label: "Estadísticas",
-                    icon: "bar-chart-2",
-                    color: "#9C27B0",
-                  },
-                ].map((action, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: "#f8f9fa",
-                      borderRadius: 8,
-                      paddingVertical: 10,
-                      paddingHorizontal: 16,
-                      marginRight: 12,
-                      marginBottom: windowWidth > 800 ? 0 : 12,
-                      borderWidth: 1,
-                      borderColor: "#e0e0e0",
-                    }}
-                  >
-                    <Icon
-                      name={action.icon}
-                      type="feather"
-                      size={16}
-                      color={action.color}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text
-                      style={{ color: "#444", fontSize: 14, fontWeight: "500" }}
-                    >
-                      {action.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
 
             <View
               style={{

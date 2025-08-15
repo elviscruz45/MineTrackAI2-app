@@ -22,6 +22,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
   },
+  company: {
+    paddingHorizontal: 15,
+    fontWeight: "900",
+    textAlign: "center",
+  },
   rowlikes: {
     flexDirection: "row",
     margin: 10,

@@ -382,7 +382,9 @@ function ItemScreenNotRedux(props: any) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "report.docx";
+      a.download = `Reporte_${serviceInfo.NombreServicio}.docx`;
+      //  a.download = "Reporte_de_Servicio.docx";
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

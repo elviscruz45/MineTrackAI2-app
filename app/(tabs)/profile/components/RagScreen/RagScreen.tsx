@@ -19,7 +19,7 @@ import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { Icon } from "@rneui/themed";
 import { Feather } from "@expo/vector-icons";
 import axios from "axios";
-// import OpenAI from "openai";
+import OpenAI from "openai";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 function RagScreenBare() {
@@ -36,7 +36,7 @@ function RagScreenBare() {
   // } = props;
 
   // const openai = new OpenAI({
-  //   apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || '', // Use environment variable
+  //   apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || "", // Use environment variable
   // });
 
   useEffect(() => {
@@ -49,6 +49,8 @@ function RagScreenBare() {
           //--------------------------------------------------------------
           //--------------------------------------------------------------
           {
+            //url: "https://drive.google.com/file/d/19UCohJgpxyJKeELxY9457QGzXYJsLc4J/view?usp=sharing", //modificar
+
             url: "https://firebasestorage.googleapis.com/v0/b/antapaccay-app.firebasestorage.app/o/Gantt_primrio.pdf?alt=media&token=b0ff7fd7-712a-41c5-a833-feef0da0d098", //modificar
           },
           //--------------------------------------------------------------
@@ -57,11 +59,15 @@ function RagScreenBare() {
           //--------------------------------------------------------------
           {
             headers: {
-              "x-api-key": process.env.EXPO_PUBLIC_CHATPDF_API_KEY || '', // Use environment variable
+              "x-api-key":
+                process.env.EXPO_PUBLIC_CHATPDF_API_KEY ||
+                "sec_dBMhcmZhRXPUT8NUmLeqAMEtcqVlNiqr", // Use environment variable
               "Content-Type": "application/json",
             },
           }
         );
+
+        console.log("Sourceeeeee ID:", response.data.sourceId);
 
         setSourceId(response.data.sourceId);
       } catch (error) {
@@ -72,7 +78,7 @@ function RagScreenBare() {
     addPdfUrl();
   }, []);
 
-  // const chatWithGPT = async (pregunta) => {
+  // const chatWithGPT = async (pregunta: any) => {
   //   try {
   //     const completion = await openai.chat.completions.create({
   //       model: "gpt-4o-mini",
@@ -95,6 +101,7 @@ function RagScreenBare() {
   // };
   const chatPDF = async (pregunta: string) => {
     setIsLoading(true);
+
     try {
       const response = await axios.post(
         "https://api.chatpdf.com/v1/chats/message",
@@ -111,7 +118,9 @@ function RagScreenBare() {
         },
         {
           headers: {
-            "x-api-key": process.env.EXPO_PUBLIC_CHATPDF_API_KEY || '', // Use environment variable
+            "x-api-key":
+              process.env.EXPO_PUBLIC_CHATPDF_API_KEY ||
+              "sec_dBMhcmZhRXPUT8NUmLeqAMEtcqVlNiqr", // Use environment variable
             "Content-Type": "application/json",
           },
         }
@@ -122,7 +131,9 @@ function RagScreenBare() {
 
       // return response.data.content;
     } catch (error) {
-      console.error("Error sending chat message:", error);
+      // console.error("Error sending chat message:", error);
+      setIsLoading(false);
+      setContent("error");
     }
   };
 

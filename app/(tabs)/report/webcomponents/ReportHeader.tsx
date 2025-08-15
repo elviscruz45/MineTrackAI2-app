@@ -5,8 +5,9 @@ const ReportHeader: React.FC = () => (
     className="report-header"
     style={{
       display: "flex",
+      backgroundColor: "white",
       alignItems: "center",
-      background: "linear-gradient(to right, #f8f9fa, #f1f3f5)",
+      background: "linear-gradient(to right, white, white)",
       padding: "16px 24px",
       borderBottom: "1px solid #e9ecef",
       boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
@@ -26,7 +27,7 @@ const ReportHeader: React.FC = () => (
       >
         EN EJECUCION
       </span>
-      <span
+      {/* <span
         style={{
           fontWeight: 600,
           fontSize: 16,
@@ -34,7 +35,7 @@ const ReportHeader: React.FC = () => (
         }}
       >
         CHANCADO PRIMARIO
-      </span>
+      </span> */}
       <span
         style={{
           fontSize: 14,

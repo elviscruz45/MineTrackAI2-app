@@ -42,7 +42,7 @@ import {
 import ReportHeader from "./webcomponents/ReportHeader";
 import ReportNavbar from "./webcomponents/ReportNavbar";
 import ProjectSelector from "./webcomponents/ProjectSelector";
-import ProjectFilterModal from "./webcomponents/ProjectFilterModal";
+import ProjectFilterModal from "../home/components/ProjectFilterModal";
 import ActivityView from "./webcomponents/ActivityView";
 import OnePageView from "./webcomponents/OnePageView";
 import CriticalRouteView from "./webcomponents/CriticalRouteView";
@@ -171,7 +171,7 @@ function ReportnoRedux(props: any) {
 
   // Format the project title in the desired format
   const getFormattedProjectTitle = () => {
-    return `${selectedCompany} - ${selectedType} - ${selectedDate}`;
+    return `${selectedCompany} - ${selectedType} - Chancado Primario - ${selectedDate}`;
   };
 
   if (!data) {
@@ -191,97 +191,6 @@ function ReportnoRedux(props: any) {
   } else {
     return (
       <div style={{ ...styles.AndroidSafeArea }}>
-        {/* Enhanced Project Selector with Modal Filter */}
-        <div
-          style={{
-            backgroundColor: "#f8f9fa",
-            padding: "12px 24px",
-            borderBottom: "1px solid #eaeaea",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
-            <h3
-              style={{
-                margin: 0,
-                fontSize: 16,
-                color: "#2A3B76",
-                fontWeight: 500,
-              }}
-            >
-              PROYECTO:
-            </h3>
-            <h3
-              style={{
-                ...styles.company,
-                margin: 0,
-                fontSize: 18,
-                color: "#555",
-                // fontWeight: 600,
-                textAlign: "center",
-              }}
-            >
-              {`${selectedProject} (${getFormattedProjectTitle()})`}
-            </h3>
-          </div>
-          <button
-            onClick={() => setShowProjectModal(true)}
-            style={{
-              backgroundColor: "#2A3B76",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 16px",
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Cambiar Proyecto
-          </button>
-
-          {/* Project Filter Modal */}
-          {showProjectModal && (
-            <ProjectFilterModal
-              isOpen={showProjectModal}
-              onClose={() => setShowProjectModal(false)}
-              onSelectProject={(project, company, type, date) => {
-                handleProjectChange(project);
-                if (company) setSelectedCompany(company);
-                if (type) setSelectedType(type);
-                if (date) setSelectedDate(date);
-              }}
-              availableProjects={AVAILABLE_PROJECTS}
-              currentProject={selectedProject}
-            />
-          )}
-        </div>
         <ReportHeader />
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
 
@@ -348,7 +257,7 @@ function ReportnoRedux(props: any) {
                       fontWeight: 600,
                     }}
                   >
-                    Avance Parada de Planta
+                    Curva S de Avance General
                   </h4>
 
                   <div
@@ -357,7 +266,7 @@ function ReportnoRedux(props: any) {
                       gap: 12,
                     }}
                   >
-                    <button
+                    {/* <button
                       style={{
                         backgroundColor: "#2A3B76",
                         color: "white",
@@ -388,9 +297,12 @@ function ReportnoRedux(props: any) {
                         />
                       </svg>
                       Exportar
-                    </button>
+                    </button> */}
 
-                    <button
+                    {/* <button
+                      // onClick={() =>
+                      //   window.ZingChart.exec("myChart", "exportPDF")
+                      // }
                       style={{
                         backgroundColor: "white",
                         color: "#2A3B76",
@@ -420,7 +332,7 @@ function ReportnoRedux(props: any) {
                         />
                       </svg>
                       Imprimir
-                    </button>
+                    </button> */}
                   </div>
                 </div>
 

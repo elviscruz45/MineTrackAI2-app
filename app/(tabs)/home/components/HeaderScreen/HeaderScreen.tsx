@@ -19,6 +19,7 @@ import { mineraCorreosList } from "@/utils/MineraList";
 import { useRouter } from "expo-router";
 
 function HeaderScreenNoRedux(props: any) {
+  console.log("HEADER HEADER", props);
   const router = useRouter();
 
   const [data, setData] = useState();
@@ -29,19 +30,14 @@ function HeaderScreenNoRedux(props: any) {
   const regex = /@(.+?)\./i;
   useEffect(() => {
     let unsubscribe: any;
-    if (props.email) {
-      // const companyName =
-      //   capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo";
-      // const companyNameLowercase = companyName.toLowerCase();
-
+    if (props.email && props.idproyecto) {
+      // <-- check for idproyecto
       function fetchData() {
         let queryRef;
 
         queryRef = query(
-          collection(db, "ServiciosAIT")
-          // limit(20)
-          // where("AvanceAdministrativoTexto", "!=", "Fin servicio")
-          // where("EmpresaMinera", "==", mineraCorreosList[companyNameLowercase])
+          collection(db, "ServiciosAIT"),
+          where("projectId", "==", props.idproyecto) // <-- use idproyecto here
         );
 
         unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
@@ -50,7 +46,6 @@ function HeaderScreenNoRedux(props: any) {
             lista.push(doc.data());
           });
 
-          //order the list by date
           lista.sort((a: any, b: any) => {
             return b.LastEventPosted - a.LastEventPosted;
           });
@@ -59,14 +54,14 @@ function HeaderScreenNoRedux(props: any) {
           props.updateAITServicesDATA(lista);
         });
       }
-      fetchData();
+      props.idproyecto && fetchData();
       return () => {
         if (unsubscribe) {
           unsubscribe();
         }
       };
     }
-  }, [props.email]);
+  }, [props.email, props.idproyecto]);
 
   const selectAsset = async (item: any) => {
     await router.push({

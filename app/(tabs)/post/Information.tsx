@@ -62,6 +62,8 @@ function InformationRaw(props: any) {
         newData.AITphotoServiceURL = props.actualServiceAIT?.photoServiceURL;
         newData.AITNumero = props.actualServiceAIT?.NumeroAIT;
         newData.AITcompanyName = props.actualServiceAIT?.companyName;
+        newData.projectId = props.actualServiceAIT?.projectId;
+
         //push notification
         // newData.pushNotification = expoPushToken?.data || "no token";
 

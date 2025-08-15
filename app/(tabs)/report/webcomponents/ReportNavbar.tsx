@@ -215,7 +215,7 @@ const ReportNavbar: React.FC<{
       display: "flex",
       alignItems: "center",
       borderBottom: "1px solid #e9ecef",
-      background: "linear-gradient(to right, #f8f9fa, #f1f3f5)",
+      background: "linear-gradient(to right, white, white)",
       paddingLeft: 24,
       boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
     }}
