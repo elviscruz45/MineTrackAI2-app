@@ -272,7 +272,19 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
       }}
     >
       {ZingChartComponent ? (
-        <ZingChartComponent data={chartConfig} />
+        <>
+          <h4
+            style={{
+              margin: 0,
+              fontSize: 18,
+              color: "#2A3B76",
+              fontWeight: 600,
+            }}
+          >
+            Curva S de Avance General
+          </h4>
+          <ZingChartComponent data={chartConfig} />
+        </>
       ) : (
         <div>Loading chart data...</div>
       )}

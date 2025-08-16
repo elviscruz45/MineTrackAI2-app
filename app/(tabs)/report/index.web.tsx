@@ -249,7 +249,7 @@ function ReportnoRedux(props: any) {
                     marginBottom: 16,
                   }}
                 >
-                  <h4
+                  {/* <h4
                     style={{
                       margin: 0,
                       fontSize: 18,
@@ -258,7 +258,7 @@ function ReportnoRedux(props: any) {
                     }}
                   >
                     Curva S de Avance General
-                  </h4>
+                  </h4> */}
 
                   <div
                     style={{

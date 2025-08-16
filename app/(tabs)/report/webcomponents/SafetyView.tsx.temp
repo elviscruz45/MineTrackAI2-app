@@ -39,12 +39,8 @@ interface Props {
 }
 
 const SafetyView: React.FC<Props> = ({ selectedProject }) => {
-  const [activeTab, setActiveTab] = useState<
-    "KPIs" | "Eventos" | "Mantenimiento"
-  >("KPIs");
-  const [selectedFilter, setSelectedFilter] = useState<
-    "Todos" | "Alto" | "Medio" | "Bajo"
-  >("Todos");
+  const [activeTab, setActiveTab] = useState<"KPIs" | "Eventos" | "Mantenimiento">("KPIs");
+  const [selectedFilter, setSelectedFilter] = useState<"Todos" | "Alto" | "Medio" | "Bajo">("Todos");
 
   // Datos KPI de ejemplo
   const kpisSeguridad: KPISeguridad[] = [
@@ -131,8 +127,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
   const eventosMantenimiento: EventoMantenimiento[] = [
     {
       codigo: "1.1.1.1",
-      nombre:
-        "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora",
+      nombre: "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora",
       fechaInicio: "31/05/25 08:00",
       fechaFin: "02/06/25 08:00",
       duracion: 48,
@@ -192,8 +187,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
     },
     {
       codigo: "2.1.1.1.16",
-      nombre:
-        "Levantamiento de información para planos de plataforma para alineamiento",
+      nombre: "Levantamiento de información para planos de plataforma para alineamiento",
       fechaInicio: "09/06/25 05:00",
       fechaFin: "09/06/25 08:00",
       duracion: 3,
@@ -247,70 +241,57 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
   };
 
   // Filtra los eventos de mantenimiento según el filtro seleccionado
-  const eventosFiltrados =
-    selectedFilter === "Todos"
-      ? eventosMantenimiento
-      : eventosMantenimiento.filter(
-          (evento: EventoMantenimiento) => evento.riesgo === selectedFilter
-        );
+  const eventosFiltrados = selectedFilter === "Todos" 
+    ? eventosMantenimiento 
+    : eventosMantenimiento.filter((evento: EventoMantenimiento) => evento.riesgo === selectedFilter);
 
   // Calcula estadísticas de seguridad para mantenimientos
   const totalEventos = eventosMantenimiento.length;
-  const eventosAltoRiesgo = eventosMantenimiento.filter(
-    (e: EventoMantenimiento) => e.riesgo === "Alto"
-  ).length;
-  const porcentajeAltoRiesgo = Math.round(
-    (eventosAltoRiesgo / totalEventos) * 100
-  );
-
-  const eventosCompletados = eventosMantenimiento.filter(
-    (e: EventoMantenimiento) => e.estado === "Completado"
-  ).length;
-  const porcentajeCompletados = Math.round(
-    (eventosCompletados / totalEventos) * 100
-  );
+  const eventosAltoRiesgo = eventosMantenimiento.filter((e: EventoMantenimiento) => e.riesgo === "Alto").length;
+  const porcentajeAltoRiesgo = Math.round((eventosAltoRiesgo / totalEventos) * 100);
+  
+  const eventosCompletados = eventosMantenimiento.filter((e: EventoMantenimiento) => e.estado === "Completado").length;
+  const porcentajeCompletados = Math.round((eventosCompletados / totalEventos) * 100);
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       {/* Navegación entre pestañas */}
-      <div
-        style={{
-          display: "flex",
-          marginBottom: "20px",
-          borderBottom: "1px solid #dee2e6",
+      <div 
+        style={{ 
+          display: "flex", 
+          marginBottom: "20px", 
+          borderBottom: "1px solid #dee2e6" 
         }}
       >
-        <div
+        <div 
           onClick={() => setActiveTab("KPIs")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
+          style={{ 
+            padding: "10px 20px", 
+            cursor: "pointer", 
             fontWeight: activeTab === "KPIs" ? "bold" : "normal",
-            borderBottom: activeTab === "KPIs" ? "2px solid #1976d2" : "none",
+            borderBottom: activeTab === "KPIs" ? "2px solid #1976d2" : "none"
           }}
         >
           KPIs de Seguridad
         </div>
-        <div
+        <div 
           onClick={() => setActiveTab("Eventos")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
+          style={{ 
+            padding: "10px 20px", 
+            cursor: "pointer", 
             fontWeight: activeTab === "Eventos" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Eventos" ? "2px solid #1976d2" : "none",
+            borderBottom: activeTab === "Eventos" ? "2px solid #1976d2" : "none"
           }}
         >
           Incidentes de Seguridad
         </div>
-        <div
+        <div 
           onClick={() => setActiveTab("Mantenimiento")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
+          style={{ 
+            padding: "10px 20px", 
+            cursor: "pointer", 
             fontWeight: activeTab === "Mantenimiento" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Mantenimiento" ? "2px solid #1976d2" : "none",
+            borderBottom: activeTab === "Mantenimiento" ? "2px solid #1976d2" : "none"
           }}
         >
           Eventos de Mantenimiento
@@ -328,7 +309,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
               gap: "20px",
-              marginBottom: "30px",
+              marginBottom: "30px"
             }}
           >
             {kpisSeguridad.map((kpi) => (
@@ -492,9 +473,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
           <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>
             Incidentes de Seguridad
           </h2>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {incidentesSeguridad.map((incidente) => (
               <div
                 key={incidente.id}
@@ -577,14 +556,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
       {/* Sección de Eventos de Mantenimiento */}
       {activeTab === "Mantenimiento" && (
         <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
             <h2 style={{ color: "#1976d2", margin: 0 }}>
               Eventos de Mantenimiento
             </h2>
@@ -595,8 +567,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   padding: "8px 12px",
                   borderRadius: "4px",
                   border: "none",
-                  backgroundColor:
-                    selectedFilter === "Todos" ? "#1976d2" : "#e9ecef",
+                  backgroundColor: selectedFilter === "Todos" ? "#1976d2" : "#e9ecef",
                   color: selectedFilter === "Todos" ? "white" : "#333",
                   cursor: "pointer",
                 }}
@@ -609,8 +580,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   padding: "8px 12px",
                   borderRadius: "4px",
                   border: "none",
-                  backgroundColor:
-                    selectedFilter === "Alto" ? "#dc3545" : "#e9ecef",
+                  backgroundColor: selectedFilter === "Alto" ? "#dc3545" : "#e9ecef",
                   color: selectedFilter === "Alto" ? "white" : "#333",
                   cursor: "pointer",
                 }}
@@ -623,8 +593,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   padding: "8px 12px",
                   borderRadius: "4px",
                   border: "none",
-                  backgroundColor:
-                    selectedFilter === "Medio" ? "#ffc107" : "#e9ecef",
+                  backgroundColor: selectedFilter === "Medio" ? "#ffc107" : "#e9ecef",
                   color: selectedFilter === "Medio" ? "white" : "#333",
                   cursor: "pointer",
                 }}
@@ -637,8 +606,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   padding: "8px 12px",
                   borderRadius: "4px",
                   border: "none",
-                  backgroundColor:
-                    selectedFilter === "Bajo" ? "#198754" : "#e9ecef",
+                  backgroundColor: selectedFilter === "Bajo" ? "#198754" : "#e9ecef",
                   color: selectedFilter === "Bajo" ? "white" : "#333",
                   cursor: "pointer",
                 }}
@@ -648,9 +616,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
             </div>
           </div>
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {eventosFiltrados.map((evento) => (
               <div
                 key={evento.codigo}
@@ -702,13 +668,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
                   <strong>Código:</strong> {evento.codigo}
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "8px",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                   <div style={{ fontSize: "14px" }}>
                     <strong>Inicio:</strong> {evento.fechaInicio}
                   </div>
@@ -726,14 +686,7 @@ const SafetyView: React.FC<Props> = ({ selectedProject }) => {
 
                 <div style={{ marginBottom: "12px", fontSize: "14px" }}>
                   <strong>Recursos Asignados:</strong>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "5px",
-                      marginTop: "5px",
-                    }}
-                  >
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "5px" }}>
                     {evento.recursos.map((recurso, index) => (
                       <div
                         key={index}

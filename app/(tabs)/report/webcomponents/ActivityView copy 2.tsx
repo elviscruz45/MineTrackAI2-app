@@ -64,19 +64,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.1",
           wbs: "1.1.1.1.1",
           tag: "SECCION",
-          status: "Completada",
+          status: "Pendiente",
           company: "Antamina",
           task: "PM Alimentador Pebbles 3M",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "02/06/25", time: "08:00" },
           endDateProg: { date: "03/06/25", time: "08:00" },
-          startDateReal: { date: "02/06/25", time: "08:30" },
-          endDateReal: { date: "03/06/25", time: "07:45" },
+          startDateReal: {},
+          endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "100%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -84,19 +84,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.2",
           wbs: "1.1.1.1.2",
           tag: "SECCION",
-          status: "En Progreso",
+          status: "Pendiente",
           company: "Antamina",
           task: "Cambio de liner falderas a condición",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "03/06/25", time: "08:00" },
           endDateProg: { date: "03/06/25", time: "20:00" },
-          startDateReal: { date: "03/06/25", time: "08:15" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "65%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -104,19 +104,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.3",
           wbs: "1.1.1.1.3",
           tag: "SECCION",
-          status: "Atrasada",
+          status: "Pendiente",
           company: "Antamina",
           task: "PM chute de descarga hacia la chancadora",
           hours: 1,
           workHours: 1,
-          startDateProg: { date: "03/01/2023", time: "20:00" },
-          endDateProg: { date: "04/01/2023", time: "08:00" },
-          startDateReal: { date: "05/01/2023", time: "10:00" },
+          startDateProg: { date: "03/06/25", time: "20:00" },
+          endDateProg: { date: "04/06/25", time: "08:00" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "20%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -124,19 +124,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.4",
           wbs: "1.1.1.1.4",
           tag: "SECCION",
-          status: "En Progreso",
+          status: "Pendiente",
           company: "Antamina",
           task: "Cambio de camas de impacto",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "04/06/25", time: "20:00" },
           endDateProg: { date: "05/06/25", time: "08:00" },
-          startDateReal: { date: "04/06/25", time: "21:30" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "35%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -144,19 +144,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.5",
           wbs: "1.1.1.1.5",
           tag: "SECCION",
-          status: "Completada",
+          status: "Pendiente",
           company: "Antamina",
           task: "Inspección de liners superiores (lado descarga de silo)",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "05/06/25", time: "08:00" },
           endDateProg: { date: "05/06/25", time: "20:00" },
-          startDateReal: { date: "05/06/25", time: "07:45" },
-          endDateReal: { date: "05/06/25", time: "19:30" },
+          startDateReal: {},
+          endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "100%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -164,7 +164,7 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.6",
           wbs: "1.1.1.1.6",
           tag: "SECCION",
-          status: "No Ejecutada",
+          status: "Pendiente",
           company: "Antamina",
           task: "Inspección Alimentador Pebbles 3M",
           hours: 1,
@@ -184,19 +184,19 @@ const mockActivitiesData: ActivityData = {
           id: "1.1.1.1.7",
           wbs: "1.1.1.1.7",
           tag: "SECCION",
-          status: "En Progreso",
+          status: "Pendiente",
           company: "Antamina",
           task: "Alineamiento de plataforma de impacto y polines de carga",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "06/06/25", time: "08:00" },
           endDateProg: { date: "07/06/25", time: "08:00" },
-          startDateReal: { date: "06/06/25", time: "09:30" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "45%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -293,19 +293,19 @@ const mockActivitiesData: ActivityData = {
           id: "2.1.1.1.1",
           wbs: "2.1.1.1.1",
           tag: "SECCION",
-          status: "Completada",
+          status: "Pendiente",
           company: "Antamina",
           task: "PM Mantto faja Pebbles 3M",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "01/06/25", time: "08:00" },
           endDateProg: { date: "02/06/25", time: "08:00" },
-          startDateReal: { date: "01/06/25", time: "08:00" },
-          endDateReal: { date: "02/06/25", time: "07:30" },
+          startDateReal: {},
+          endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "100%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -333,19 +333,19 @@ const mockActivitiesData: ActivityData = {
           id: "2.1.1.1.3",
           wbs: "2.1.1.1.3",
           tag: "SECCION",
-          status: "En Progreso",
+          status: "Pendiente",
           company: "Antamina",
           task: "Reparación de bandeja de lodos y linea de drenaje",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "03/06/25", time: "08:00" },
           endDateProg: { date: "03/06/25", time: "20:00" },
-          startDateReal: { date: "03/06/25", time: "08:45" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "75%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -433,19 +433,19 @@ const mockActivitiesData: ActivityData = {
           id: "2.1.1.1.8",
           wbs: "2.1.1.1.8",
           tag: "SECCION",
-          status: "En Progreso",
+          status: "Pendiente",
           company: "Antamina",
           task: "PM Chute STP027",
           hours: 1,
           workHours: 1,
           startDateProg: { date: "05/06/25", time: "20:00" },
           endDateProg: { date: "06/06/25", time: "08:00" },
-          startDateReal: { date: "05/06/25", time: "22:00" },
+          startDateReal: {},
           endDateReal: {},
           deltaWork: { hours: 0, percent: "0%" },
           deltaStart: { hours: 0, percent: "0%" },
           duration: {},
-          avance: "25%",
+          avance: "0%",
           expected: "100%",
           actions: ["edit", "notes", "photos", "delete"],
         },
@@ -637,108 +637,6 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
     }))
   );
 
-  // Function to check if a date is in the past
-  const isDatePast = (dateStr: string) => {
-    const [day, month, year] = dateStr.split("/").map(Number);
-    const date = new Date(2000 + year, month - 1, day);
-    return date < new Date();
-  };
-
-  // Function to update task status and progress
-  const updateTaskStatus = (
-    sectionId: string,
-    taskId: string,
-    newStatus: string,
-    newAvance: string
-  ) => {
-    setSections((prevSections) =>
-      prevSections.map((section) => {
-        if (section.id === sectionId) {
-          return {
-            ...section,
-            tasks: section.tasks.map((task) => {
-              if (task.id === taskId) {
-                return {
-                  ...task,
-                  status: newStatus,
-                  avance: newAvance,
-                  // Add real start date if task is starting
-                  startDateReal:
-                    newStatus === "En Progreso" &&
-                    Object.keys(task.startDateReal).length === 0
-                      ? {
-                          date: new Date().toLocaleDateString("es-ES", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                          }),
-                          time: new Date().toLocaleTimeString("es-ES", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }),
-                        }
-                      : task.startDateReal,
-                  // Add real end date if task is completed
-                  endDateReal:
-                    newStatus === "Completada"
-                      ? {
-                          date: new Date().toLocaleDateString("es-ES", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                          }),
-                          time: new Date().toLocaleTimeString("es-ES", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }),
-                        }
-                      : task.endDateReal,
-                };
-              }
-              return task;
-            }),
-          };
-        }
-        return section;
-      })
-    );
-  }; // Apply filters to tasks
-  const getFilteredSections = () => {
-    return sections.map((section) => {
-      const filteredTasks = section.tasks.filter((task) => {
-        // Current date for comparison
-        const currentDate = new Date();
-
-        switch (activeFilter) {
-          case "Todas":
-            return true;
-          case "Atrasadas":
-            // Tasks that are past their end date and not completed
-            return isDatePast(task.endDateProg.date) && task.avance !== "100%";
-          case "En Progreso":
-            // Tasks that have started but not completed
-            return (
-              task.status === "En Progreso" ||
-              (task.avance !== "0%" && task.avance !== "100%")
-            );
-          case "No Ejecutadas":
-            // Tasks that haven't started yet
-            return task.avance === "0%" && task.status === "Pendiente";
-          case "Completadas":
-            // Tasks that are completed
-            return task.avance === "100%" || task.status === "Completada";
-          default:
-            return true;
-        }
-      });
-
-      return {
-        ...section,
-        tasks: filteredTasks,
-      };
-    });
-  };
-
   // Function to toggle section expansion
   const toggleSection = (sectionId: string) => {
     setSections((prevSections) =>
@@ -749,9 +647,6 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
       )
     );
   };
-
-  // Get the filtered sections for rendering
-  const filteredSections = getFilteredSections();
 
   return (
     <div style={{ padding: "8px 0" }}>
@@ -802,22 +697,22 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
           Atrasadas
         </button>
         <button
-          style={buttonStyle(activeFilter === "En Progreso")}
-          onClick={() => setActiveFilter("En Progreso")}
+          style={buttonStyle(activeFilter === "Filtro por Tiempo")}
+          onClick={() => setActiveFilter("Filtro por Tiempo")}
         >
-          En Progreso
+          Filtro por Tiempo
         </button>
         <button
-          style={buttonStyle(activeFilter === "No Ejecutadas")}
-          onClick={() => setActiveFilter("No Ejecutadas")}
+          style={buttonStyle(activeFilter === "Filtrar")}
+          onClick={() => setActiveFilter("Filtrar")}
         >
-          No Ejecutadas
+          Filtrar
         </button>
         <button
-          style={buttonStyle(activeFilter === "Completadas")}
-          onClick={() => setActiveFilter("Completadas")}
+          style={buttonStyle(activeFilter === "Atrasadas Reportaje")}
+          onClick={() => setActiveFilter("Atrasadas Reportaje")}
         >
-          Completadas
+          Atrasadas Reportaje
         </button>
         <div style={{ marginLeft: "auto" }}>
           <button
@@ -831,16 +726,6 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
               display: "flex",
               alignItems: "center",
               gap: 4,
-            }}
-            onClick={() => {
-              // Reset to original data
-              setSections(
-                mockActivitiesData.sections.map((section) => ({
-                  ...section,
-                  isOpen: section.id === "1.1",
-                }))
-              );
-              setActiveFilter("Todas");
             }}
           >
             <svg
@@ -913,66 +798,48 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
       </div>
 
       {/* Sections with tasks */}
-      {filteredSections.map((section) => (
+      {sections.map((section) => (
         <div key={section.id} style={{ marginBottom: 24 }}>
-          {section.tasks.length > 0 && (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "12px 16px",
-                  backgroundColor: "#e9ecef",
-                  borderRadius: "4px 4px 0 0",
-                  cursor: "pointer",
-                }}
-                onClick={() => toggleSection(section.id)}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{
-                    transform: section.isOpen
-                      ? "rotate(0deg)"
-                      : "rotate(-90deg)",
-                    transition: "transform 0.2s",
-                  }}
-                >
-                  <path
-                    d="M19 9L12 16L5 9"
-                    stroke="#333"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span style={{ fontWeight: 600 }}>
-                  {section.id} {section.title}
-                </span>
-                <span style={{ fontSize: 12, color: "#777", marginLeft: 8 }}>
-                  {section.type}
-                </span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: "#666",
-                    marginLeft: "auto",
-                    backgroundColor: "#e2e6ea",
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                  }}
-                >
-                  {section.tasks.length} tareas
-                </span>
-              </div>
-            </>
-          )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 16px",
+              backgroundColor: "#e9ecef",
+              borderRadius: "4px 4px 0 0",
+              cursor: "pointer",
+            }}
+            onClick={() => toggleSection(section.id)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                transform: section.isOpen ? "rotate(0deg)" : "rotate(-90deg)",
+                transition: "transform 0.2s",
+              }}
+            >
+              <path
+                d="M19 9L12 16L5 9"
+                stroke="#333"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span style={{ fontWeight: 600 }}>
+              {section.id} {section.title}
+            </span>
+            <span style={{ fontSize: 12, color: "#777", marginLeft: 8 }}>
+              {section.type}
+            </span>
+          </div>
 
-          {section.isOpen && section.tasks.length > 0 && (
+          {section.isOpen && (
             <div style={{ padding: "8px 16px", fontSize: 14 }}>
               <div style={{ overflowX: "auto", marginBottom: 16 }}>
                 <table
@@ -1087,15 +954,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                         >
                           <div
                             style={{
-                              backgroundColor:
-                                task.status === "Completada"
-                                  ? "#28a745"
-                                  : task.status === "En Progreso"
-                                  ? "#007bff"
-                                  : isDatePast(task.endDateProg.date) &&
-                                    task.avance !== "100%"
-                                  ? "#dc3545"
-                                  : "#007bff",
+                              backgroundColor: "#007bff",
                               color: "white",
                               padding: "3px 6px",
                               borderRadius: 4,
@@ -1161,12 +1020,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                         >
                           <div
                             style={{
-                              backgroundColor:
-                                task.avance === "100%"
-                                  ? "#28a745"
-                                  : task.avance === "0%"
-                                  ? "#dc3545"
-                                  : "#ffc107",
+                              backgroundColor: "#dc3545",
                               color: "white",
                               padding: "4px 8px",
                               borderRadius: 4,
@@ -1216,27 +1070,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                                 cursor: "pointer",
                                 padding: 4,
                               }}
-                              title="Editar Estado"
-                              onClick={() => {
-                                const newStatus =
-                                  task.status === "Pendiente"
-                                    ? "En Progreso"
-                                    : task.status === "En Progreso"
-                                    ? "Completada"
-                                    : "Pendiente";
-                                const newAvance =
-                                  task.status === "Pendiente"
-                                    ? "50%"
-                                    : task.status === "En Progreso"
-                                    ? "100%"
-                                    : "0%";
-                                updateTaskStatus(
-                                  section.id,
-                                  task.id,
-                                  newStatus,
-                                  newAvance
-                                );
-                              }}
+                              title="Editar"
                             >
                               <svg
                                 width="16"

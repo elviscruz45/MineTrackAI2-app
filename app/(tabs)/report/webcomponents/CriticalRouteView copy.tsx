@@ -32,165 +32,151 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
     }, 500);
   }, []);
 
-  // Tasks from CSV data converted to critical path format
+  // Mock data for the critical path tasks
   const mockTasks: Task[] = [
     {
-      id: "1.1.1.1",
-      name: "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora",
-      startDate: "31/05/25 08:00",
-      endDate: "02/06/25 08:00",
-      duration: 48,
+      id: "T1",
+      name: "Desenergizar equipos",
+      startDate: "07-07-2025 07:00",
+      endDate: "07-07-2025 10:00",
+      duration: 3,
       progress: 100,
       dependencies: [],
       isCritical: true,
       slack: 0,
-      resources: ["Mecánico 1", "Mecánico 2"],
+      resources: ["Eléctrico 1", "Eléctrico 2"],
       riskLevel: "medium",
-      responsible: "F. García",
+      responsible: "J. Rodriguez",
     },
     {
-      id: "1.1.1.1.1",
-      name: "PM Alimentador Pebbles 3M",
-      startDate: "02/06/25 08:00",
-      endDate: "03/06/25 08:00",
-      duration: 24,
+      id: "T2",
+      name: "Desmontaje de motor principal",
+      startDate: "07-07-2025 10:00",
+      endDate: "07-07-2025 19:00",
+      duration: 9,
       progress: 100,
-      dependencies: ["1.1.1.1"],
+      dependencies: ["T1"],
       isCritical: true,
       slack: 0,
-      resources: ["Mecánico 1", "Mecánico 3", "Operador"],
-      riskLevel: "medium",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.2",
-      name: "Cambio de liner falderas a condición",
-      startDate: "03/06/25 08:00",
-      endDate: "03/06/25 20:00",
-      duration: 12,
-      progress: 100,
-      dependencies: ["1.1.1.1.1"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 2", "Soldador"],
-      riskLevel: "medium",
-      responsible: "J. Rodríguez",
-    },
-    {
-      id: "1.1.1.1.3",
-      name: "PM chute de descarga hacia la chancadora",
-      startDate: "03/06/25 20:00",
-      endDate: "04/06/25 20:00",
-      duration: 24,
-      progress: 90,
-      dependencies: ["1.1.1.1.2"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 1", "Mecánico 4", "Soldador"],
+      resources: ["Mecánico 1", "Mecánico 2", "Operador grúa"],
       riskLevel: "high",
-      responsible: "F. García",
+      responsible: "F. Gomez",
     },
     {
-      id: "1.1.1.1.4",
-      name: "Cambio de camas de impacto",
-      startDate: "04/06/25 20:00",
-      endDate: "05/06/25 08:00",
+      id: "T3",
+      name: "Cambio de rodamientos",
+      startDate: "08-07-2025 07:00",
+      endDate: "08-07-2025 15:00",
+      duration: 8,
+      progress: 85,
+      dependencies: ["T2"],
+      isCritical: true,
+      slack: 0,
+      resources: ["Mecánico 1", "Mecánico 3"],
+      riskLevel: "medium",
+      responsible: "F. Gomez",
+    },
+    {
+      id: "T4",
+      name: "Montaje de motor principal",
+      startDate: "08-07-2025 15:00",
+      endDate: "09-07-2025 03:00",
       duration: 12,
-      progress: 80,
-      dependencies: ["1.1.1.1.3"],
+      progress: 50,
+      dependencies: ["T3"],
       isCritical: true,
       slack: 0,
-      resources: ["Mecánico 2", "Mecánico 3"],
-      riskLevel: "medium",
-      responsible: "J. Rodríguez",
-    },
-    {
-      id: "1.1.1.1.5",
-      name: "Cambio de polines de carga a condición",
-      startDate: "05/06/25 08:00",
-      endDate: "06/06/25 08:00",
-      duration: 24,
-      progress: 65,
-      dependencies: ["1.1.1.1.4"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 3", "Mecánico 4"],
-      riskLevel: "medium",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.6",
-      name: "Cambio de polines de retorno a condición",
-      startDate: "06/06/25 08:00",
-      endDate: "07/06/25 08:00",
-      duration: 24,
-      progress: 40,
-      dependencies: ["1.1.1.1.5"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 2", "Mecánico 3", "Mecánico 4"],
+      resources: ["Mecánico 1", "Mecánico 2", "Mecánico 4", "Operador grúa"],
       riskLevel: "high",
-      responsible: "J. Rodríguez",
+      responsible: "F. Gomez",
+    },
+    {
+      id: "T5",
+      name: "Conexiones eléctricas",
+      startDate: "09-07-2025 07:00",
+      endDate: "09-07-2025 15:00",
+      duration: 8,
+      progress: 0,
+      dependencies: ["T4"],
+      isCritical: true,
+      slack: 0,
+      resources: ["Eléctrico 1", "Eléctrico 3"],
+      riskLevel: "medium",
+      responsible: "J. Rodriguez",
+    },
+    {
+      id: "T6",
+      name: "Pruebas sin carga",
+      startDate: "09-07-2025 15:00",
+      endDate: "09-07-2025 19:00",
+      duration: 4,
+      progress: 0,
+      dependencies: ["T5"],
+      isCritical: true,
+      slack: 0,
+      resources: ["Instrumentista 1", "Supervisor"],
+      riskLevel: "medium",
+      responsible: "M. Torres",
+    },
+    {
+      id: "T7",
+      name: "Puesta en marcha",
+      startDate: "10-07-2025 07:00",
+      endDate: "10-07-2025 11:00",
+      duration: 4,
+      progress: 0,
+      dependencies: ["T6"],
+      isCritical: true,
+      slack: 0,
+      resources: ["Instrumentista 1", "Supervisor", "Operador"],
+      riskLevel: "high",
+      responsible: "M. Torres",
     },
   ];
 
   // Non-critical tasks that are related to the critical path
   const relatedTasks: Task[] = [
     {
-      id: "2.1.1.1",
-      name: "PM Mantto faja Pebbles 3M - PM Chute",
-      startDate: "31/05/25 08:00",
-      endDate: "01/06/25 08:00",
-      duration: 24,
+      id: "T8",
+      name: "Limpieza de área",
+      startDate: "07-07-2025 10:00",
+      endDate: "07-07-2025 15:00",
+      duration: 5,
       progress: 100,
+      dependencies: ["T1"],
+      isCritical: false,
+      slack: 4,
+      resources: ["Ayudante 1", "Ayudante 2"],
+      riskLevel: "low",
+      responsible: "P. Herrera",
+    },
+    {
+      id: "T9",
+      name: "Inspección de componentes",
+      startDate: "08-07-2025 07:00",
+      endDate: "08-07-2025 11:00",
+      duration: 4,
+      progress: 100,
+      dependencies: ["T2"],
+      isCritical: false,
+      slack: 8,
+      resources: ["Inspector QA"],
+      riskLevel: "low",
+      responsible: "S. Vargas",
+    },
+    {
+      id: "T10",
+      name: "Preparación documentación",
+      startDate: "09-07-2025 07:00",
+      endDate: "09-07-2025 11:00",
+      duration: 4,
+      progress: 75,
       dependencies: [],
       isCritical: false,
       slack: 12,
-      resources: ["Mecánico 5", "Mecánico 6"],
+      resources: ["Supervisor"],
       riskLevel: "low",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.1",
-      name: "Revisión de componentes mecánicos",
-      startDate: "01/06/25 08:00",
-      endDate: "02/06/25 08:00",
-      duration: 24,
-      progress: 100,
-      dependencies: ["2.1.1.1"],
-      isCritical: false,
-      slack: 8,
-      resources: ["Mecánico 5", "Inspector"],
-      riskLevel: "low",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.8",
-      name: "PM Chute STP027",
-      startDate: "05/06/25 20:00",
-      endDate: "06/06/25 08:00",
-      duration: 12,
-      progress: 40,
-      dependencies: ["2.1.1.1.7"],
-      isCritical: false,
-      slack: 8,
-      resources: ["Mecánico 5", "Soldador 2"],
-      riskLevel: "medium",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.16",
-      name: "Levantamiento de información para planos de plataforma para alineamiento",
-      startDate: "09/06/25 05:00",
-      endDate: "09/06/25 08:00",
-      duration: 3,
-      progress: 0,
-      dependencies: ["2.1.1.1.15"],
-      isCritical: false,
-      slack: 6,
-      resources: ["Ingeniero 1", "Técnico CAD"],
-      riskLevel: "low",
-      responsible: "M. Torres",
+      responsible: "S. Vargas",
     },
   ];
 
@@ -237,7 +223,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
 
     // Check if task is delayed
     const now = new Date();
-    const startDate = new Date(task.startDate.replace(/\//g, "-"));
+    const startDate = new Date(task.startDate.replace(/-/g, "/"));
 
     if (now > startDate && task.progress === 0) return "Retrasado";
     return "Pendiente";
@@ -249,7 +235,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
     if (task.progress > 0) return "#2196f3";
 
     const now = new Date();
-    const startDate = new Date(task.startDate.replace(/\//g, "-"));
+    const startDate = new Date(task.startDate.replace(/-/g, "/"));
 
     if (now > startDate && task.progress === 0) return "#f44336";
     return "#ff9800";
@@ -951,7 +937,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#2A3B76",
                   }}
                 >
-                  82%
+                  48%
                 </div>
               </div>
               <div
@@ -1005,7 +991,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#4caf50",
                   }}
                 >
-                  3
+                  2
                 </div>
               </div>
               <div
@@ -1032,7 +1018,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#f44336",
                   }}
                 >
-                  0
+                  1
                 </div>
               </div>
             </div>
@@ -1068,7 +1054,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#2A3B76",
                   }}
                 >
-                  48 horas
+                  22.5 horas
                 </div>
                 <div
                   style={{
@@ -1080,7 +1066,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "white",
                   }}
                 >
-                  6 días
+                  2 días
                 </div>
               </div>
             </div>
