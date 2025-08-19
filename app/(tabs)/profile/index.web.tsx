@@ -36,6 +36,7 @@ function ProfileRaw(props: any) {
   //   apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY || '', // Use environment variable
   // });
   const [showModal, setShowModal] = useState(false);
+  const [showRagModal, setShowRagModal] = useState(false);
   const [renderComponent, setRenderComponent] = useState<any>(null);
   const [post, setPost] = useState(null);
   //states of filters
@@ -153,7 +154,31 @@ function ProfileRaw(props: any) {
             onPress={() => logout()}
           />
         </View>
-        <RagScreen />
+
+        <View style={styles.aiAssistantSection}>
+          <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+            Asistente de Mantenimiento IA
+          </Text>
+          <Text style={styles.aiAssistantDescription}>
+            Consulta información sobre paradas de planta y mantenimiento
+            utilizando nuestro asistente de IA.
+          </Text>
+          <Button
+            icon={
+              <Feather
+                name="cpu"
+                size={16}
+                color="white"
+                style={{ marginRight: 8 }}
+              />
+            }
+            title="Abrir Asistente IA"
+            buttonStyle={styles.aiAssistantButton}
+            titleStyle={styles.aiAssistantButtonText}
+            onPress={() => setShowRagModal(true)}
+          />
+        </View>
+
         {/* <ProfileDateScreen
           filterButton={filter}
           quitFilterButton={quitfilter}
@@ -402,6 +427,20 @@ function ProfileRaw(props: any) {
       </KeyboardAwareScrollView>
       <Modal show={showModal} close={onCloseOpenModal}>
         {renderComponent}
+      </Modal>
+
+      {/* RAG AI Assistant Modal */}
+      <Modal show={showRagModal} close={() => setShowRagModal(false)}>
+        <View style={styles.ragModalContainer}>
+          <TouchableOpacity
+            style={styles.ragModalCloseButton}
+            onPress={() => setShowRagModal(false)}
+            accessibilityLabel="Cerrar asistente IA"
+          >
+            <Feather name="x" size={20} color="#333" />
+          </TouchableOpacity>
+          <RagScreen />
+        </View>
       </Modal>
     </SafeAreaView>
   );
