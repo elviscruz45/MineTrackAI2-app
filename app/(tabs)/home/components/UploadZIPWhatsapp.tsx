@@ -196,7 +196,7 @@ const UploadZIPWhatsapp = ({
       const startTime = Date.now();
 
       const response = await fetch(
-        "https://api.minetrack.site//crear-informe-final",
+        "https://api.minetrack.site/crear-informe-final",
         {
           method: "POST",
           body: formData,
