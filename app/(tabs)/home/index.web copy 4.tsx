@@ -492,7 +492,7 @@ function HomeScreenRaw(props: any) {
             gap: windowWidth > 768 ? "12px" : "8px",
           }}
         >
-          {/* <div
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -511,7 +511,7 @@ function HomeScreenRaw(props: any) {
             >
               {`${getFormattedProjectTitle()}`}
             </h3>
-          </div> */}
+          </div>
 
           {/* Contenedor de botones responsive */}
           <div
@@ -519,7 +519,7 @@ function HomeScreenRaw(props: any) {
               display: "flex",
               flexDirection: windowWidth > 768 ? "row" : "column",
               gap: windowWidth > 768 ? "8px" : "6px",
-              alignItems: "flex-end",
+              alignItems: "stretch",
               width: windowWidth > 768 ? "auto" : "100%",
             }}
           >
@@ -568,7 +568,7 @@ function HomeScreenRaw(props: any) {
                   strokeLinejoin="round"
                 />
               </svg>
-              Crear Proyecto
+              Crear Nuevo Proyecto
             </button>
 
             <button
@@ -799,47 +799,29 @@ function HomeScreenRaw(props: any) {
               >
                 🚀 Funcionalidades Principales
               </Text>
-              <View
+
+              <Text
                 style={{
-                  // fontSize: 16,
-                  // color: "#666",
-                  // textAlign: "center",
+                  fontSize: 16,
+                  color: "#666",
+                  textAlign: "center",
                   marginBottom: 40,
                   maxWidth: 600,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  // lineHeight: 24,
+                  lineHeight: 24,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    color: "#666",
-                    textAlign: "center",
-                    marginBottom: 40,
-                    maxWidth: 600,
-                    lineHeight: 24,
-                  }}
-                >
-                  Descubre todo lo que MineTrackAI puede hacer por tu operación
-                  minera
-                </Text>
-              </View>
-              {/* Grid de características mejorado */}
+                Descubre todo lo que MineTrackAI puede hacer por tu operación
+                minera
+              </Text>
 
+              {/* Grid de características mejorado */}
               <View
                 style={{
                   flexDirection: windowWidth > 768 ? "row" : "column",
                   flexWrap: "wrap",
                   justifyContent: "center",
-                  alignItems: "center",
-                  // justifyContent: "center",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  // alignItems: "stretch",
-                  // width: "100%",
+                  alignItems: "stretch",
+                  width: "100%",
                   maxWidth: 1200,
                   gap: windowWidth > 768 ? 20 : 16,
                   paddingHorizontal: windowWidth > 768 ? 0 : 4,
@@ -996,7 +978,7 @@ function HomeScreenRaw(props: any) {
             padding: "12px 24px",
             borderBottom: "1px solid #eaeaeaff",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
             alignItems: "center",
           }}
         >
@@ -1005,7 +987,6 @@ function HomeScreenRaw(props: any) {
               display: "flex",
               alignItems: "center",
               gap: "0px",
-              justifyContent: "flex-end",
             }}
           >
             {/* <h3
@@ -1018,7 +999,7 @@ function HomeScreenRaw(props: any) {
             >
               PROYECTO:
             </h3> */}
-            {/* <h3
+            <h3
               style={{
                 ...styles.company,
                 margin: 0,
@@ -1029,7 +1010,7 @@ function HomeScreenRaw(props: any) {
               }}
             >
               {`${getFormattedProjectTitle()}`}
-            </h3> */}
+            </h3>
           </div>
           <button
             onClick={() => msProject()}
@@ -1064,10 +1045,8 @@ function HomeScreenRaw(props: any) {
                 strokeLinejoin="round"
               />
             </svg>
-            Crear Proyecto
+            Crear Nuevo Proyecto
           </button>
-          <Text> </Text>
-          <Text> </Text>
           <button
             onClick={() => setShowProjectModal(true)}
             style={{

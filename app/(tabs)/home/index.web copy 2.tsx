@@ -10,8 +10,6 @@ import {
   Dimensions,
   TextInput,
 } from "react-native";
-// Importar estilos CSS para gradientes y efectos web
-import "./mobile-styles.css";
 import { connect } from "react-redux";
 import {
   collection,
@@ -483,520 +481,10 @@ function HomeScreenRaw(props: any) {
         <div
           style={{
             backgroundColor: "white",
-            padding: windowWidth > 768 ? "12px 24px" : "8px 12px",
-            borderBottom: "1px solid #eaeaeaff",
-            display: "flex",
-            flexDirection: windowWidth > 768 ? "row" : "column",
-            justifyContent: "space-between",
-            alignItems: windowWidth > 768 ? "center" : "stretch",
-            gap: windowWidth > 768 ? "12px" : "8px",
-          }}
-        >
-          {/* <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: windowWidth > 768 ? "flex-start" : "center",
-              marginBottom: windowWidth > 768 ? 0 : 8,
-            }}
-          >
-            <h3
-              style={{
-                ...styles.company,
-                margin: 0,
-                fontSize: windowWidth > 768 ? 18 : 16,
-                color: "black",
-                textAlign: "center",
-              }}
-            >
-              {`${getFormattedProjectTitle()}`}
-            </h3>
-          </div> */}
-
-          {/* Contenedor de botones responsive */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: windowWidth > 768 ? "row" : "column",
-              gap: windowWidth > 768 ? "8px" : "6px",
-              alignItems: "flex-end",
-              width: windowWidth > 768 ? "auto" : "100%",
-            }}
-          >
-            <button
-              onClick={() => msProject()}
-              className="button-hover"
-              style={{
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                padding: windowWidth > 768 ? "10px 16px" : "12px 16px",
-                fontSize: windowWidth > 768 ? 14 : 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                boxShadow: "0 3px 6px rgba(40, 167, 69, 0.2)",
-                transition: "all 0.2s ease",
-                fontWeight: "600",
-                minHeight: 40,
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "#218838";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "#28a745";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-                <path
-                  d="M12 8V16M8 12H16"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Crear Proyecto
-            </button>
-
-            <button
-              onClick={() => setShowZIPwhatsappModal(true)}
-              className="button-hover"
-              style={{
-                backgroundColor: "#25D366",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                padding: windowWidth > 768 ? "10px 16px" : "12px 16px",
-                fontSize: windowWidth > 768 ? 14 : 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                boxShadow: "0 3px 6px rgba(37, 211, 102, 0.2)",
-                transition: "all 0.2s ease",
-                fontWeight: "600",
-                minHeight: 40,
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "#20b358";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "#25D366";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="10" fill="white" />
-                <path
-                  d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.472-.148-.67.15-.198.297-.767.967-.94 1.166-.173.198-.347.223-.644.075-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.447-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.149-.67-1.617-.917-2.217-.242-.582-.487-.502-.67-.511-.173-.007-.372-.009-.571-.009-.198 0-.52.075-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.877 1.214 3.075.149.198 2.099 3.205 5.077 4.367.71.244 1.263.389 1.695.497.712.18 1.36.155 1.872.094.571-.067 1.758-.719 2.007-1.413.248-.694.248-1.288.173-1.413-.075-.124-.272-.198-.57-.347z"
-                  fill="#25D366"
-                />
-              </svg>
-              Reporte Automático
-            </button>
-
-            <button
-              onClick={() => setShowProjectModal(true)}
-              className="button-hover"
-              style={{
-                backgroundColor: "#2A3B76",
-                color: "white",
-                border: "none",
-                borderRadius: 8,
-                padding: windowWidth > 768 ? "10px 16px" : "12px 16px",
-                fontSize: windowWidth > 768 ? 14 : 13,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                boxShadow: "0 3px 6px rgba(42, 59, 118, 0.2)",
-                transition: "all 0.2s ease",
-                fontWeight: "600",
-                minHeight: 40,
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "#1e2d5a";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "#2A3B76";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Cambiar Proyecto
-            </button>
-          </div>
-
-          {/* Project Filter Modal */}
-          {showProjectModal && (
-            <ProjectFilterModal
-              isOpen={showProjectModal}
-              setIdProyecto={setIdProyecto}
-              onClose={() => setShowProjectModal(false)}
-              onSelectProject={(project, company, type, date) => {
-                handleProjectChange(project);
-                if (company) setSelectedCompany(company);
-                if (type) setSelectedType(type);
-                if (date) setSelectedDate(date);
-              }}
-              availableProjects={AVAILABLE_PROJECTS}
-              currentProject={selectedProject}
-            />
-          )}
-        </div>
-        <UploadZIPWhatsapp
-          isVisible={showZIPwhatsappModal}
-          onClose={() => setShowZIPwhatsappModal(false)}
-          onUploadFile={handleZIPwhatsappUpload}
-        />
-        <ProjectUploadModal
-          isVisible={showNewProjectModal}
-          onClose={() => setShowNewProjectModal(false)}
-          onUploadFile={handleProjectFileUpload}
-        />
-        <ScrollView
-          className="mobile-scroll-container"
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "transparent",
-            }}
-          >
-            {/* Hero Section con gradiente */}
-            <View
-              className="gradient-hero"
-              style={{
-                backgroundColor: "#667eea", // Fallback color
-                backgroundImage:
-                  "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                paddingVertical: windowWidth > 768 ? 60 : 40,
-                paddingHorizontal: windowWidth > 768 ? 40 : 20,
-                alignItems: "center",
-              }}
-            >
-              {/* Logo con efecto de sombra */}
-              <View
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 20,
-                  elevation: 15,
-                  marginBottom: 30,
-                }}
-              >
-                <ImageExpo
-                  source={require("../../../assets/logoPandora.jpg")}
-                  style={{
-                    width: windowWidth > 768 ? 180 : 140,
-                    height: windowWidth > 768 ? 180 : 140,
-                    borderRadius: windowWidth > 768 ? 90 : 70,
-                    borderWidth: 4,
-                    borderColor: "white",
-                  }}
-                  cachePolicy={"memory-disk"}
-                />
-              </View>
-
-              {/* Título principal */}
-              <Text
-                style={{
-                  fontSize: windowWidth > 768 ? 48 : 32,
-                  fontWeight: "800",
-                  color: "white",
-                  marginBottom: 16,
-                  textAlign: "center",
-                  textShadowColor: "rgba(0, 0, 0, 0.3)",
-                  textShadowOffset: { width: 0, height: 2 },
-                  textShadowRadius: 4,
-                  letterSpacing: -0.5,
-                }}
-              >
-                Bienvenido a MineTrackAI
-              </Text>
-
-              {/* Subtítulo */}
-              <Text
-                style={{
-                  fontSize: windowWidth > 768 ? 20 : 16,
-                  color: "rgba(255, 255, 255, 0.9)",
-                  marginBottom: 40,
-                  textAlign: "center",
-                  maxWidth: windowWidth > 768 ? 700 : 300,
-                  lineHeight: windowWidth > 768 ? 28 : 24,
-                  fontWeight: "300",
-                }}
-              >
-                La plataforma integral para monitoreo y mantenimiento de plantas
-                mineras. Conectando equipos, optimizando recursos y mejorando la
-                eficiencia.
-              </Text>
-            </View>
-
-            {/* Sección de características con fondo blanco */}
-            <View
-              style={{
-                backgroundColor: "white",
-                borderTopLeftRadius: 30,
-                borderTopRightRadius: 30,
-                marginTop: -20,
-                paddingTop: 40,
-                paddingBottom: 60,
-                paddingHorizontal: windowWidth > 768 ? 40 : 20,
-                flex: 1,
-              }}
-            >
-              {/* Título de sección */}
-              <Text
-                style={{
-                  fontSize: windowWidth > 768 ? 32 : 24,
-                  fontWeight: "700",
-                  color: "#2A3B76",
-                  textAlign: "center",
-                  marginBottom: 16,
-                }}
-              >
-                🚀 Funcionalidades Principales
-              </Text>
-              <View
-                style={{
-                  // fontSize: 16,
-                  // color: "#666",
-                  // textAlign: "center",
-                  marginBottom: 40,
-                  maxWidth: 600,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  // lineHeight: 24,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    color: "#666",
-                    textAlign: "center",
-                    marginBottom: 40,
-                    maxWidth: 600,
-                    lineHeight: 24,
-                  }}
-                >
-                  Descubre todo lo que MineTrackAI puede hacer por tu operación
-                  minera
-                </Text>
-              </View>
-              {/* Grid de características mejorado */}
-
-              <View
-                style={{
-                  flexDirection: windowWidth > 768 ? "row" : "column",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  // justifyContent: "center",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                  // alignItems: "stretch",
-                  // width: "100%",
-                  maxWidth: 1200,
-                  gap: windowWidth > 768 ? 20 : 16,
-                  paddingHorizontal: windowWidth > 768 ? 0 : 4,
-                }}
-              >
-                {[
-                  {
-                    icon: "📊",
-                    iconName: "bar-chart",
-                    title: "Análisis en Tiempo Real",
-                    description:
-                      "Monitoreo continuo de datos operativos con dashboards interactivos",
-                    color: "#4CAF50",
-                  },
-                  {
-                    icon: "🔧",
-                    iconName: "settings",
-                    title: "Mantenimiento Preventivo",
-                    description:
-                      "Anticipe problemas antes de que ocurran con IA predictiva",
-                    color: "#2196F3",
-                  },
-                  {
-                    icon: "📱",
-                    iconName: "smartphone",
-                    title: "Acceso Móvil y Web",
-                    description:
-                      "Controle sus operaciones desde cualquier lugar del mundo",
-                    color: "#FF9800",
-                  },
-                  {
-                    icon: "📄",
-                    iconName: "file-text",
-                    title: "Reportes Automáticos",
-                    description:
-                      "Genere reportes profesionales en PDF automáticamente",
-                    color: "#9C27B0",
-                  },
-                ].map((feature, index) => (
-                  <View
-                    key={index}
-                    className="feature-card elevated-card"
-                    style={{
-                      backgroundColor: "white",
-                      borderRadius: 16,
-                      padding: 24,
-                      width: windowWidth > 768 ? "48%" : "100%",
-                      maxWidth: windowWidth > 768 ? 320 : undefined,
-                      alignItems: "center",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowOpacity: 0.12,
-                      shadowRadius: 24,
-                      elevation: 8,
-                      borderWidth: 1,
-                      borderColor: "#f0f0f0",
-                    }}
-                  >
-                    {/* Icono con fondo de color */}
-                    <View
-                      style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: 35,
-                        backgroundColor: `${feature.color}15`,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        marginBottom: 20,
-                        borderWidth: 2,
-                        borderColor: `${feature.color}30`,
-                      }}
-                    >
-                      <Text style={{ fontSize: 32 }}>{feature.icon}</Text>
-                    </View>
-
-                    {/* Título */}
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: "700",
-                        color: "#2A3B76",
-                        marginBottom: 12,
-                        textAlign: "center",
-                        lineHeight: 24,
-                      }}
-                    >
-                      {feature.title}
-                    </Text>
-
-                    {/* Descripción */}
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: "#666",
-                        textAlign: "center",
-                        lineHeight: 20,
-                      }}
-                    >
-                      {feature.description}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Call to Action mejorado */}
-              <View
-                style={{
-                  marginTop: 50,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: windowWidth > 768 ? 24 : 20,
-                    fontWeight: "600",
-                    color: "#2A3B76",
-                    textAlign: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  ¿Listo para optimizar tus operaciones?
-                </Text>
-
-                <Text
-                  style={{
-                    fontSize: 16,
-                    color: "#666",
-                    textAlign: "center",
-                    marginBottom: 30,
-                  }}
-                >
-                  Selecciona un proyecto arriba para comenzar
-                </Text>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  } else {
-    return (
-      <SafeAreaView
-        style={[
-          {
-            flex: 1,
-            backgroundColor: "white",
-            height: "100%",
-          },
-        ]}
-      >
-        <div
-          style={{
-            backgroundColor: "white",
             padding: "12px 24px",
             borderBottom: "1px solid #eaeaeaff",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
             alignItems: "center",
           }}
         >
@@ -1005,7 +493,6 @@ function HomeScreenRaw(props: any) {
               display: "flex",
               alignItems: "center",
               gap: "0px",
-              justifyContent: "flex-end",
             }}
           >
             {/* <h3
@@ -1018,7 +505,7 @@ function HomeScreenRaw(props: any) {
             >
               PROYECTO:
             </h3> */}
-            {/* <h3
+            <h3
               style={{
                 ...styles.company,
                 margin: 0,
@@ -1029,7 +516,7 @@ function HomeScreenRaw(props: any) {
               }}
             >
               {`${getFormattedProjectTitle()}`}
-            </h3> */}
+            </h3>
           </div>
           <button
             onClick={() => msProject()}
@@ -1064,10 +551,352 @@ function HomeScreenRaw(props: any) {
                 strokeLinejoin="round"
               />
             </svg>
-            Crear Proyecto
+            Crear Nuevo Proyecto
           </button>
-          <Text> </Text>
-          <Text> </Text>
+          <button
+            onClick={() => setShowZIPwhatsappModal(true)}
+            style={{
+              backgroundColor: "#25D366",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(37, 211, 102, 0.2)",
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: 6 }}
+            >
+              <circle cx="12" cy="12" r="10" fill="white" />
+              <path
+                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.472-.148-.67.15-.198.297-.767.967-.94 1.166-.173.198-.347.223-.644.075-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.447-.52.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.075-.149-.67-1.617-.917-2.217-.242-.582-.487-.502-.67-.511-.173-.007-.372-.009-.571-.009-.198 0-.52.075-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.877 1.214 3.075.149.198 2.099 3.205 5.077 4.367.71.244 1.263.389 1.695.497.712.18 1.36.155 1.872.094.571-.067 1.758-.719 2.007-1.413.248-.694.248-1.288.173-1.413-.075-.124-.272-.198-.57-.347z"
+                fill="#25D366"
+              />
+            </svg>
+            Reporte Automático
+          </button>
+          <button
+            onClick={() => setShowProjectModal(true)}
+            style={{
+              backgroundColor: "#2A3B76",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Cambiar Proyecto
+          </button>
+
+          {/* Project Filter Modal */}
+          {showProjectModal && (
+            <ProjectFilterModal
+              isOpen={showProjectModal}
+              setIdProyecto={setIdProyecto}
+              onClose={() => setShowProjectModal(false)}
+              onSelectProject={(project, company, type, date) => {
+                handleProjectChange(project);
+                if (company) setSelectedCompany(company);
+                if (type) setSelectedType(type);
+                if (date) setSelectedDate(date);
+              }}
+              availableProjects={AVAILABLE_PROJECTS}
+              currentProject={selectedProject}
+            />
+          )}
+        </div>
+        <UploadZIPWhatsapp
+          isVisible={showZIPwhatsappModal}
+          onClose={() => setShowZIPwhatsappModal(false)}
+          onUploadFile={handleZIPwhatsappUpload}
+        />
+        <ProjectUploadModal
+          isVisible={showNewProjectModal}
+          onClose={() => setShowNewProjectModal(false)}
+          onUploadFile={handleProjectFileUpload}
+        />
+        <View
+          style={{
+            // flex: 1,
+            backgroundColor: "#f8f9fa",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <ImageExpo
+            source={require("../../../assets/logoPandora.jpg")}
+            style={{
+              width: 150,
+              height: 150,
+              marginBottom: 40,
+              borderRadius: 75, // Make it circular
+              overflow: "hidden",
+            }}
+            cachePolicy={"memory-disk"}
+          />
+          <Text
+            style={{
+              fontSize: windowWidth > 800 ? 60 : 40,
+              fontWeight: "700",
+              color: "#2A3B76",
+              marginBottom: 20,
+              textAlign: "center",
+            }}
+          >
+            Bienvenido a MineTrackAI
+          </Text>
+          <Text
+            style={{
+              fontSize: windowWidth > 800 ? 22 : 18,
+              color: "#555",
+              marginBottom: 40,
+              textAlign: "center",
+              maxWidth: 600,
+              lineHeight: 28,
+            }}
+          >
+            La plataforma integral para monitoreo y mantenimiento de plantas
+            mineras. Conectando equipos, optimizando recursos y mejorando la
+            eficiencia.
+          </Text>
+
+          {/* Feature highlights */}
+          <View
+            style={{
+              flexDirection: windowWidth > 800 ? "row" : "column",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              maxWidth: 900,
+              marginBottom: 60,
+            }}
+          >
+            {[
+              {
+                icon: "bar-chart",
+                title: "Análisis en tiempo real",
+                description: "Monitoreo continuo de datos operativos",
+              },
+              {
+                icon: "settings",
+                title: "Mantenimiento preventivo",
+                description: "Anticipe problemas antes de que ocurran",
+              },
+              {
+                icon: "smartphone",
+                title: "Acceso móvil y web",
+                description: "Controle sus operaciones desde cualquier lugar",
+              },
+              {
+                icon: "file-text",
+                title: "Reportes automaticos",
+                description: "Crea Reportes automáticos en PDF",
+              },
+            ].map((feature, index) => (
+              <View
+                key={index}
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: 12,
+                  padding: 24,
+                  margin: 10,
+                  width: windowWidth > 800 ? "30%" : "80%",
+                  alignItems: "center",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#E6F2FF",
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <Icon
+                    name={feature.icon}
+                    type="feather"
+                    size={28}
+                    color="#2A3B76"
+                  />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "600",
+                    color: "#2A3B76",
+                    marginBottom: 8,
+                    textAlign: "center",
+                  }}
+                >
+                  {feature.title}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#666",
+                    textAlign: "center",
+                    lineHeight: 20,
+                  }}
+                >
+                  {feature.description}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* CTA Button */}
+          {/* <TouchableOpacity
+            style={{
+              backgroundColor: "#2A3B76",
+              paddingVertical: 16,
+              paddingHorizontal: 32,
+              borderRadius: 8,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontSize: 18,
+                fontWeight: "600",
+              }}
+            >
+              Empezar ahora
+            </Text>
+          </TouchableOpacity> */}
+        </View>
+      </View>
+    );
+  } else {
+    return (
+      <SafeAreaView
+        style={[
+          {
+            flex: 1,
+            backgroundColor: "white",
+            height: "100%",
+          },
+        ]}
+      >
+        <div
+          style={{
+            backgroundColor: "white",
+            padding: "12px 24px",
+            borderBottom: "1px solid #eaeaeaff",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0px",
+            }}
+          >
+            {/* <h3
+              style={{
+                margin: 0,
+                fontSize: 16,
+                color: "#2A3B76",
+                fontWeight: 500,
+              }}
+            >
+              PROYECTO:
+            </h3> */}
+            <h3
+              style={{
+                ...styles.company,
+                margin: 0,
+                fontSize: 18,
+                color: "black",
+                // fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              {`${getFormattedProjectTitle()}`}
+            </h3>
+          </div>
+          <button
+            onClick={() => msProject()}
+            style={{
+              backgroundColor: "green",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
+              padding: "8px 16px",
+              fontSize: 14,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: 6 }}
+            >
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <path
+                d="M12 8V16M8 12H16"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Crear Nuevo Proyecto
+          </button>
           <button
             onClick={() => setShowProjectModal(true)}
             style={{

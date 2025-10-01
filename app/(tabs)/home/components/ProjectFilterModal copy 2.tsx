@@ -159,7 +159,6 @@ const ProjectFilterModal = ({
               fontWeight: "bold",
               color: "white",
               letterSpacing: 1,
-              fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
             }}
           >
             Seleccionar Proyecto
@@ -175,7 +174,6 @@ const ProjectFilterModal = ({
               padding: 0,
               fontWeight: 700,
               lineHeight: 1,
-              fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
             }}
             aria-label="Cerrar"
           >
@@ -204,7 +202,6 @@ const ProjectFilterModal = ({
                 color: "#555",
                 fontSize: 14,
                 fontWeight: "bold",
-                fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
               }}
             ></h4>
 
@@ -225,7 +222,6 @@ const ProjectFilterModal = ({
                     fontSize: 14,
                     color: "#555",
                     fontWeight: "500",
-                    fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                   }}
                 >
                   Empresa
@@ -240,7 +236,6 @@ const ProjectFilterModal = ({
                     borderRadius: 5,
                     fontSize: 14,
                     backgroundColor: "white",
-                    fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                   }}
                 >
                   {COMPANIES.map((company) => (
@@ -260,7 +255,6 @@ const ProjectFilterModal = ({
                     fontSize: 14,
                     color: "#555",
                     fontWeight: "500",
-                    fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                   }}
                 >
                   Tipo de Proyecto
@@ -345,7 +339,6 @@ const ProjectFilterModal = ({
                     borderRadius: 5,
                     fontSize: 14,
                     backgroundColor: "white",
-                    fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                   }}
                 />
               </div>
@@ -360,7 +353,6 @@ const ProjectFilterModal = ({
                   fontSize: 14,
                   color: "#555",
                   fontWeight: "500",
-                  fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                 }}
               >
                 Buscar Proyecto
@@ -376,7 +368,6 @@ const ProjectFilterModal = ({
                   border: "1px solid #ddd",
                   borderRadius: 5,
                   fontSize: 14,
-                  fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                 }}
               />
             </div>
@@ -394,7 +385,6 @@ const ProjectFilterModal = ({
                 color: "#555",
                 fontSize: 14,
                 fontWeight: "bold",
-                fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
               }}
             >
               Proyectos Disponibles
@@ -407,7 +397,6 @@ const ProjectFilterModal = ({
                   textAlign: "center",
                   padding: "20px 0",
                   fontSize: 14,
-                  fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
                 }}
               >
                 No se encontraron proyectos con estos filtros.
@@ -454,20 +443,12 @@ const ProjectFilterModal = ({
                           fontWeight: 500,
                           color: "#333",
                           fontSize: 14,
-                          fontFamily:
-                            "'Inter', 'Segoe UI', 'Arial', sans-serif",
                         }}
                       >
                         {`${project.projectName}`.toUpperCase()}
                       </div>
                       <div
-                        style={{
-                          fontSize: 12,
-                          color: "#888",
-                          marginTop: 2,
-                          fontFamily:
-                            "'Inter', 'Segoe UI', 'Arial', sans-serif",
-                        }}
+                        style={{ fontSize: 12, color: "#888", marginTop: 2 }}
                       >
                         {project.Area || "PARADA DE PLANTA"}
                       </div>
@@ -521,7 +502,6 @@ const ProjectFilterModal = ({
               color: "#666",
               fontSize: 14,
               cursor: "pointer",
-              fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
             }}
           >
             Cancelar
@@ -545,7 +525,6 @@ const ProjectFilterModal = ({
               fontSize: 14,
               cursor: "pointer",
               fontWeight: "bold",
-              fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
             }}
           >
             Cargar Proyecto

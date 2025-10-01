@@ -1,0 +1,47 @@
+/* Estilos adicionales para el gradiente de fondo */
+.gradient-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Mejorar la experiencia en móviles */
+@media (max-width: 768px) {
+  .gradient-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+  }
+
+  /* Asegurar scroll en móviles */
+  .mobile-scroll-container {
+    overflow-y: auto;
+    height: 100vh;
+  }
+}
+
+/* Animaciones suaves */
+.button-hover {
+  transition: all 0.2s ease;
+}
+
+.button-hover:hover {
+  transform: translateY(-1px);
+}
+
+/* Responsive cards */
+.feature-card {
+  transition: all 0.3s ease;
+}
+
+/* Mejorar sombras en web */
+.elevated-card {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.elevated-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}

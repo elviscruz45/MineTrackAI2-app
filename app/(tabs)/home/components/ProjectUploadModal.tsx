@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   webModalContainer: {
-    width: "60%",
+    width: "90%",
     maxWidth: 600,
   },
   scrollViewContent: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2A3B76",
+    color: "#28A745",
   },
   closeButton: {
     padding: 5,
@@ -351,8 +351,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   projectTypeButtonSelected: {
-    backgroundColor: "#2A3B76",
-    borderColor: "#2A3B76",
+    backgroundColor: "#28A745",
+    borderColor: "#28A745",
   },
   projectTypeText: {
     fontSize: 13,
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   submitButton: {
-    backgroundColor: "#2A3B76",
+    backgroundColor: "#28A745",
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,

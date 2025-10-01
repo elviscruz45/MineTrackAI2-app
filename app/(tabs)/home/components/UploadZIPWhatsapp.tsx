@@ -196,7 +196,7 @@ const UploadZIPWhatsapp = ({
       const startTime = Date.now();
 
       const response = await fetch(
-        "http://34.176.75.204:8000/crear-informe-final",
+        "http://34.176.107.100:8000/crear-informe-final",
         {
           method: "POST",
           body: formData,
@@ -450,13 +450,25 @@ const UploadZIPWhatsapp = ({
               </View>
             </View>
 
-            <View style={styles.modalFooter}>
+            <View
+              style={[
+                styles.modalFooter,
+                Platform.OS !== "web" && styles.modalFooterMobile, // Aplica estilo móvil
+              ]}
+            >
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={handleClose}
                 disabled={isLoading}
               >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
+                <Text
+                  style={[
+                    styles.cancelButtonText,
+                    Platform.OS !== "web" && styles.modalFooterMobile,
+                  ]}
+                >
+                  Cancelar
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -504,7 +516,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   webModalContainer: {
-    width: "60%",
+    width: "90%",
     maxWidth: 500,
   },
   scrollViewContent: {
@@ -737,6 +749,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     fontStyle: "italic",
+  },
+  modalFooterMobile: {
+    flexDirection: "column",
+    gap: 8,
+    justifyContent: "center",
+    alignItems: "stretch",
+    marginTop: 8,
   },
 });
 
