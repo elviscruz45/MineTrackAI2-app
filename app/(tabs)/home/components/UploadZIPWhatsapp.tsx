@@ -190,10 +190,13 @@ const UploadZIPWhatsapp = ({
       const timeoutId = setTimeout(() => {
         console.log("TIMEOUT: Abortando petición después de 10 minutos");
         controller.abort();
-      }, 10 * 60 * 1000); // 10 minutos timeout
+      }, 20 * 60 * 1000); // 10 minutos timeout
 
       console.log("Enviando petición a API...");
       const startTime = Date.now();
+
+      //"https://api.minetrack.site/crear-informe-final",
+      //"http://34.176.107.100:8000/crear-informe-final",
 
       const response = await fetch(
         "https://api.minetrack.site/crear-informe-final",
@@ -212,13 +215,18 @@ const UploadZIPWhatsapp = ({
         `Petición completada en ${(endTime - startTime) / 1000} segundos`
       );
 
-      console.log("Response status:", response.status);
+      console.log("Response status:", response);
       console.log(
         "Response headers:",
         Object.fromEntries(response.headers.entries())
       );
 
       if (response.ok) {
+        // // Obtener el JSON del body
+        // const data = await response.json();
+
+        // console.log("Data:", data);
+
         // Completar progreso al 100%
         setProgress(100);
         setCurrentStage("✅ Descargando reporte...");
