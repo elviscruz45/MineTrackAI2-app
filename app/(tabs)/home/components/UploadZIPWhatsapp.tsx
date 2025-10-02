@@ -147,7 +147,7 @@ const UploadZIPWhatsapp = ({
     setIsLoading(true);
 
     try {
-      console.log("=== INICIANDO UPLOAD ===");
+      console.log("=== INICIANDO UPLOAD ver 1===");
       console.log("Archivo seleccionado:", {
         name: selectedFile.name,
         size: selectedFile.size,
