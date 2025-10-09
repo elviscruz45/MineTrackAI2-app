@@ -55,9 +55,9 @@ const ProjectFilterModal = ({
   setIdProyecto,
 }: ProjectFilterModalProps) => {
   // Filter states
-  const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
-  const [selectedType, setSelectedType] = useState("Parada de Planta");
-  const [selectedArea, setSelectedArea] = useState("Chancado Primario");
+  const [selectedCompany, setSelectedCompany] = useState("Todos");
+  const [selectedType, setSelectedType] = useState("Todos");
+  const [selectedArea, setSelectedArea] = useState("Todos");
 
   const [selectedDate, setSelectedDate] = useState("2025-07");
   const [filteredProjects, setFilteredProjects] = useState(availableProjects);

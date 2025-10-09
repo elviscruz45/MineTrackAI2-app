@@ -94,9 +94,7 @@ function HomeScreenRaw(props: any) {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [companyName, setCompanyName] = useState("");
-  const [selectedProject, setSelectedProject] = useState<any>(
-    AVAILABLE_PROJECTS[0]
-  );
+  const [selectedProject, setSelectedProject] = useState(AVAILABLE_PROJECTS[0]);
   // const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
   const [selectedCompany, setSelectedCompany] = useState("");
 
@@ -1006,26 +1004,32 @@ function HomeScreenRaw(props: any) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
-              justifyContent: "flex-start",
-              padding: "8px 20px",
+              gap: "0px",
+              justifyContent: "flex-end",
             }}
           >
-            <span
+            {/* <h3
               style={{
-                fontSize: 18,
-                fontWeight: 600,
+                margin: 0,
+                fontSize: 16,
                 color: "#2A3B76",
-                fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
-                marginLeft: 4,
-                textAlign: "left",
-                letterSpacing: 0.2,
+                fontWeight: 500,
               }}
             >
-              {selectedProject?.projectName
-                ? selectedProject.projectName
-                : "Selecciona un Proyecto"}
-            </span>
+              PROYECTO:
+            </h3> */}
+            {/* <h3
+              style={{
+                ...styles.company,
+                margin: 0,
+                fontSize: 18,
+                color: "black",
+                // fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              {`${getFormattedProjectTitle()}`}
+            </h3> */}
           </div>
           <button
             onClick={() => msProject()}

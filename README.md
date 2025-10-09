@@ -48,3 +48,22 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# DOCUMENTACION DEL PROEYCTO
+
+Todo se basa en el ID del proyecto
+
+1. Eventos basado en el ID
+2. Lista de Servicios basado en el ID
+
+# FIREBASE:
+
+Se tienen los siguientes colecciones:
+
+ServiciosAIT
+
+events
+
+proyectos
+
+users

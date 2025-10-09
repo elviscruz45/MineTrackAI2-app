@@ -137,7 +137,6 @@ const UploadZIPWhatsapp = ({
 
       console.log("Enviando petición a API...");
       const startTime = Date.now();
-
       const response = await fetch(
         "http://34.176.107.100:8000/crear-informe-final",
         {

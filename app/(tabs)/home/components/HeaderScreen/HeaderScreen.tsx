@@ -27,7 +27,7 @@ function HeaderScreenNoRedux(props: any) {
   function capitalizeFirstLetter(str: string) {
     return str?.charAt(0).toUpperCase() + str?.slice(1);
   }
-  const regex = /@(.+?)\./i;
+  // const regex = /@(.+?)\./i;
   useEffect(() => {
     let unsubscribe: any;
     if (props.email && props.idproyecto) {

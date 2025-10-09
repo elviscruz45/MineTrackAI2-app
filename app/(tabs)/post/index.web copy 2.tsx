@@ -483,7 +483,7 @@ function PublishRaw(props: any) {
                 Cámara
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => addAIT()}
               style={{
                 display: "flex",
@@ -505,8 +505,8 @@ function PublishRaw(props: any) {
               >
                 Nuevo Servicio
               </Text>
-            </TouchableOpacity>
-            {/* <TouchableOpacity
+            </TouchableOpacity> */}
+            <TouchableOpacity
               onPress={() => msProject()}
               style={{
                 // style={styles.btnContainer4}
@@ -529,7 +529,7 @@ function PublishRaw(props: any) {
               >
                 Proyecto Global
               </Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
         )}
         <Text> </Text>

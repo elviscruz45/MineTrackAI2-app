@@ -341,6 +341,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  powerBIContainer: {
+    marginHorizontal: 20,
+    marginVertical: 15,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  powerBIWrapper: {
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#f5f5f5",
+    minHeight: 400,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default styles;

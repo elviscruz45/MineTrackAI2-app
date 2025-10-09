@@ -29,24 +29,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RagScreen } from "./components/RagScreen/RagScreen";
 import { titulo_proyecto } from "../../../redux/actions/auth";
 
-// Importación condicional para Power BI
-let PowerBIEmbed: any = null;
-let models: any = null;
-
-if (typeof window !== "undefined") {
-  // Solo importar en el cliente
-  const powerBIImport = import("powerbi-client-react").then((module) => {
-    PowerBIEmbed = module.PowerBIEmbed;
-  });
-  const modelsImport = import("powerbi-client").then((module) => {
-    models = module.models;
-  });
-}
-
-// Importar estilos CSS solo en web
-if (typeof window !== "undefined") {
-  import("./powerbi-styles.css");
-}
+import { PowerBIEmbed } from "powerbi-client-react";
+import { models } from "powerbi-client";
 
 function capitalizeFirstLetter(str: any) {
   return str?.charAt(0).toUpperCase() + str?.slice(1);
@@ -66,27 +50,6 @@ function ProfileRaw(props: any) {
   const [pregunta, setPregunta] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [content, setContent] = useState("");
-  const [powerBIReady, setPowerBIReady] = useState(false);
-
-  // Cargar Power BI dinámicamente
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const loadPowerBI = async () => {
-        try {
-          const [powerBIModule, modelsModule] = await Promise.all([
-            import("powerbi-client-react"),
-            import("powerbi-client"),
-          ]);
-          PowerBIEmbed = powerBIModule.PowerBIEmbed;
-          models = modelsModule.models;
-          setPowerBIReady(true);
-        } catch (error) {
-          console.error("Error loading Power BI:", error);
-        }
-      };
-      loadPowerBI();
-    }
-  }, []);
 
   const regex = /@(.+?)\./i;
   const companyName =
@@ -284,7 +247,7 @@ function ProfileRaw(props: any) {
             marginBottom: 15,
           }}
         >
-          Estadísticas personales de uso
+          Estadísticas de uso
         </Text>
 
         <View style={styles.statsContainer}>
@@ -369,98 +332,114 @@ function ProfileRaw(props: any) {
           </View>
         </View>
 
-        <Text> </Text>
+        <View style={styles.recentActivityContainer}>
+          <Text style={styles.sectionTitle}>Actividad reciente</Text>
 
-        {/* Power BI Component */}
-        <View style={styles.powerBIContainer}>
-          <Text style={styles.sectionTitle}>Dashboard Power BI</Text>
-          <View style={styles.powerBIWrapper}>
-            {powerBIReady && PowerBIEmbed && models ? (
-              <PowerBIEmbed
-                embedConfig={{
-                  type: "report", // Supported types: report, dashboard, tile, visual, and qna.
-                  id: undefined,
-                  embedUrl: undefined,
-                  accessToken: undefined, // Keep as an empty string, null, or undefined.
-                  tokenType: models.TokenType.Embed,
-                }}
-                // embedConfig={{
-                //   type: "report",
-                //   id: "sample-report-id",
-                //   embedUrl: "https://app.powerbi.com/reportEmbed",
-                //   accessToken: "sample-access-token",
-                //   tokenType: models.TokenType.Embed,
-                //   settings: {
-                //     panes: {
-                //       filters: {
-                //         expanded: false,
-                //         visible: false,
-                //       },
-                //     },
-                //     background: models.BackgroundType.Transparent,
-                //   },
-                // }}
-                eventHandlers={
-                  new Map([
-                    [
-                      "loaded",
-                      function () {
-                        console.log("Report loaded");
-                      },
-                    ],
-                    [
-                      "rendered",
-                      function () {
-                        console.log("Report rendered");
-                      },
-                    ],
-                    [
-                      "error",
-                      function (event: any) {
-                        console.log("Power BI Error:", event?.detail || event);
-                      },
-                    ],
-                  ])
-                }
-                cssClassName="powerbi-report-container"
-              />
-            ) : (
+          {/* Recent Activity Items */}
+          {[
+            {
+              type: "report",
+              title: "Informe de mantenimiento preventivo",
+              date: "12 Jul",
+            },
+            {
+              type: "event",
+              title: "Reparación bomba hidráulica",
+              date: "10 Jul",
+            },
+            {
+              type: "project",
+              title: "Ampliación planta procesadora",
+              date: "8 Jul",
+            },
+          ].map((item, index) => (
+            <View key={index} style={styles.activityItem}>
               <View
-                style={{
-                  height: 400,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: 8,
-                }}
+                style={[
+                  styles.activityIcon,
+                  {
+                    backgroundColor:
+                      item.type === "report"
+                        ? "#E6F7FF"
+                        : item.type === "event"
+                        ? "#F6FFED"
+                        : "#FFF7E6",
+                  },
+                ]}
               >
-                <Text
-                  style={{
-                    color: "#666",
-                    fontSize: 16,
-                    textAlign: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  {powerBIReady
-                    ? "Conecta tu reporte de Power BI"
-                    : "Cargando Power BI..."}
-                </Text>
-                <Text
-                  style={{
-                    color: "#999",
-                    fontSize: 14,
-                    textAlign: "center",
-                  }}
-                >
-                  Configura tu accessToken e ID de reporte
-                </Text>
+                <Feather
+                  name={
+                    item.type === "report"
+                      ? "file-text"
+                      : item.type === "event"
+                      ? "calendar"
+                      : "briefcase"
+                  }
+                  size={16}
+                  color={
+                    item.type === "report"
+                      ? "#1890FF"
+                      : item.type === "event"
+                      ? "#52C41A"
+                      : "#FA8C16"
+                  }
+                />
               </View>
-            )}
-          </View>
+              <View style={styles.activityDetails}>
+                <Text style={styles.activityTitle}>{item.title}</Text>
+                <Text style={styles.activityDate}>{item.date}</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="#CCC" />
+            </View>
+          ))}
         </View>
 
         <Text> </Text>
+
+        <div style={{ width: "100%", height: "800px" }}>
+          <iframe
+            title="Dashboard Power BI"
+            width="100%"
+            height="100%"
+            src="https://app.powerbi.com/discover/gallery/0579b437-67ba-4acf-b2c8-4bebc64b9899?experience=power-bi" // 👈 tu link aquí
+            frameBorder="0"
+            allowFullScreen
+          ></iframe>
+        </div>
+
+        {/* <FlatList
+            data={post}
+            scrollEnabled={false}
+            renderItem={({ item, index }) => {
+              return (
+                <TouchableOpacity onPress={() => comentPost(item)}>
+                  <View>
+                    <View style={styles.equipments2}>
+                      <ImageExpo
+                        source={{ uri: item.fotoPrincipal }}
+                        style={styles.image2}
+                        cachePolicy={"memory-disk"}
+                      />
+                      <View style={{ marginLeft: 5 }}>
+                        <Text style={styles.name2}>
+                          {item.AITNombreServicio}
+                        </Text>
+                        <Text style={styles.name2}>
+                          {"Evento: "}
+                          {item.titulo}
+                        </Text>
+                        <Text style={styles.info2}>{item.comentarios}</Text>
+                        <Text style={styles.info2}>
+                          {item.fechaPostFormato}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+            keyExtractor={(item, index) => `${index}-${item.fechaPostFormato}`}
+          /> */}
       </KeyboardAwareScrollView>
       <Modal show={showModal} close={onCloseOpenModal}>
         {renderComponent}
