@@ -45,11 +45,12 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import * as XLSX from "xlsx";
 
 interface CSVRow {
   Codigo: string;
   NombreServicio: string;
-  FechaInicio: string;
+  FechaInicio?: string;
   FechaFin?: string;
   OrdenCompra?: string;
   SupervisorMina?: string;
@@ -78,8 +79,7 @@ function PublishRaw(props: any) {
   const [flatlistData, setFlatlistData] = useState(false);
   const [idServiciosAIT, setIdServiciosAIT] = useState("");
   const [showProjectModal, setShowProjectModal] = useState(false);
-  // const [codes4, setCodes4] = useState<CSVRow[]>([]);
-  // const [codes5, setCodes5] = useState<CSVRow[]>([]);
+
   const router = useRouter();
 
   // const emptyimage = require("../../../assets/pictures/appTeseoLogol.png");
@@ -239,10 +239,8 @@ function PublishRaw(props: any) {
     fileAsset: any,
     newProjectDocID: any
   ) => {
-    console.log("55555 sabe que su plata es lo mismo y el profe");
     try {
       setIsLoading(true);
-      console.log("66666 sabe que su plata es lo mismo y el profe");
 
       // Get file content
       let fileContent = "";
@@ -256,8 +254,6 @@ function PublishRaw(props: any) {
           reader.onerror = (e) => reject(e);
           reader.readAsText(webFile);
         });
-
-        console.log("77777 sabe que su plata es lo mismo y el profe");
       } else {
         // Native: use FileSystem
         const fileUri = fileAsset.uri;
@@ -265,7 +261,6 @@ function PublishRaw(props: any) {
           encoding: FileSystem.EncodingType.UTF8,
         });
       }
-      console.log("88888 sabe que su plata es lo mismo y el profe");
 
       // 2️⃣ Parse CSV and filter activities
       const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
@@ -276,9 +271,8 @@ function PublishRaw(props: any) {
           ...row,
           parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
         }));
-      console.log("0000000 sabe que su plata es lo mismo y el profe");
-      // 3️⃣ Upload only new activities, referencing the new project
 
+      // 3️⃣ Upload only new activities, referencing the new project
       //----------------------------------------------------------------------------------------------------------------------------
       for (const item of list4) {
         const {
@@ -302,8 +296,38 @@ function PublishRaw(props: any) {
           HorasTotales,
         } = item;
 
+        // 👇 MODIFICADO: Parsear fechas y guardar como Timestamp
+        const fechaInicioDate = parseAnyDate(FechaInicio);
+        const fechaFinDate = parseAnyDate(FechaFin);
+
+        // const filteredData =
+        //   list5?.filter((item: any) => item.parentCode === Codigo) ?? [];
+
         const filteredData =
-          list5?.filter((item: any) => item.parentCode === Codigo) ?? [];
+          list5
+            ?.filter((item: any) => item.parentCode === Codigo)
+            .map((item: any) => {
+              const fechaInicioDate = parseAnyDate(item.FechaInicio);
+              const fechaFinDate = parseAnyDate(item.FechaFin);
+
+              console.log(
+                "fechaInicioDatefechaInicioDatefechaInicioDate",
+                Timestamp.fromDate(fechaInicioDate ?? new Date())
+              );
+              console.log(
+                "fechaFinDatefechaFinDatefechaFinDatefechaFinDate",
+                Timestamp.fromDate(fechaFinDate ?? new Date())
+              );
+              return {
+                ...item,
+                FechaInicio: fechaInicioDate
+                  ? Timestamp.fromDate(fechaInicioDate)
+                  : null,
+                FechaFin: fechaFinDate
+                  ? Timestamp.fromDate(fechaFinDate)
+                  : null,
+              };
+            }) ?? [];
 
         const filterNamesActivities = filteredData.map(
           (item: any) => item.NombreServicio
@@ -324,8 +348,12 @@ function PublishRaw(props: any) {
           Soldador: NumeroSoldador || "0",
           TipoServicio: TipoServicio || projectType,
           NumeroCotizacion: NumeroCotizacion,
-          FechaInicio: FechaInicio,
-          FechaFin: FechaFin,
+          // FechaInicio: FechaInicio,
+          // FechaFin: FechaFin,
+          FechaInicio: fechaInicioDate
+            ? Timestamp.fromDate(fechaInicioDate)
+            : null,
+          FechaFin: fechaFinDate ? Timestamp.fromDate(fechaFinDate) : null,
           ResponsableEmpresaUsuario3: SupervisorMina,
           ResponsableEmpresaContratista3: SupervisorEECC,
           // Global project properties
@@ -624,5 +652,57 @@ const Publish = connect(mapStateToProps, {
   saveActualAITServicesFirebaseGlobalState,
   saveTotalActivities,
 })(PublishRaw);
+
+// Intenta parsear fechas en múltiples formatos y seriales de Excel
+function parseAnyDate(value: any) {
+  if (!value) return null;
+
+  // 1. Si es número (serial Excel)
+  if (typeof value === "number") {
+    const date = XLSX.SSF.parse_date_code(value);
+    if (date) {
+      return new Date(date.y, date.m - 1, date.d, date.H, date.M, date.S);
+    }
+  }
+
+  // 2. Si es string, prueba varios formatos
+  if (typeof value === "string") {
+    // Normaliza separador
+    let str = value.replace(",", " ").replace("  ", " ").trim();
+
+    // Intenta con Date.parse (soporta ISO y algunos formatos comunes)
+    let d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+
+    // Intenta con regex para DD/MM/YYYY HH:mm(:ss)? (AM/PM)?
+    const regex =
+      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?$/i;
+    const match = str.match(regex);
+    if (match) {
+      let [, day, month, year, hour, minute, second = "0", ampm] = match;
+      if (year.length === 2) year = "20" + year;
+      if (ampm) {
+        hour = String(
+          ampm.toUpperCase() === "PM" && hour !== "12"
+            ? Number(hour) + 12
+            : hour === "12" && ampm.toUpperCase() === "AM"
+            ? 0
+            : hour
+        );
+      }
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+      );
+    }
+  }
+
+  // Si nada funcionó, retorna null
+  return null;
+}
 
 export default Publish;

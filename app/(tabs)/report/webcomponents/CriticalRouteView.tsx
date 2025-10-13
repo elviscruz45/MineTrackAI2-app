@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 interface CriticalRouteViewProps {
-  selectedProject: string;
+  data: any;
 }
 
 interface Task {
@@ -17,13 +17,57 @@ interface Task {
   resources: string[];
   riskLevel: "low" | "medium" | "high";
   responsible: string;
+  ResponsableEmpresaContratista?: string;
+  ResponsableEmpresaUsuario?: string;
 }
+const sortByCodigo = (arr: any[], key: string = "Codigo") => {
+  return arr.sort((a, b) => {
+    const aParts = (a[key] || "").split(".").map(Number);
+    const bParts = (b[key] || "").split(".").map(Number);
 
-const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
-  selectedProject,
-}) => {
+    for (let i = 0; i < aParts.length; i++) {
+      if (aParts[i] !== bParts[i]) {
+        return aParts[i] - bParts[i]; // ascendente
+      }
+    }
+    return 0;
+  });
+};
+
+// Utilidad para convertir Timestamp o string a {date, time}
+function toDateTimeObj(fecha: any): { date: string; time: string } {
+  if (!fecha) return { date: "", time: "" };
+  let d: Date;
+  if (typeof fecha === "string") {
+    d = new Date(fecha);
+  } else if (fecha.seconds) {
+    d = new Date(fecha.seconds * 1000);
+  } else {
+    return { date: "", time: "" };
+  }
+  return {
+    date: d.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }),
+    time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+  };
+}
+const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [animateFlow, setAnimateFlow] = useState(false);
+  const [sections, setSections] = useState<any>();
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [criticalPath, setCriticalPath] = useState<Task[]>([]);
+  const [projectStats, setProjectStats] = useState({
+    totalDuration: 0,
+    completedTasks: 0,
+    delayedTasks: 0,
+    criticalTasks: 0,
+    overallProgress: 0,
+    remainingTime: 0,
+  });
 
   // Start animation after component mounts
   useEffect(() => {
@@ -32,167 +76,329 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
     }, 500);
   }, []);
 
-  // Tasks from CSV data converted to critical path format
-  const mockTasks: Task[] = [
-    {
-      id: "1.1.1.1",
-      name: "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora",
-      startDate: "31/05/25 08:00",
-      endDate: "02/06/25 08:00",
-      duration: 48,
-      progress: 100,
-      dependencies: [],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 1", "Mecánico 2"],
-      riskLevel: "medium",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.1",
-      name: "PM Alimentador Pebbles 3M",
-      startDate: "02/06/25 08:00",
-      endDate: "03/06/25 08:00",
-      duration: 24,
-      progress: 100,
-      dependencies: ["1.1.1.1"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 1", "Mecánico 3", "Operador"],
-      riskLevel: "medium",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.2",
-      name: "Cambio de liner falderas a condición",
-      startDate: "03/06/25 08:00",
-      endDate: "03/06/25 20:00",
-      duration: 12,
-      progress: 100,
-      dependencies: ["1.1.1.1.1"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 2", "Soldador"],
-      riskLevel: "medium",
-      responsible: "J. Rodríguez",
-    },
-    {
-      id: "1.1.1.1.3",
-      name: "PM chute de descarga hacia la chancadora",
-      startDate: "03/06/25 20:00",
-      endDate: "04/06/25 20:00",
-      duration: 24,
-      progress: 90,
-      dependencies: ["1.1.1.1.2"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 1", "Mecánico 4", "Soldador"],
-      riskLevel: "high",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.4",
-      name: "Cambio de camas de impacto",
-      startDate: "04/06/25 20:00",
-      endDate: "05/06/25 08:00",
-      duration: 12,
-      progress: 80,
-      dependencies: ["1.1.1.1.3"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 2", "Mecánico 3"],
-      riskLevel: "medium",
-      responsible: "J. Rodríguez",
-    },
-    {
-      id: "1.1.1.1.5",
-      name: "Cambio de polines de carga a condición",
-      startDate: "05/06/25 08:00",
-      endDate: "06/06/25 08:00",
-      duration: 24,
-      progress: 65,
-      dependencies: ["1.1.1.1.4"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 3", "Mecánico 4"],
-      riskLevel: "medium",
-      responsible: "F. García",
-    },
-    {
-      id: "1.1.1.1.6",
-      name: "Cambio de polines de retorno a condición",
-      startDate: "06/06/25 08:00",
-      endDate: "07/06/25 08:00",
-      duration: 24,
-      progress: 40,
-      dependencies: ["1.1.1.1.5"],
-      isCritical: true,
-      slack: 0,
-      resources: ["Mecánico 2", "Mecánico 3", "Mecánico 4"],
-      riskLevel: "high",
-      responsible: "J. Rodríguez",
-    },
-  ];
+  // Función para convertir fecha/hora a timestamp para cálculos
+  const getTimestamp = (dateObj: { date: string; time: string }) => {
+    if (!dateObj.date || !dateObj.time) return 0;
+    const [day, month, year] = dateObj.date.split("/");
+    const [hours, minutes] = dateObj.time.split(":");
+    const fullYear = year.length === 2 ? `20${year}` : year;
+    return new Date(
+      `${fullYear}-${month}-${day}T${hours}:${minutes}`
+    ).getTime();
+  };
 
-  // Non-critical tasks that are related to the critical path
-  const relatedTasks: Task[] = [
-    {
-      id: "2.1.1.1",
-      name: "PM Mantto faja Pebbles 3M - PM Chute",
-      startDate: "31/05/25 08:00",
-      endDate: "01/06/25 08:00",
-      duration: 24,
-      progress: 100,
-      dependencies: [],
-      isCritical: false,
-      slack: 12,
-      resources: ["Mecánico 5", "Mecánico 6"],
-      riskLevel: "low",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.1",
-      name: "Revisión de componentes mecánicos",
-      startDate: "01/06/25 08:00",
-      endDate: "02/06/25 08:00",
-      duration: 24,
-      progress: 100,
-      dependencies: ["2.1.1.1"],
-      isCritical: false,
-      slack: 8,
-      resources: ["Mecánico 5", "Inspector"],
-      riskLevel: "low",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.8",
-      name: "PM Chute STP027",
-      startDate: "05/06/25 20:00",
-      endDate: "06/06/25 08:00",
-      duration: 12,
-      progress: 40,
-      dependencies: ["2.1.1.1.7"],
-      isCritical: false,
-      slack: 8,
-      resources: ["Mecánico 5", "Soldador 2"],
-      riskLevel: "medium",
-      responsible: "C. López",
-    },
-    {
-      id: "2.1.1.1.16",
-      name: "Levantamiento de información para planos de plataforma para alineamiento",
-      startDate: "09/06/25 05:00",
-      endDate: "09/06/25 08:00",
-      duration: 3,
-      progress: 0,
-      dependencies: ["2.1.1.1.15"],
-      isCritical: false,
-      slack: 6,
-      resources: ["Ingeniero 1", "Técnico CAD"],
-      riskLevel: "low",
-      responsible: "M. Torres",
-    },
-  ];
+  // Función para calcular la ruta crítica basada en todas las tareas
+  const calculateCriticalPath = (tasks: any[]) => {
+    if (!tasks || tasks.length === 0) return [];
+
+    // Preparar tareas con fechas efectivas (real si existe, sino programada)
+    const preparedTasks = tasks.map((task) => ({
+      ...task,
+      // Usar fechas reales si están disponibles, sino fechas programadas
+      effectiveStartDate:
+        task.startDateReal.date && task.startDateReal.time
+          ? task.startDateReal
+          : task.startDateProg,
+      effectiveEndDate:
+        task.endDateReal.date && task.endDateReal.time
+          ? task.endDateReal
+          : task.endDateProg,
+      progress: parseInt(task.avance.replace("%", "")) || 0,
+      hasRealDates: !!(task.startDateReal.date && task.endDateReal.date),
+    }));
+
+    // Función para verificar si una tarea engloba a otra
+    const taskEnglobesAnother = (taskA: any, taskB: any) => {
+      const aStart = getTimestamp(taskA.effectiveStartDate);
+      const aEnd = getTimestamp(taskA.effectiveEndDate);
+      const bStart = getTimestamp(taskB.effectiveStartDate);
+      const bEnd = getTimestamp(taskB.effectiveEndDate);
+
+      // TaskA engloba a TaskB si:
+      // - TaskA comienza antes o al mismo tiempo que TaskB
+      // - TaskA termina después o al mismo tiempo que TaskB
+      return aStart <= bStart && aEnd >= bEnd;
+    };
+
+    // Filtrar tareas eliminando las que están contenidas dentro de otras
+    const filteredTasks = preparedTasks.filter((task, index) => {
+      // Verificar si esta tarea está contenida dentro de alguna otra
+      for (let i = 0; i < preparedTasks.length; i++) {
+        if (i === index) continue; // No comparar consigo misma
+
+        const otherTask = preparedTasks[i];
+
+        // Si otra tarea engloba a esta tarea
+        if (taskEnglobesAnother(otherTask, task)) {
+          // Mantener la tarea que:
+          // 1. Comience más temprano (más crítica al inicio)
+          // 2. Tenga menor progreso (más crítica)
+          // 3. Tenga mayor duración
+          const taskStart = getTimestamp(task.effectiveStartDate);
+          const otherStart = getTimestamp(otherTask.effectiveStartDate);
+          const taskDuration =
+            getTimestamp(task.effectiveEndDate) -
+            getTimestamp(task.effectiveStartDate);
+          const otherDuration =
+            getTimestamp(otherTask.effectiveEndDate) -
+            getTimestamp(otherTask.effectiveStartDate);
+
+          // Si la otra tarea comienza antes o al mismo tiempo
+          if (otherStart <= taskStart) {
+            // Si la otra tarea tiene mayor duración, excluir esta tarea
+            if (otherDuration >= taskDuration) {
+              return false; // Excluir esta tarea
+            }
+          }
+        }
+      }
+      return true; // Mantener esta tarea
+    });
+
+    // Ordenar las tareas filtradas por fecha de inicio efectiva
+    const sortedTasks = [...filteredTasks].sort(
+      (a, b) =>
+        getTimestamp(a.effectiveStartDate) - getTimestamp(b.effectiveStartDate)
+    );
+
+    // Construir la ruta crítica siguiendo la continuidad temporal
+    const criticalTasks: Task[] = [];
+    const usedTaskIds = new Set<string>();
+
+    // Comenzar con la primera tarea cronológicamente
+    let currentTask = sortedTasks[0];
+
+    while (currentTask) {
+      // Evitar duplicados
+      if (usedTaskIds.has(currentTask.id)) {
+        break;
+      }
+
+      usedTaskIds.add(currentTask.id);
+
+      const taskStartTime = getTimestamp(currentTask.effectiveStartDate);
+      const taskEndTime = getTimestamp(currentTask.effectiveEndDate);
+      const duration = (taskEndTime - taskStartTime) / (1000 * 60 * 60);
+
+      // Calcular retraso si tiene fechas reales
+      let delay = 0;
+      if (currentTask.hasRealDates) {
+        const plannedEnd = getTimestamp(currentTask.endDateProg);
+        const actualEnd = getTimestamp(currentTask.endDateReal);
+        delay = (actualEnd - plannedEnd) / (1000 * 60 * 60);
+      }
+
+      criticalTasks.push({
+        id: currentTask.id,
+        name:
+          currentTask.task || currentTask.name || `Tarea ${currentTask.wbs}`,
+        startDate: `${currentTask.effectiveStartDate.date} ${currentTask.effectiveStartDate.time}`,
+        endDate: `${currentTask.effectiveEndDate.date} ${currentTask.effectiveEndDate.time}`,
+        duration: Math.round(duration),
+        progress: currentTask.progress,
+        dependencies: [],
+        isCritical: true,
+        slack: 0,
+        resources: [],
+        riskLevel: (delay > 0
+          ? "high"
+          : currentTask.progress < 50
+          ? "medium"
+          : currentTask.progress < 100
+          ? "low"
+          : "low") as "low" | "medium" | "high",
+        responsible: currentTask.company || "No asignado",
+        delay: delay,
+        hasRealDates: currentTask.hasRealDates,
+        plannedStart: `${currentTask.startDateProg.date} ${currentTask.startDateProg.time}`,
+        plannedEnd: `${currentTask.endDateProg.date} ${currentTask.endDateProg.time}`,
+        ResponsableEmpresaContratista:
+          currentTask.ResponsableEmpresaContratista,
+        ResponsableEmpresaUsuario: currentTask.ResponsableEmpresaUsuario,
+      } as Task);
+
+      // Buscar la siguiente tarea que comience después o durante el final de la actual
+      const currentEndTime = getTimestamp(currentTask.effectiveEndDate);
+
+      // Filtrar tareas disponibles (no usadas)
+      const availableTasks = sortedTasks.filter(
+        (task) => !usedTaskIds.has(task.id)
+      );
+
+      if (availableTasks.length === 0) {
+        break; // No hay más tareas disponibles
+      }
+
+      // Buscar la tarea que mejor continúe la secuencia
+      let nextTask = null;
+      let bestMatch = null;
+      let minGap = Number.MAX_SAFE_INTEGER;
+
+      for (const task of availableTasks) {
+        const taskStart = getTimestamp(task.effectiveStartDate);
+        const taskEnd = getTimestamp(task.effectiveEndDate);
+
+        // Calcular la brecha entre el final de la tarea actual y el inicio de esta tarea
+        const gap = Math.abs(taskStart - currentEndTime);
+
+        // Priorizar tareas que:
+        // 1. Comienzan cerca del final de la tarea actual (continuidad)
+        // 2. Tienen menor progreso (más críticas)
+        // 3. Terminan más tarde (impacto en el proyecto)
+        const isGoodContinuity = gap <= 7 * 24 * 60 * 60 * 1000; // Máximo 7 días de brecha
+        const taskProgress = parseInt(task.avance.replace("%", "")) || 0;
+
+        if (isGoodContinuity && gap < minGap) {
+          minGap = gap;
+          bestMatch = task;
+        } else if (!bestMatch && taskProgress < 100) {
+          // Si no hay buena continuidad, tomar tareas incompletas
+          if (
+            !nextTask ||
+            taskProgress < parseInt(nextTask.avance.replace("%", "")) ||
+            0
+          ) {
+            nextTask = task;
+          }
+        }
+      }
+
+      // Usar la mejor coincidencia o la siguiente tarea lógica
+      currentTask = bestMatch || nextTask;
+
+      // Si no encontramos una buena continuidad, buscar la tarea con fecha final más tardía
+      if (!currentTask) {
+        currentTask = availableTasks.reduce((latest, task) => {
+          const latestEnd = getTimestamp(latest.effectiveEndDate);
+          const taskEnd = getTimestamp(task.effectiveEndDate);
+          return taskEnd > latestEnd ? task : latest;
+        });
+      }
+    }
+
+    // Verificar que la secuencia tenga sentido cronológico
+    criticalTasks.sort((a, b) => {
+      const aStart = getTimestamp({
+        date: a.startDate.split(" ")[0],
+        time: a.startDate.split(" ")[1],
+      });
+      const bStart = getTimestamp({
+        date: b.startDate.split(" ")[0],
+        time: b.startDate.split(" ")[1],
+      });
+      return aStart - bStart;
+    });
+
+    return criticalTasks;
+  };
+
+  // Función para calcular estadísticas del proyecto
+  const calculateProjectStats = (allTasks: any[], criticalTasks: Task[]) => {
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter(
+      (t) => t.status === "Completada"
+    ).length;
+    const delayedTasks = allTasks.filter((t) => {
+      if (!t.startDateReal.date || !t.endDateReal.date) return false;
+      const programmedEnd = getTimestamp(t.endDateProg);
+      const actualEnd = getTimestamp(t.endDateReal);
+      return actualEnd > programmedEnd;
+    }).length;
+
+    const totalProgress = allTasks.reduce((sum, task) => {
+      return sum + (parseInt(task.avance.replace("%", "")) || 0);
+    }, 0);
+
+    const overallProgress =
+      totalTasks > 0 ? Math.round(totalProgress / totalTasks) : 0;
+
+    // Calcular tiempo restante basado en la ruta crítica
+    const now = new Date().getTime();
+    const lastCriticalTask = criticalTasks[criticalTasks.length - 1];
+    const projectEndTime = lastCriticalTask
+      ? getTimestamp({
+          date: lastCriticalTask.endDate.split(" ")[0],
+          time: lastCriticalTask.endDate.split(" ")[1],
+        })
+      : now;
+
+    const remainingTime = Math.max(
+      0,
+      Math.round((projectEndTime - now) / (1000 * 60 * 60))
+    );
+
+    return {
+      totalDuration: criticalTasks.reduce(
+        (sum, task) => sum + task.duration,
+        0
+      ),
+      completedTasks,
+      delayedTasks,
+      criticalTasks: criticalTasks.length,
+      overallProgress,
+      remainingTime,
+    };
+  };
+
+  useEffect(() => {
+    if (!data) return;
+
+    const processedSections = sortByCodigo(data).map(
+      (section: any, idx: number) => ({
+        id: section.Codigo || section.id || `section-${idx + 1}`,
+        title: section.NombreServicio || "",
+        type: section.TipoServicio || "Actividad",
+
+        isOpen: idx === 0,
+        tasks: (Array.isArray(section.activitiesData)
+          ? section.activitiesData
+          : []
+        ).map((act: any, i: number) => ({
+          id: act.Codigo || act.id || `task-${i + 1}`,
+          wbs: act.Codigo || "",
+          tag: "SECCION",
+          status:
+            act.avance === "100%" || act.RealFechaFin
+              ? "Completada"
+              : act.RealFechaInicio
+              ? "En Progreso"
+              : "Pendiente",
+          company: act.EmpresaMinera || "",
+          task: act.NombreServicio || "",
+          ResponsableEmpresaContratista:
+            section.ResponsableEmpresaContratista || "",
+          ResponsableEmpresaUsuario: section.ResponsableEmpresaUsuario || "",
+          hours: act.HorasTotales || 1,
+          workHours: act.HorasTotales || 1,
+          startDateProg: toDateTimeObj(act.FechaInicio),
+          endDateProg: toDateTimeObj(act.FechaFin),
+          startDateReal: toDateTimeObj(act.RealFechaInicio),
+          endDateReal: toDateTimeObj(act.RealFechaFin),
+          deltaWork: { hours: 0, percent: "0%" },
+          deltaStart: { hours: 0, percent: "0%" },
+          duration: {},
+          avance:
+            act.avance ||
+            (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
+          expected: "100%",
+          actions: ["edit", "notes", "photos", "delete"],
+        })),
+      })
+    );
+
+    setSections(processedSections);
+
+    // Aplanar todas las tareas de todas las secciones
+    const allTasksFlat = processedSections.flatMap((section) => section.tasks);
+    setAllTasks(allTasksFlat);
+
+    // Calcular ruta crítica con todas las tareas
+    const calculatedCriticalPath = calculateCriticalPath(allTasksFlat);
+    const stats = calculateProjectStats(allTasksFlat, calculatedCriticalPath);
+
+    setCriticalPath(calculatedCriticalPath);
+    setProjectStats(stats);
+  }, [data]);
 
   const getProgressColor = (progress: number) => {
     if (progress === 0) return "#f5f5f5";
@@ -301,7 +507,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                 strokeLinejoin="round"
               />
             </svg>
-            Ruta Crítica: {selectedProject}
+            Ruta Crítica: Proyecto Parada
           </h3>
 
           <div
@@ -384,7 +590,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
               }}
             ></div>
 
-            {mockTasks.map((task, index) => (
+            {criticalPath.map((task, index) => (
               <div
                 key={task.id}
                 style={{
@@ -452,7 +658,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                         color: "#333",
                       }}
                     >
-                      {task.name}
+                      {task.id} {task.name}
                     </div>
 
                     <div
@@ -546,13 +752,21 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     }}
                   >
                     <div>
-                      <span style={{ fontWeight: 500 }}>Responsable:</span>{" "}
-                      {task.responsible}
+                      <span style={{ fontWeight: 500 }}>
+                        Responsable Contratista:
+                      </span>
+                      {task?.ResponsableEmpresaContratista}
                     </div>
                     <div>
-                      <span style={{ fontWeight: 500 }}>Recursos:</span>{" "}
-                      {task.resources.length}
+                      <span style={{ fontWeight: 500 }}>
+                        Responsable Minera:
+                      </span>
+                      {task?.ResponsableEmpresaUsuario}
                     </div>
+                    {/* <div>
+                      <span style={{ fontWeight: 500 }}>Recursos:</span>
+                      {task.resources.length}
+                    </div> */}
                   </div>
                 </div>
               </div>
@@ -951,7 +1165,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#2A3B76",
                   }}
                 >
-                  82%
+                  {projectStats.overallProgress}%
                 </div>
               </div>
               <div
@@ -978,7 +1192,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#2A3B76",
                   }}
                 >
-                  7
+                  {projectStats.criticalTasks}
                 </div>
               </div>
               <div
@@ -1005,7 +1219,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#4caf50",
                   }}
                 >
-                  3
+                  {projectStats.completedTasks}
                 </div>
               </div>
               <div
@@ -1032,7 +1246,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#f44336",
                   }}
                 >
-                  0
+                  {projectStats.delayedTasks}
                 </div>
               </div>
             </div>
@@ -1068,19 +1282,20 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({
                     color: "#2A3B76",
                   }}
                 >
-                  48 horas
+                  {projectStats.remainingTime} horas
                 </div>
                 <div
                   style={{
                     padding: "4px 8px",
-                    backgroundColor: "#ff9800",
+                    backgroundColor:
+                      projectStats.remainingTime > 0 ? "#ff9800" : "#4caf50",
                     borderRadius: 4,
                     fontSize: 12,
                     fontWeight: 500,
                     color: "white",
                   }}
                 >
-                  6 días
+                  {Math.ceil(projectStats.remainingTime / 24)} días
                 </div>
               </div>
             </div>

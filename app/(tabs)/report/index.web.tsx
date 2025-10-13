@@ -146,6 +146,8 @@ function ReportnoRedux(props: any) {
     setData(props.servicesData);
   }, [props.servicesData, company]);
 
+  console.log("Data in Report Screenn:", data);
+
   // go to a history screen
   const goToHistoryScreen = () => {
     // navigation.navigate(screen.report.tab, {
@@ -340,11 +342,11 @@ function ReportnoRedux(props: any) {
                 {activeTab === "Proyeccion" ? (
                   <AvanceProgressChart data={data} />
                 ) : activeTab === "Actividades" ? (
-                  <ActivityView selectedProject={selectedProject} />
-                ) : activeTab === "OnePage Mantención" ? (
-                  <OnePageView selectedProject={selectedProject} />
-                ) : activeTab === "Ruta Critica" ? (
-                  <CriticalRouteView selectedProject={selectedProject} />
+                  <ActivityView data={data} />
+                ) : // ) : activeTab === "OnePage Mantención" ? (
+                //   <OnePageView selectedProject={selectedProject} />
+                activeTab === "Ruta Critica" ? (
+                  <CriticalRouteView data={data} />
                 ) : activeTab === "Seguridad" ? (
                   <SafetyView selectedProject={selectedProject} />
                 ) : activeTab === "Medio Ambiente" ? (

@@ -143,7 +143,7 @@ function FileScreenBare(props: any) {
               await updateDoc(Ref, updatedData);
 
               //delete doc from storage
-              const documentPath = `pdfPost/${item.FilenameTitle}-${item.fechaPostFormato}`;
+              const documentPath = `pdfPost/${item.fechaPostFormato}-${item.FilenameTitle}`;
               try {
                 const storage = getStorage();
                 const storageRef = ref(storage, documentPath);

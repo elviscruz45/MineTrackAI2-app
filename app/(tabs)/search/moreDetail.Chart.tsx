@@ -188,7 +188,7 @@ const graphStyle = {
   // paddingRight: 100,
   // borderRadius: 16,
 
-  backgroundColor: "black",
+  backgroundColor: "white",
   // marginHorizontal: "20%",
 };
 

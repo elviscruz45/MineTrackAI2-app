@@ -41,6 +41,27 @@ export const EquipmentListUpper = (list: any) => (dispatch: any) => {
     alert(error);
   }
 };
+
+// export const RefreshGanttProgramadoRealData =
+//   (item: any) => (dispatch: any) => {
+//     try {
+//       dispatch({
+//         type: "REFRESHGANTTPROGRAMADOREALDATA",
+//         payload: item,
+//       });
+//     } catch (error) {
+//       alert(error);
+//     }
+//   };
+
+export const RefreshGanttProgramadoRealData = () => (dispatch: any) => {
+  try {
+    dispatch({ type: "REFRESHGANTTPROGRAMADOREALDATA" });
+  } catch (error) {
+    console.error("RefreshGanttProgramadoRealData error:", error);
+  }
+};
+
 export const saveTotalEventServiceAITList = (item: any) => (dispatch: any) => {
   try {
     dispatch({

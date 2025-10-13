@@ -4,11 +4,11 @@ import ActivityView from "./ActivityView";
 import CriticalRouteView from "./CriticalRouteView";
 
 interface OnePageReportProps {
-  selectedProject: string;
+  selectedProject: any;
 }
 
 // Mock data based on the image provided
-const mockOnePageData = {
+const mockOnePageData: any = {
   title: "REPORTE ONEPAGE - CONSOLIDADO AL 10-08-2025 15:13HRS",
   company: "Cerro Verde",
   area: "EQUIPOS ÁREA SECA",
@@ -767,7 +767,7 @@ const OnePageView: React.FC<OnePageReportProps> = ({ selectedProject }) => {
           <h4 style={{ fontSize: 18, margin: "0 0 20px 0", color: "#2A3B76" }}>
             ACTIVIDADES DEL PROYECTO
           </h4>
-          <ActivityView selectedProject={selectedProject} />
+          <ActivityView data={selectedProject} />
         </div>
 
         {/* Fourth row - Shift Planning */}

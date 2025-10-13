@@ -144,7 +144,7 @@ const uploadPdf = async (uri: any, FilenameTitle: any, formattedDate: any) => {
 
     const storageRef = ref(
       storage,
-      `pdfPost/${FilenameTitle}-${JSON.stringify(new Date())}`
+      `pdfPost/${JSON.stringify(new Date())}-${FilenameTitle}`
     );
 
     return uploadBytesResumable(storageRef, blob);

@@ -92,6 +92,7 @@ function ChangeDisplayFechaFin(props: any) {
           type="datetime-local"
           id="date"
           name="date"
+          lang="es"
           onChange={(event: any) => {
             const selectedDateTimeString = event.target.value; // "YYYY-MM-DDThh:mm"
             const [dateStr, timeStr] = selectedDateTimeString.split("T");

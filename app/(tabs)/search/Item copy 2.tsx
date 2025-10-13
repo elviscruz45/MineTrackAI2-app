@@ -707,6 +707,64 @@ function ItemScreenNotRedux(props: any) {
                 </View>
               </View>
             </View>
+
+            {/* Progress Section */}
+            <View style={modernStyles.progressSection}>
+              <View style={modernStyles.progressHeader}>
+                <MaterialIcons name="trending-up" size={20} color="#007AFF" />
+                <Text style={modernStyles.progressTitle}>
+                  Progreso de Ejecución: {serviceInfo?.AvanceEjecucion}%
+                </Text>
+              </View>
+
+              <View style={modernStyles.progressBarContainer}>
+                <Progress.Bar
+                  progress={serviceInfo?.AvanceEjecucion / 100}
+                  width={null}
+                  height={8}
+                  color="#007AFF"
+                  unfilledColor="#e9ecef"
+                  borderWidth={0}
+                  borderRadius={4}
+                />
+              </View>
+
+              {/* Status Indicator */}
+              <View style={modernStyles.statusContainer}>
+                <View
+                  style={[
+                    modernStyles.statusDot,
+                    {
+                      backgroundColor:
+                        serviceInfo.AvanceEjecucion === "100"
+                          ? "#4caf50"
+                          : Number(daysLeft) < 0
+                          ? "#f44336"
+                          : "#ff9800",
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    modernStyles.statusText,
+                    {
+                      color:
+                        serviceInfo.AvanceEjecucion === "100"
+                          ? "#4caf50"
+                          : Number(daysLeft) < 0
+                          ? "#f44336"
+                          : "#ff9800",
+                    },
+                  ]}
+                >
+                  {serviceInfo.AvanceEjecucion === "100"
+                    ? "✅ Finalizado"
+                    : Number(daysLeft) < 0
+                    ? `⚠️ Retraso: ${-daysLeft} horas`
+                    : `⏰ Tiempo restante: ${daysLeft} horas`}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Action Buttons */}

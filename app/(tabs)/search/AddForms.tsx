@@ -158,7 +158,7 @@ function AddDocsFormBare(props: any) {
 
       const storageRef = ref(
         storage,
-        `pdfPost/${shortNameFileUpdated}-${JSON.stringify(new Date())}`
+        `pdfPost/${JSON.stringify(new Date())}-${shortNameFileUpdated}`
       );
       return await uploadBytesResumable(storageRef, blob);
     } catch (error) {

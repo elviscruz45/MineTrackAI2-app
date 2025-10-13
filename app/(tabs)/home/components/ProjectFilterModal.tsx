@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/firebaseConfig"; // Adjust path if needed
 
 // Mock data for companies and project types
@@ -71,7 +71,12 @@ const ProjectFilterModal = ({
     const fetchProjects = async () => {
       try {
         const proyectosRef = collection(db, "proyectos");
-        const snapshot = await getDocs(proyectosRef);
+        const proyectosQuery = query(
+          proyectosRef,
+          orderBy("createdAt", "desc")
+        );
+
+        const snapshot = await getDocs(proyectosQuery);
         const projects = snapshot.docs.map((doc, index) => {
           // You can customize this to use projectName or any other field
           const data = doc.data();

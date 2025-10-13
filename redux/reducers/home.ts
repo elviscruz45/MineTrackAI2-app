@@ -5,6 +5,7 @@ const INITIAL_STATE = {
   postPerPage: 10,
   servicesData: null,
   approvalList: null,
+  refreshGanttRealTime: false,
 };
 
 export function home(state = INITIAL_STATE, action: any) {
@@ -13,6 +14,9 @@ export function home(state = INITIAL_STATE, action: any) {
       return { ...state };
     case "EQUIPMENTLISTUPPER":
       return { ...state, equipmentList: action.payload };
+    case "REFRESHGANTTPROGRAMADOREALDATA":
+      return { ...state, refreshGanttRealTime: !state.refreshGanttRealTime };
+
     case "SAVE_TOTALEVENTSERVICEAITLIST":
       return {
         ...state,

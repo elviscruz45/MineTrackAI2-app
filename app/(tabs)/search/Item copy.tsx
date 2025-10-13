@@ -6,9 +6,7 @@ import {
   Image,
   ScrollView,
   Dimensions,
-  StyleSheet,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import styles from "./Item.styles";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -29,204 +27,22 @@ import * as Progress from "react-native-progress";
 import { createEnhancedDocxReport } from "../../../utils/createDocxReport";
 
 const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
-
-// Responsive breakpoints
-const isTablet = windowWidth > 768;
-const isMobile = windowWidth <= 480;
-
-// Modern styles for enhanced UI/UX
-const modernStyles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  serviceCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  serviceHeader: {
-    flexDirection: isMobile ? "column" : "row",
-    alignItems: isMobile ? "center" : "flex-start",
-    marginBottom: 20,
-  },
-  progressContainer: {
-    alignItems: "center",
-    marginRight: isMobile ? 0 : 20,
-    marginBottom: isMobile ? 16 : 0,
-  },
-  serviceInfoContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  serviceName: {
-    fontSize: isMobile ? 20 : 24,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    marginBottom: 12,
-    textAlign: isMobile ? "center" : "left",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    flexWrap: "wrap",
-  },
-  infoIcon: {
-    marginRight: 8,
-    width: 20,
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
-    marginRight: 4,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: "#1a1a1a",
-    fontWeight: "400",
-    flex: 1,
-  },
-  progressSection: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginLeft: 8,
-  },
-  progressBarContainer: {
-    marginBottom: 12,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e9ecef",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  dateCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#007AFF",
-  },
-  actionButtonsContainer: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  actionButton: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 80,
-    flex: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  actionButtonIcon: {
-    width: 32,
-    height: 32,
-    marginBottom: 8,
-  },
-  actionButtonLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#666",
-    textAlign: "center",
-  },
-});
-// function parseCustomDate(dateStr: string) {
-//   // Try DD/MM/YYYY or D/M/YY
-//   const regex =
-//     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/;
-//   const match = dateStr?.match(regex);
-//   if (match) {
-//     let [, day, month, year, hour, minute, second, ampm] = match;
-//     // Handle 2-digit year
-//     if (year.length === 2) year = "20" + year;
-//     hour = String(
-//       ampm === "PM" && hour !== "12"
-//         ? Number(hour) + 12
-//         : hour === "12" && ampm === "AM"
-//         ? 0
-//         : hour
-//     );
-//     return new Date(
-//       Number(year),
-//       Number(month) - 1,
-//       Number(day),
-//       Number(hour),
-//       Number(minute),
-//       Number(second)
-//     );
-//   }
-//   // fallback: try Date.parse
-//   const fallback = new Date(dateStr);
-//   return isNaN(fallback.getTime()) ? null : fallback;
-// }
 function parseCustomDate(dateStr: string) {
-  if (!dateStr) return null;
-  // Intenta con segundos y AM/PM
-  let regex =
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}) (\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?$/i;
-  let match = dateStr.match(regex);
+  // Try DD/MM/YYYY or D/M/YY
+  const regex =
+    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/;
+  const match = dateStr?.match(regex);
   if (match) {
-    let [, day, month, year, hour, minute, second = "0", ampm] = match;
+    let [, day, month, year, hour, minute, second, ampm] = match;
+    // Handle 2-digit year
     if (year.length === 2) year = "20" + year;
-    if (ampm) {
-      hour = String(
-        ampm.toUpperCase() === "PM" && hour !== "12"
-          ? Number(hour) + 12
-          : hour === "12" && ampm.toUpperCase() === "AM"
-          ? 0
-          : hour
-      );
-    }
+    hour = String(
+      ampm === "PM" && hour !== "12"
+        ? Number(hour) + 12
+        : hour === "12" && ampm === "AM"
+        ? 0
+        : hour
+    );
     return new Date(
       Number(year),
       Number(month) - 1,
@@ -239,24 +55,6 @@ function parseCustomDate(dateStr: string) {
   // fallback: try Date.parse
   const fallback = new Date(dateStr);
   return isNaN(fallback.getTime()) ? null : fallback;
-}
-
-// Helper function to format dates in a cleaner way
-function formatDateDisplay(dateInput: any) {
-  if (!dateInput) return "No definido";
-
-  if (dateInput?.seconds) {
-    const date = new Date(dateInput.seconds * 1000);
-    return date.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  return dateInput;
 }
 
 function ItemScreenNotRedux(props: any) {
@@ -469,9 +267,6 @@ function ItemScreenNotRedux(props: any) {
 
     //new Date(item.createdAt.seconds * 1000)
 
-    console.log("FechaInicio PROGRAMADO", FechaInicio);
-    console.log("FechaFin PROGRAMADO", FechaFin);
-
     // const DiasTotales = Number(FechaFin) - Number(FechaInicio);
 
     const fechaInicioDate = parseCustomDate(FechaInicio);
@@ -484,7 +279,6 @@ function ItemScreenNotRedux(props: any) {
     }
     console.log("fechaInicioDate", fechaInicioDate);
     console.log("fechaFinDate", fechaFinDate);
-    console.log("HorasTotales", HorasTotales);
 
     const AvanceEventos = data?.events?.map((item: any) => {
       // Build Date directly from Firestore timestamp
@@ -629,163 +423,231 @@ function ItemScreenNotRedux(props: any) {
     return <LoadingSpinner />;
   } else {
     return (
-      <View style={modernStyles.mainContainer}>
+      <>
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ backgroundColor: "white" }} // Add backgroundColor here
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 16 }}
         >
-          {/* Service Information Card */}
-          <View style={modernStyles.serviceCard}>
-            <View style={modernStyles.serviceHeader}>
-              {/* Progress Circle */}
-              <View style={modernStyles.progressContainer}>
-                <CircularProgress
-                  imageSourceDefault={imageSource}
-                  imageStyle={styles.roundImage}
-                  avance={serviceInfo.AvanceEjecucion}
-                  idait={serviceInfo.idServiciosAIT}
-                  image={serviceInfo.photoServiceURL}
-                  titulo={serviceInfo.NombreServicio}
-                  emailProfile={props.email}
-                  emailPost={serviceInfo.emailPerfil}
+          <Text> </Text>
+
+          <View style={[styles.row, styles.center]}>
+            <View>
+              <CircularProgress
+                imageSourceDefault={imageSource}
+                imageStyle={styles.roundImage}
+                avance={serviceInfo.AvanceEjecucion}
+                idait={serviceInfo.idServiciosAIT}
+                image={serviceInfo.photoServiceURL}
+                titulo={serviceInfo.NombreServicio}
+                emailProfile={props.email}
+                emailPost={serviceInfo.emailPerfil}
+              />
+            </View>
+            <Text> </Text>
+            <View style={{ marginLeft: "0%" }}>
+              <Text style={styles.name}>{serviceInfo.NombreServicio}</Text>
+
+              <Text style={styles.info}>
+                {"Numero Serv:  "} {serviceInfo.NumeroAIT}
+              </Text>
+              {/* <Text style={styles.info}>
+                {"Tipo:  "} {serviceInfo.TipoServicio}
+              </Text> */}
+              {/* <Text style={styles.info}>
+                {"Fecha Inicio: "}
+                {new Date(
+                  serviceInfo?.FechaInicio?.seconds * 1000
+                ).toLocaleString()}
+              </Text> */}
+              {/* <Text style={styles.info}>
+                {"Fecha Inicio: "}
+
+                {serviceInfo?.FechaInicio}
+              </Text> */}
+              {/* <Text style={styles.info}>
+                {"Fecha Fin:  "}
+                {new Date(
+                  serviceInfo?.FechaFin?.seconds * 1000
+                ).toLocaleString()}
+              </Text> */}
+              {/* <Text style={styles.info}>
+                {"Fecha Fin: "}
+
+                {serviceInfo?.FechaFin}
+              </Text> */}
+              <Text style={styles.info}>
+                {"Fecha Inicio: "}
+                {serviceInfo?.FechaInicio?.seconds
+                  ? (() => {
+                      const date = new Date(
+                        serviceInfo.FechaInicio.seconds * 1000
+                      );
+                      const day = String(date.getDate()).padStart(2, "0");
+                      const month = String(date.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                      );
+                      const year = date.getFullYear();
+                      let hours = date.getHours();
+                      const minutes = String(date.getMinutes()).padStart(
+                        2,
+                        "0"
+                      );
+                      const seconds = String(date.getSeconds()).padStart(
+                        2,
+                        "0"
+                      );
+                      const ampm = hours >= 12 ? "PM" : "AM";
+                      hours = hours % 12;
+                      hours = hours ? hours : 12; // the hour '0' should be '12'
+                      return `${day}/${month}/${year} ${String(hours).padStart(
+                        2,
+                        "0"
+                      )}:${minutes}:${seconds} ${ampm}`;
+                    })()
+                  : serviceInfo?.FechaInicio}
+              </Text>
+
+              <Text style={styles.info}>
+                {"Fecha Fin: "}
+                {serviceInfo?.FechaFin?.seconds
+                  ? (() => {
+                      const date = new Date(
+                        serviceInfo.FechaFin.seconds * 1000
+                      );
+                      const day = String(date.getDate()).padStart(2, "0");
+                      const month = String(date.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                      );
+                      const year = date.getFullYear();
+                      let hours = date.getHours();
+                      const minutes = String(date.getMinutes()).padStart(
+                        2,
+                        "0"
+                      );
+                      const seconds = String(date.getSeconds()).padStart(
+                        2,
+                        "0"
+                      );
+                      const ampm = hours >= 12 ? "PM" : "AM";
+                      hours = hours % 12;
+                      hours = hours ? hours : 12; // the hour '0' should be '12'
+                      return `${day}/${month}/${year} ${String(hours).padStart(
+                        2,
+                        "0"
+                      )}:${minutes}:${seconds} ${ampm}`;
+                    })()
+                  : serviceInfo?.FechaFin}
+              </Text>
+              <Text style={styles.info}>
+                {"Ejecución:  "} {serviceInfo?.AvanceEjecucion}
+                {" %"}
+              </Text>
+              <View
+                style={{ flexDirection: "row", marginLeft: windowWidth / 32 }}
+              >
+                <Progress.Bar
+                  progress={serviceInfo?.AvanceEjecucion / 100}
+                  width={windowWidth * 0.3}
                 />
               </View>
-
-              {/* Service Info */}
-              <View style={modernStyles.serviceInfoContainer}>
-                <Text style={modernStyles.serviceName}>
-                  {serviceInfo.NombreServicio}
+              {serviceInfo.AvanceEjecucion === "100" ? (
+                <Text style={styles.alert2}>
+                  {"Estado:  "}
+                  {" Finalizado"}
                 </Text>
-
-                {/* Service Number */}
-                <View style={modernStyles.infoRow}>
-                  <MaterialIcons
-                    name="confirmation-number"
-                    size={16}
-                    color="#007AFF"
-                    style={modernStyles.infoIcon}
-                  />
-                  <Text style={modernStyles.infoLabel}>
-                    Número de Servicio:
-                  </Text>
-                  <Text style={modernStyles.infoValue}>
-                    {serviceInfo.NumeroAIT}
-                  </Text>
-                </View>
-
-                {/* Start Date */}
-                <View style={modernStyles.dateCard}>
-                  <View style={modernStyles.infoRow}>
-                    <MaterialIcons
-                      name="play-arrow"
-                      size={16}
-                      color="#4caf50"
-                      style={modernStyles.infoIcon}
-                    />
-                    <Text style={modernStyles.infoLabel}>Inicio:</Text>
-                    <Text style={modernStyles.infoValue}>
-                      {formatDateDisplay(serviceInfo?.FechaInicio)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* End Date */}
-                <View style={modernStyles.dateCard}>
-                  <View style={modernStyles.infoRow}>
-                    <MaterialIcons
-                      name="stop"
-                      size={16}
-                      color="#f44336"
-                      style={modernStyles.infoIcon}
-                    />
-                    <Text style={modernStyles.infoLabel}>Fin:</Text>
-                    <Text style={modernStyles.infoValue}>
-                      {formatDateDisplay(serviceInfo?.FechaFin)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              ) : Number(daysLeft) < 0 ? (
+                <Text style={styles.alert1}>
+                  {"Horas Retraso:  "} {-daysLeft}
+                  {" Horas"}
+                </Text>
+              ) : (
+                <Text style={styles.alert2}>
+                  {"Horas Restantes:  "} {daysLeft}
+                  {" Horas"}
+                </Text>
+              )}
             </View>
           </View>
+          <Text> </Text>
+          <Text> </Text>
 
-          {/* Action Buttons */}
-          <View style={modernStyles.actionButtonsContainer}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: "#1a1a1a",
-                marginBottom: 16,
-                textAlign: "center",
-              }}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "white",
+              justifyContent: "space-between",
+              paddingHorizontal: 30,
+            }}
+          >
+            <TouchableOpacity
+              style={styles.btnContainer4}
+              onPress={() => Detalles(serviceInfo)}
             >
-              Acciones Rápidas
-            </Text>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-around",
-              }}
+              <Image
+                source={require("../../../assets/pictures/more_information.png")}
+                style={styles.roundImageUpload}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnContainer4}
+              onPress={() => goToDocs(serviceInfo)}
             >
-              <TouchableOpacity
-                style={modernStyles.actionButton}
-                onPress={() => Detalles(serviceInfo)}
-              >
-                <MaterialIcons name="info" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>
-                  Más Información
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={modernStyles.actionButton}
-                onPress={() => goToDocs(serviceInfo)}
-              >
-                <MaterialIcons name="folder" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>Documentos</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={modernStyles.actionButton}
-                onPress={() => createReport(post, serviceInfo)}
-              >
-                <MaterialIcons name="description" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>
-                  Generar Reporte
-                </Text>
-              </TouchableOpacity>
-            </View>
+              <Image
+                source={require("../../../assets/pictures/docsIcon.png")}
+                style={styles.roundImageUpload}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnContainer4}
+              onPress={() => createReport(post, serviceInfo)}
+            >
+              <Image
+                source={require("../../../assets/pictures/ms-word.png")}
+                style={styles.roundImageUpload}
+              />
+            </TouchableOpacity>
+            {/* <TouchableOpacity
+              style={styles.btnContainer4}
+              onPress={() => goToPublicar()}
+            >
+              <Image
+                source={require("../../../assets/pictures/TakePhoto2.png")}
+                style={styles.roundImageUpload}
+              />
+            </TouchableOpacity> */}
+            {/* <TouchableOpacity
+              style={styles.btnContainer4}
+              onPress={() => goToDocsToApprove(serviceInfo)}
+            >
+              <Image
+                source={require("../../../assets/pictures/approved.png")}
+                style={styles.roundImageUpload}
+              />
+            </TouchableOpacity> */}
           </View>
+          <Text> </Text>
+          <Text> </Text>
 
-          {/* History Section */}
-          <View style={modernStyles.serviceCard}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-                justifyContent: "center",
-              }}
-            >
-              <MaterialIcons name="history" size={20} color="#007AFF" />
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: "#1a1a1a",
-                  marginLeft: 8,
-                }}
-              >
-                Historial de Eventos
-              </Text>
-            </View>
+          <Text
+            style={{
+              marginLeft: 15,
+              borderRadius: 5,
+              fontWeight: "700",
+              alignSelf: "center",
+            }}
+          >
+            Historial de Eventos
+          </Text>
+          <Text> </Text>
+          <Text> </Text>
+          {/* <DateScreen filterButton={filter} quitFilterButton={quitfilter} /> */}
 
-            <GanttHistorial datas={post} comentPost={comentPost} />
-          </View>
+          <GanttHistorial datas={post} comentPost={comentPost} />
         </ScrollView>
-      </View>
+      </>
     );
   }
 }

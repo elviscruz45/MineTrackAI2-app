@@ -19,10 +19,11 @@ import { mineraCorreosList } from "@/utils/MineraList";
 import { useRouter } from "expo-router";
 
 function HeaderScreenNoRedux(props: any) {
-  console.log("HEADER HEADER", props);
   const router = useRouter();
 
   const [data, setData] = useState();
+
+  console.log("header screen data ", data);
   //Data about the company belong this event
   function capitalizeFirstLetter(str: string) {
     return str?.charAt(0).toUpperCase() + str?.slice(1);
@@ -61,7 +62,7 @@ function HeaderScreenNoRedux(props: any) {
         }
       };
     }
-  }, [props.email, props.idproyecto]);
+  }, [props.email, props.idproyecto, props.refreshGantt]); // <-- add idproyecto to dependencies
 
   const selectAsset = async (item: any) => {
     await router.push({
@@ -79,12 +80,6 @@ function HeaderScreenNoRedux(props: any) {
         },
       });
     }, 50);
-    // router.push({
-    //   pathname: "/search/Item",
-    //   params: {
-    //     Item: item,
-    //   },
-    // });
   };
 
   // create an algorithm to reduce the total text of the service description
@@ -144,6 +139,7 @@ function HeaderScreenNoRedux(props: any) {
 const mapStateToProps = (reducers: any) => {
   return {
     email: reducers.profile.email,
+    refreshGantt: reducers.home.refreshGanttRealTime,
   };
 };
 

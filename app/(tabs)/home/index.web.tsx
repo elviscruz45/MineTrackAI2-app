@@ -18,9 +18,6 @@ import {
   onSnapshot,
   query,
   doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
   limit,
   where,
   orderBy,
@@ -49,6 +46,7 @@ import * as FileSystem from "expo-file-system";
 import Papa from "papaparse";
 import { useFormik } from "formik";
 import { initialValues, validationSchema } from "./index.data";
+import * as XLSX from "xlsx";
 
 interface CSVRow {
   Codigo: string;
@@ -197,10 +195,6 @@ function HomeScreenRaw(props: any) {
     }
   }, [props.email]);
 
-  const loadMorePosts = () => {
-    props.resetPostPerPageHome(props.postPerPage);
-  };
-
   const formik = useFormik({
     initialValues: initialValues(),
     validationSchema: validationSchema(),
@@ -214,10 +208,8 @@ function HomeScreenRaw(props: any) {
     fileAsset: any,
     newProjectDocID: any
   ) => {
-    console.log("55555 sabe que su plata es lo mismo y el profe");
     try {
       setIsLoading(true);
-      console.log("66666 sabe que su plata es lo mismo y el profe");
 
       // Get file content
       let fileContent = "";
@@ -231,8 +223,6 @@ function HomeScreenRaw(props: any) {
           reader.onerror = (e) => reject(e);
           reader.readAsText(webFile);
         });
-
-        console.log("77777 sabe que su plata es lo mismo y el profe");
       } else {
         // Native: use FileSystem
         const fileUri = fileAsset.uri;
@@ -240,7 +230,6 @@ function HomeScreenRaw(props: any) {
           encoding: FileSystem.EncodingType.UTF8,
         });
       }
-      console.log("88888 sabe que su plata es lo mismo y el profe");
 
       // 2️⃣ Parse CSV and filter activities
       const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
@@ -251,7 +240,6 @@ function HomeScreenRaw(props: any) {
           ...row,
           parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
         }));
-      console.log("0000000 sabe que su plata es lo mismo y el profe");
       // 3️⃣ Upload only new activities, referencing the new project
 
       //----------------------------------------------------------------------------------------------------------------------------
@@ -276,11 +264,35 @@ function HomeScreenRaw(props: any) {
           NumeroSoldador,
           HorasTotales,
         } = item;
-
-        console.log("se esta guardando", item);
+        // 👇 MODIFICADO: Parsear fechas y guardar como Timestamp
+        const fechaInicioDate = parseAnyDate(FechaInicio);
+        const fechaFinDate = parseAnyDate(FechaFin);
 
         const filteredData =
-          list5?.filter((item: any) => item.parentCode === Codigo) ?? [];
+          list5
+            ?.filter((item: any) => item.parentCode === Codigo)
+            .map((item: any) => {
+              const fechaInicioDate = parseAnyDate(item.FechaInicio);
+              const fechaFinDate = parseAnyDate(item.FechaFin);
+
+              console.log(
+                "fechaInicioDatefechaInicioDatefechaInicioDate",
+                Timestamp.fromDate(fechaInicioDate ?? new Date())
+              );
+              console.log(
+                "fechaFinDatefechaFinDatefechaFinDatefechaFinDate",
+                Timestamp.fromDate(fechaFinDate ?? new Date())
+              );
+              return {
+                ...item,
+                FechaInicio: fechaInicioDate
+                  ? Timestamp.fromDate(fechaInicioDate)
+                  : null,
+                FechaFin: fechaFinDate
+                  ? Timestamp.fromDate(fechaFinDate)
+                  : null,
+              };
+            }) ?? [];
 
         const filterNamesActivities = filteredData.map(
           (item: any) => item.NombreServicio
@@ -289,6 +301,7 @@ function HomeScreenRaw(props: any) {
         // Create a new data object with all required fields
         const newData = {
           ...formik.values, // Include current form values
+          Codigo: Codigo || `0.0.0.0`,
           NombreServicio: NombreServicio || projectName,
           NumeroAIT: OrdenCompra || `PROJ-${Date.now().toString().slice(-6)}`,
           EmpresaMinera: EmpresaMinera,
@@ -301,8 +314,10 @@ function HomeScreenRaw(props: any) {
           Soldador: NumeroSoldador || "0",
           TipoServicio: TipoServicio || projectType,
           NumeroCotizacion: NumeroCotizacion,
-          FechaInicio: FechaInicio,
-          FechaFin: FechaFin,
+          FechaInicio: fechaInicioDate
+            ? Timestamp.fromDate(fechaInicioDate)
+            : null,
+          FechaFin: fechaFinDate ? Timestamp.fromDate(fechaFinDate) : null,
           ResponsableEmpresaUsuario3: SupervisorMina,
           ResponsableEmpresaContratista3: SupervisorEECC,
           // Global project properties
@@ -346,78 +361,15 @@ function HomeScreenRaw(props: any) {
     }
   };
 
-  //---This is used to get the attached file in the post that contain an attached file---
-  const uploadFile = useCallback(async (uri: any) => {
-    try {
-      const supported = await Linking.canOpenURL(uri);
-      if (supported) {
-        await Linking.openURL(uri);
-      } else {
-        Toast.show({
-          type: "error",
-          position: "top",
-          text1: "Unable to open PDF document",
-        });
-      }
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        position: "top",
-        text1: "Error opening PDF document",
-      });
-    }
-  }, []);
-
-  // Format the project title in the desired format
-  const getFormattedProjectTitle = () => {
-    if (selectedCompany) {
-      return `${selectedCompany} - ${selectedType} - ${selectedDate}`;
-    }
-    return "";
-  };
-
   const handleProjectChange = (project: string) => {
     setSelectedProject(project);
-    // Here you would typically fetch or filter data based on the selected project
-    console.log(`Selected project: ${project}`);
   };
-  //---activate like/unlike Post using useCallback--------
-  const likePost = useCallback(
-    async (item: any) => {
-      const postRef = doc(db, "events", item.idDocFirestoreDB);
-
-      if (item.likes?.includes(props.email)) {
-        await updateDoc(postRef, {
-          likes: arrayRemove(props.email),
-        });
-      } else {
-        await updateDoc(postRef, {
-          likes: arrayUnion(props.email),
-        });
-      }
-    },
-    [props.email]
-  );
 
   const msProject = () => {
-    console.log("111111 msProject");
     // Open the project upload modal instead of directly handling file upload
     setShowNewProjectModal(true);
   };
 
-  const handleZIPwhatsappUpload = async (
-    projectName: string,
-    projectType: string,
-    fileAsset: any,
-    newProjectDocID: any
-  ) => {
-    // This function is for ZIP whatsapp upload - placeholder for now
-    console.log("ZIP WhatsApp upload:", {
-      projectName,
-      projectType,
-      fileAsset,
-    });
-  };
   //--To goes to comment screen using callBack-----
   const commentPost = useCallback((data: any) => {
     router.push({
@@ -463,15 +415,7 @@ function HomeScreenRaw(props: any) {
     }, 100); // Adjust the delay as needed
   };
 
-  // if (isLoading) {
-  //   return <LoadingSpinner />;
-  // }
-  if (
-    // posts?.length === 0 ||
-    !props.email ||
-    !props.user_photo ||
-    !companyName
-  ) {
+  if (!props.email || !props.user_photo || !companyName) {
     return (
       <View
         style={{
@@ -479,9 +423,6 @@ function HomeScreenRaw(props: any) {
           backgroundColor: "#f8f9fa",
         }}
       >
-        {/* <View style={{ alignItems: "center", marginTop: 24, marginBottom: 24 }}>
-          <HeaderScreen idproyecto={idproyecto} />
-        </View> */}
         <div
           style={{
             backgroundColor: "white",
@@ -494,27 +435,6 @@ function HomeScreenRaw(props: any) {
             gap: windowWidth > 768 ? "12px" : "8px",
           }}
         >
-          {/* <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: windowWidth > 768 ? "flex-start" : "center",
-              marginBottom: windowWidth > 768 ? 0 : 8,
-            }}
-          >
-            <h3
-              style={{
-                ...styles.company,
-                margin: 0,
-                fontSize: windowWidth > 768 ? 18 : 16,
-                color: "black",
-                textAlign: "center",
-              }}
-            >
-              {`${getFormattedProjectTitle()}`}
-            </h3>
-          </div> */}
-
           {/* Contenedor de botones responsive */}
           <div
             style={{
@@ -686,7 +606,6 @@ function HomeScreenRaw(props: any) {
         <UploadZIPWhatsapp
           isVisible={showZIPwhatsappModal}
           onClose={() => setShowZIPwhatsappModal(false)}
-          onUploadFile={handleZIPwhatsappUpload}
         />
         <ProjectUploadModal
           isVisible={showNewProjectModal}
@@ -1571,5 +1490,58 @@ const HomeScreen = connect(mapStateToProps, {
   saveApprovalListnew,
   updateAITServicesDATA,
 })(HomeScreenRaw);
+
+// Intenta parsear fechas en múltiples formatos y seriales de Excel
+function parseAnyDate(value: any) {
+  if (!value) return null;
+
+  // 1. Si es número (serial Excel)
+  if (typeof value === "number") {
+    const date = XLSX.SSF.parse_date_code(value);
+    if (date) {
+      return new Date(date.y, date.m - 1, date.d, date.H, date.M, date.S);
+    }
+  }
+
+  // 2. Si es string, prueba varios formatos
+  if (typeof value === "string") {
+    // Normaliza separador
+    let str = value.replace(",", " ").replace("  ", " ").trim();
+
+    // Siempre intenta primero con DD/MM/YYYY (o DD/MM/YY) con o sin hora
+    const regex =
+      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?)?$/i;
+    const match = str.match(regex);
+    if (match) {
+      let [, day, month, year, hour = "0", minute = "0", second = "0", ampm] =
+        match;
+      if (year.length === 2) year = "20" + year;
+      if (ampm) {
+        hour = String(
+          ampm.toUpperCase() === "PM" && hour !== "12"
+            ? Number(hour) + 12
+            : hour === "12" && ampm.toUpperCase() === "AM"
+            ? 0
+            : hour
+        );
+      }
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+      );
+    }
+
+    // Si no es formato DD/MM/YYYY, intenta con Date.parse (ISO, etc)
+    let d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Si nada funcionó, retorna null
+  return null;
+}
 
 export default HomeScreen;

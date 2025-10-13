@@ -70,19 +70,9 @@ const ProgressIndicator = ({
 interface UploadZIPWhatsappProps {
   isVisible: boolean;
   onClose: () => void;
-  onUploadFile?: (
-    projectName: string,
-    projectType: string,
-    file: any,
-    projectId: string
-  ) => Promise<void>;
 }
 
-const UploadZIPWhatsapp = ({
-  isVisible,
-  onClose,
-  onUploadFile,
-}: UploadZIPWhatsappProps) => {
+const UploadZIPWhatsapp = ({ isVisible, onClose }: UploadZIPWhatsappProps) => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);

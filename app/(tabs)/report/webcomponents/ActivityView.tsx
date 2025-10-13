@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // Define types for our mock data
 interface Task {
@@ -47,6 +47,20 @@ interface ActivityData {
   equipoLabel: string;
   sections: Section[];
 }
+
+const sortByCodigo = (arr: any[], key: string = "Codigo") => {
+  return arr.sort((a, b) => {
+    const aParts = (a[key] || "").split(".").map(Number);
+    const bParts = (b[key] || "").split(".").map(Number);
+
+    for (let i = 0; i < aParts.length; i++) {
+      if (aParts[i] !== bParts[i]) {
+        return aParts[i] - bParts[i]; // ascendente
+      }
+    }
+    return 0;
+  });
+};
 
 // Restructured mock data based on the requirements
 const mockActivitiesData: ActivityData = {
@@ -626,16 +640,80 @@ const buttonStyle = (active: boolean) => ({
   fontWeight: active ? 600 : 400,
 });
 
-const ActivityView: React.FC<{ selectedProject?: string }> = ({
-  selectedProject = "PROYECTO",
-}) => {
+// Utilidad para convertir Timestamp o string a {date, time}
+function toDateTimeObj(fecha: any): { date: string; time: string } {
+  if (!fecha) return { date: "", time: "" };
+  let d: Date;
+  if (typeof fecha === "string") {
+    d = new Date(fecha);
+  } else if (fecha.seconds) {
+    d = new Date(fecha.seconds * 1000);
+  } else {
+    return { date: "", time: "" };
+  }
+  return {
+    date: d.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }),
+    time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+  };
+}
+
+const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
   const [activeFilter, setActiveFilter] = useState("Todas");
   const [sections, setSections] = useState(
-    mockActivitiesData.sections.map((section) => ({
+    mockActivitiesData.sections.map((section: any) => ({
       ...section,
-      isOpen: section.id === "1.1", // Only section 1.1 is open by default
+      isOpen: section.id === "1.1.1.1", // Only section 1.1 is open by default
     }))
   );
+
+  console.log("sections sections:", sections);
+  // console.log("sections sections:", JSON.stringify(sections[0]));
+
+  // Update sections when data prop changes
+  useEffect(() => {
+    setSections(
+      sortByCodigo(data).map((section: any, idx: number) => ({
+        id: section.Codigo || section.id || `section-${idx + 1}`,
+        title: section.NombreServicio || "",
+        type: section.TipoServicio || "Actividad",
+        isOpen: idx === 0,
+        tasks: (Array.isArray(section.activitiesData)
+          ? section.activitiesData
+          : []
+        ).map((act: any, i: number) => ({
+          id: act.Codigo || act.id || `task-${i + 1}`,
+          wbs: act.Codigo || "",
+          tag: "SECCION",
+          status:
+            act.avance === "100%" || act.RealFechaFin
+              ? "Completada"
+              : act.RealFechaInicio
+              ? "En Progreso"
+              : "Pendiente",
+          company: act.EmpresaMinera || "",
+          task: act.NombreServicio || "",
+          hours: act.HorasTotales || 1,
+          workHours: act.HorasTotales || 1,
+          startDateProg: toDateTimeObj(act.FechaInicio),
+          endDateProg: toDateTimeObj(act.FechaFin),
+          startDateReal: toDateTimeObj(act.RealFechaInicio),
+          endDateReal: toDateTimeObj(act.RealFechaFin),
+          deltaWork: { hours: 0, percent: "0%" },
+          deltaStart: { hours: 0, percent: "0%" },
+          duration: {},
+          avance:
+            act.avance ||
+            (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
+          expected: "100%",
+          actions: ["edit", "notes", "photos", "delete"],
+        })),
+      }))
+    );
+  }, [data]);
 
   // Function to check if a date is in the past
   const isDatePast = (dateStr: string) => {
@@ -651,12 +729,12 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
     newStatus: string,
     newAvance: string
   ) => {
-    setSections((prevSections) =>
-      prevSections.map((section) => {
+    setSections((prevSections: any) =>
+      prevSections.map((section: any) => {
         if (section.id === sectionId) {
           return {
             ...section,
-            tasks: section.tasks.map((task) => {
+            tasks: section.tasks.map((task: any) => {
               if (task.id === taskId) {
                 return {
                   ...task,
@@ -704,8 +782,8 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
     );
   }; // Apply filters to tasks
   const getFilteredSections = () => {
-    return sections.map((section) => {
-      const filteredTasks = section.tasks.filter((task) => {
+    return sections.map((section: any) => {
+      const filteredTasks = section.tasks.filter((task: any) => {
         // Current date for comparison
         const currentDate = new Date();
 
@@ -741,8 +819,8 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
 
   // Function to toggle section expansion
   const toggleSection = (sectionId: string) => {
-    setSections((prevSections) =>
-      prevSections.map((section) =>
+    setSections((prevSections: any) =>
+      prevSections.map((section: any) =>
         section.id === sectionId
           ? { ...section, isOpen: !section.isOpen }
           : section
@@ -756,7 +834,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
   return (
     <div style={{ padding: "8px 0" }}>
       {/* Title */}
-      <h2
+      {/* <h2
         style={{
           fontSize: 20,
           color: "#333",
@@ -764,9 +842,9 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
           marginBottom: 16,
         }}
       >
-        {mockActivitiesData.title}
-      </h2>
-      <div
+        {data?.title || mockActivitiesData.title}
+      </h2> */}
+      {/* <div
         style={{
           fontSize: 14,
           color: "#777",
@@ -774,8 +852,8 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
           marginBottom: 16,
         }}
       >
-        {mockActivitiesData.equipoLabel}
-      </div>
+        {data?.equipoLabel || mockActivitiesData.equipoLabel}
+      </div> */}
 
       {/* Filter buttons */}
       <div
@@ -795,12 +873,12 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
         >
           Todas
         </button>
-        <button
+        {/* <button
           style={buttonStyle(activeFilter === "Atrasadas")}
           onClick={() => setActiveFilter("Atrasadas")}
         >
           Atrasadas
-        </button>
+        </button> */}
         <button
           style={buttonStyle(activeFilter === "En Progreso")}
           onClick={() => setActiveFilter("En Progreso")}
@@ -819,48 +897,6 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
         >
           Completadas
         </button>
-        <div style={{ marginLeft: "auto" }}>
-          <button
-            style={{
-              backgroundColor: "transparent",
-              color: "#2A3B76",
-              border: "none",
-              padding: "6px",
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-            onClick={() => {
-              // Reset to original data
-              setSections(
-                mockActivitiesData.sections.map((section) => ({
-                  ...section,
-                  isOpen: section.id === "1.1",
-                }))
-              );
-              setActiveFilter("Todas");
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18 21L12 15L6 21V5C6 4.46957 6.21071 3.96086 6.58579 3.58579C6.96086 3.21071 7.46957 3 8 3H16C16.5304 3 17.0391 3.21071 17.4142 3.58579C17.7893 3.96086 18 4.46957 18 5V21Z"
-                stroke="#2A3B76"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Refrescar
-          </button>
-        </div>
       </div>
 
       {/* Action button */}
@@ -913,7 +949,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
       </div>
 
       {/* Sections with tasks */}
-      {filteredSections.map((section) => (
+      {filteredSections.map((section: any) => (
         <div key={section.id} style={{ marginBottom: 24 }}>
           {section.tasks.length > 0 && (
             <>
@@ -1011,7 +1047,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                           textAlign: "center",
                         }}
                       >
-                        Horas (h)
+                        Horas Programadas (h)
                       </th>
                       <th
                         style={{
@@ -1020,7 +1056,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                           textAlign: "center",
                         }}
                       >
-                        Work (h)
+                        Horas Reales (h)
                       </th>
                       <th
                         style={{
@@ -1047,6 +1083,24 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                           textAlign: "center",
                         }}
                       >
+                        Inicio Real
+                      </th>
+                      <th
+                        style={{
+                          padding: 10,
+                          border: "1px solid #dee2e6",
+                          textAlign: "center",
+                        }}
+                      >
+                        Fin Real
+                      </th>
+                      <th
+                        style={{
+                          padding: 10,
+                          border: "1px solid #dee2e6",
+                          textAlign: "center",
+                        }}
+                      >
                         AVANCE
                       </th>
                       <th
@@ -1058,7 +1112,7 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                       >
                         Esperado
                       </th>
-                      <th
+                      {/* <th
                         style={{
                           padding: 10,
                           border: "1px solid #dee2e6",
@@ -1066,11 +1120,11 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                         }}
                       >
                         Acciones
-                      </th>
+                      </th> */}
                     </tr>
                   </thead>
                   <tbody>
-                    {section.tasks.map((task) => (
+                    {section.tasks.map((task: any) => (
                       <tr key={task.id}>
                         <td
                           style={{ padding: 10, border: "1px solid #dee2e6" }}
@@ -1121,7 +1175,48 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                             textAlign: "center",
                           }}
                         >
-                          {task.hours}
+                          {(() => {
+                            // Validar que existan las fechas y horas
+                            const startDate = task.startDateProg?.date;
+                            const startTime = task.startDateProg?.time;
+                            const endDate = task.endDateProg?.date;
+                            const endTime = task.endDateProg?.time;
+
+                            if (
+                              !startDate ||
+                              !startTime ||
+                              !endDate ||
+                              !endTime ||
+                              startDate === "" ||
+                              endDate === ""
+                            ) {
+                              return "N/A";
+                            }
+
+                            // Convertir "DD/MM/YY" a "YYYY-MM-DD"
+                            const toISO = (d: string, t: string) => {
+                              const [day, month, year] = d.split("/");
+                              // Si el año es de 2 dígitos, asume 2000+
+                              const fullYear =
+                                year.length === 2 ? `20${year}` : year;
+                              return `${fullYear}-${month.padStart(
+                                2,
+                                "0"
+                              )}-${day.padStart(2, "0")}T${t}`;
+                            };
+
+                            const startProg = new Date(
+                              toISO(startDate, startTime)
+                            );
+                            const endProg = new Date(toISO(endDate, endTime));
+                            const horasProgramadas =
+                              (endProg.getTime() - startProg.getTime()) /
+                              (1000 * 60 * 60);
+
+                            return isNaN(horasProgramadas)
+                              ? "N/A"
+                              : Math.round(horasProgramadas * 10) / 10;
+                          })()}
                         </td>
                         <td
                           style={{
@@ -1130,7 +1225,47 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                             textAlign: "center",
                           }}
                         >
-                          {task.workHours}
+                          {(() => {
+                            // Calcular horas reales
+                            const startDate = task.startDateReal?.date;
+                            const startTime = task.startDateReal?.time;
+                            const endDate = task.endDateReal?.date;
+                            const endTime = task.endDateReal?.time;
+
+                            if (
+                              !startDate ||
+                              !startTime ||
+                              !endDate ||
+                              !endTime ||
+                              startDate === "" ||
+                              endDate === ""
+                            ) {
+                              return "";
+                            }
+
+                            // Convertir "DD/MM/YY" a "YYYY-MM-DD"
+                            const toISO = (d: string, t: string) => {
+                              const [day, month, year] = d.split("/");
+                              const fullYear =
+                                year.length === 2 ? `20${year}` : year;
+                              return `${fullYear}-${month.padStart(
+                                2,
+                                "0"
+                              )}-${day.padStart(2, "0")}T${t}`;
+                            };
+
+                            const startReal = new Date(
+                              toISO(startDate, startTime)
+                            );
+                            const endReal = new Date(toISO(endDate, endTime));
+                            const horasReales =
+                              (endReal.getTime() - startReal.getTime()) /
+                              (1000 * 60 * 60);
+
+                            return isNaN(horasReales)
+                              ? "N/A"
+                              : Math.round(horasReales * 10) / 10;
+                          })()}
                         </td>
                         <td
                           style={{
@@ -1151,6 +1286,26 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                         >
                           <div>{task.endDateProg.date}</div>
                           <div>{task.endDateProg.time}</div>
+                        </td>
+                        <td
+                          style={{
+                            padding: 10,
+                            border: "1px solid #dee2e6",
+                            textAlign: "center",
+                          }}
+                        >
+                          <div>{task.startDateReal.date}</div>
+                          <div>{task.startDateReal.time}</div>
+                        </td>
+                        <td
+                          style={{
+                            padding: 10,
+                            border: "1px solid #dee2e6",
+                            textAlign: "center",
+                          }}
+                        >
+                          <div>{task.endDateReal.date}</div>
+                          <div>{task.endDateReal.time}</div>
                         </td>
                         <td
                           style={{
@@ -1192,158 +1347,57 @@ const ActivityView: React.FC<{ selectedProject?: string }> = ({
                               display: "inline-block",
                             }}
                           >
-                            {task.expected}
-                          </div>
-                        </td>
-                        <td
-                          style={{
-                            padding: 10,
-                            border: "1px solid #dee2e6",
-                            textAlign: "center",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              gap: 8,
-                            }}
-                          >
-                            <button
-                              style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 4,
-                              }}
-                              title="Editar Estado"
-                              onClick={() => {
-                                const newStatus =
-                                  task.status === "Pendiente"
-                                    ? "En Progreso"
-                                    : task.status === "En Progreso"
-                                    ? "Completada"
-                                    : "Pendiente";
-                                const newAvance =
-                                  task.status === "Pendiente"
-                                    ? "50%"
-                                    : task.status === "En Progreso"
-                                    ? "100%"
-                                    : "0%";
-                                updateTaskStatus(
-                                  section.id,
-                                  task.id,
-                                  newStatus,
-                                  newAvance
-                                );
-                              }}
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
-                                  stroke="#2A3B76"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
-                                  stroke="#2A3B76"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 4,
-                              }}
-                              title="Notas"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v2m0 0v8a2 2 0 002 2h2a2 2 0 002-2v-8a2 2 0 00-2-2h-2a2 2 0 00-2 2z"
-                                  stroke="#2A3B76"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 4,
-                              }}
-                              title="Fotos"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M15 8h.01M9 16a3 3 0 100-6 3 3 0 000 6z"
-                                  stroke="#2A3B76"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-                                  stroke="#2A3B76"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              style={{
-                                backgroundColor: "transparent",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: 4,
-                                color: "#dc3545",
-                              }}
-                              title="Eliminar"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"
-                                  stroke="#dc3545"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
+                            {(() => {
+                              const startDate = task.startDateProg?.date;
+                              const startTime = task.startDateProg?.time;
+                              const endDate = task.endDateProg?.date;
+                              const endTime = task.endDateProg?.time;
+
+                              if (
+                                !startDate ||
+                                !startTime ||
+                                !endDate ||
+                                !endTime ||
+                                startDate === "" ||
+                                endDate === ""
+                              ) {
+                                return "N/A";
+                              }
+
+                              // Convertir "DD/MM/YY" a "YYYY-MM-DD"
+                              const toISO = (d: string, t: string) => {
+                                const [day, month, year] = d.split("/");
+                                const fullYear =
+                                  year.length === 2 ? `20${year}` : year;
+                                return `${fullYear}-${month.padStart(
+                                  2,
+                                  "0"
+                                )}-${day.padStart(2, "0")}T${t}`;
+                              };
+
+                              const startProg = new Date(
+                                toISO(startDate, startTime)
+                              );
+                              const endProg = new Date(toISO(endDate, endTime));
+                              const now = new Date();
+
+                              if (now <= startProg) return "0%";
+                              if (now >= endProg) return "100%";
+
+                              const total =
+                                endProg.getTime() - startProg.getTime();
+                              const transcurrido =
+                                now.getTime() - startProg.getTime();
+                              const porcentaje = Math.max(
+                                0,
+                                Math.min(
+                                  100,
+                                  Math.round((transcurrido / total) * 100)
+                                )
+                              );
+
+                              return `${porcentaje}%`;
+                            })()}
                           </div>
                         </td>
                       </tr>
