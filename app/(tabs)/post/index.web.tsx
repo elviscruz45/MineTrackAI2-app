@@ -228,175 +228,6 @@ function PublishRaw(props: any) {
     onSubmit: async (formValue) => {},
   });
 
-  const msProject = () => {
-    // Open the project upload modal instead of directly handling file upload
-    setShowProjectModal(true);
-  };
-
-  const handleProjectFileUpload = async (
-    projectName: string,
-    projectType: string,
-    fileAsset: any,
-    newProjectDocID: any
-  ) => {
-    try {
-      setIsLoading(true);
-
-      // Get file content
-      let fileContent = "";
-
-      if (Platform.OS === "web") {
-        // Web: use FileReader
-        const webFile = fileAsset.file;
-        fileContent = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => resolve(event.target?.result as string);
-          reader.onerror = (e) => reject(e);
-          reader.readAsText(webFile);
-        });
-      } else {
-        // Native: use FileSystem
-        const fileUri = fileAsset.uri;
-        fileContent = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-      }
-
-      // 2️⃣ Parse CSV and filter activities
-      const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
-      const list4 = data?.filter((row) => row.Codigo?.split(".")?.length === 4);
-      const list5 = data
-        ?.filter((row) => row.Codigo?.split(".")?.length === 5)
-        .map((row) => ({
-          ...row,
-          parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
-        }));
-
-      // 3️⃣ Upload only new activities, referencing the new project
-      //----------------------------------------------------------------------------------------------------------------------------
-      for (const item of list4) {
-        const {
-          Codigo,
-          NombreServicio,
-          FechaInicio,
-          FechaFin,
-          SupervisorMina,
-          SupervisorEECC,
-          OrdenCompra,
-          EmpresaMinera,
-          TipoServicio,
-          NumeroCotizacion,
-          Moneda,
-          Monto,
-          NumeroSupervisorSeguridad,
-          NumeroSupervisor,
-          NumeroTecnicos,
-          NumeroLider,
-          NumeroSoldador,
-          HorasTotales,
-        } = item;
-
-        // 👇 MODIFICADO: Parsear fechas y guardar como Timestamp
-        const fechaInicioDate = parseAnyDate(FechaInicio);
-        const fechaFinDate = parseAnyDate(FechaFin);
-
-        // const filteredData =
-        //   list5?.filter((item: any) => item.parentCode === Codigo) ?? [];
-
-        const filteredData =
-          list5
-            ?.filter((item: any) => item.parentCode === Codigo)
-            .map((item: any) => {
-              const fechaInicioDate = parseAnyDate(item.FechaInicio);
-              const fechaFinDate = parseAnyDate(item.FechaFin);
-
-              console.log(
-                "fechaInicioDatefechaInicioDatefechaInicioDate",
-                Timestamp.fromDate(fechaInicioDate ?? new Date())
-              );
-              console.log(
-                "fechaFinDatefechaFinDatefechaFinDatefechaFinDate",
-                Timestamp.fromDate(fechaFinDate ?? new Date())
-              );
-              return {
-                ...item,
-                FechaInicio: fechaInicioDate
-                  ? Timestamp.fromDate(fechaInicioDate)
-                  : null,
-                FechaFin: fechaFinDate
-                  ? Timestamp.fromDate(fechaFinDate)
-                  : null,
-              };
-            }) ?? [];
-
-        const filterNamesActivities = filteredData.map(
-          (item: any) => item.NombreServicio
-        );
-
-        // Create a new data object with all required fields
-        const newData = {
-          ...formik.values, // Include current form values
-          NombreServicio: NombreServicio || projectName,
-          NumeroAIT: OrdenCompra || `PROJ-${Date.now().toString().slice(-6)}`,
-          EmpresaMinera: EmpresaMinera,
-          Moneda: Moneda || "Soles",
-          Monto: Monto || "0",
-          SupervisorSeguridad: NumeroSupervisorSeguridad || "0",
-          Supervisor: NumeroSupervisor || "0",
-          Tecnicos: NumeroTecnicos || "0",
-          Lider: NumeroLider || "0",
-          Soldador: NumeroSoldador || "0",
-          TipoServicio: TipoServicio || projectType,
-          NumeroCotizacion: NumeroCotizacion,
-          // FechaInicio: FechaInicio,
-          // FechaFin: FechaFin,
-          FechaInicio: fechaInicioDate
-            ? Timestamp.fromDate(fechaInicioDate)
-            : null,
-          FechaFin: fechaFinDate ? Timestamp.fromDate(fechaFinDate) : null,
-          ResponsableEmpresaUsuario3: SupervisorMina,
-          ResponsableEmpresaContratista3: SupervisorEECC,
-          // Global project properties
-          isGlobalProject: true,
-          projectName: projectName,
-          projectType: projectType,
-          projectId: newProjectDocID, // Reference to the global project
-          // Include all required fields from your formik onSubmit function
-          emailPerfil: props.email || "Anonimo",
-          nombrePerfil: props.firebase_user_name || "Anonimo",
-          idServiciosAIT: `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2, 9)}`,
-          activities: filterNamesActivities,
-          activitiesData: filteredData,
-          createdAt: Timestamp.now(),
-        };
-
-        // Directly submit to Firebase
-        await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
-
-        // Optional: Add a small delay
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-
-      Toast.show({
-        type: "success",
-        text1: "Proyecto global creado exitosamente",
-        visibilityTime: 3000,
-      });
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error al procesar el archivo:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error al procesar el archivo",
-        text2: error instanceof Error ? error.message : "Error desconocido",
-      });
-      setIsLoading(false);
-    }
-  };
-
   const selectAsset = (AIT: any) => {
     const area = AIT.AreaServicio;
     const indexareaList = areaLists.findIndex((item) => item.value === area);
@@ -423,8 +254,10 @@ function PublishRaw(props: any) {
     >
       <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: "white" }}
+        style={{ backgroundColor: "white", marginTop: 10 }}
       >
+        <Text></Text>
+        <Text></Text>
         <SearchBar
           placeholder="Buscar por referencia o Servicio"
           value={searchText}
@@ -561,13 +394,6 @@ function PublishRaw(props: any) {
           </View>
         )}
         <Text> </Text>
-
-        {/* Project Upload Modal */}
-        <ProjectUploadModal
-          isVisible={showProjectModal}
-          onClose={() => setShowProjectModal(false)}
-          onUploadFile={handleProjectFileUpload}
-        />
 
         <FlatList
           data={searchResults}
