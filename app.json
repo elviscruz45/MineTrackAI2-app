@@ -35,17 +35,17 @@
       "bundler": "metro",
       "output": "static",
       "name": "FHServicios",
-      "favicon": "./assets/logoPandora_1024.jpg",
+      "favicon": "./assets/favicon.png",
       "shortName": "TranscargoFH",
       "manifestPath": "./public/manifest.json",
       "icons": [
         {
-          "src": "./assets/images/logo192.png",
+          "src": "./assets/logo192.png",
           "sizes": "192x192",
           "type": "image/png"
         },
         {
-          "src": "./assets/images/logo512.png",
+          "src": "./assets/logo512.png",
           "sizes": "512x512",
           "type": "image/png"
         }

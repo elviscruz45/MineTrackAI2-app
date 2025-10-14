@@ -46,7 +46,6 @@ import * as FileSystem from "expo-file-system";
 import Papa from "papaparse";
 import { useFormik } from "formik";
 import { initialValues, validationSchema } from "./index.data";
-import { GoogleGenAI } from "@google/genai"; // Uncomment after installing: npm install @google/genai
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 
@@ -204,127 +203,6 @@ function HomeScreenRaw(props: any) {
     onSubmit: async (formValue) => {},
   });
 
-  // Function to create comprehensive text for RAG embedding
-  const createRAGText = (
-    serviceData: any,
-    activitiesData: any[],
-    projectName: string,
-    projectType: string
-  ): string => {
-    const {
-      NombreServicio,
-      Codigo,
-      EmpresaMinera,
-      TipoServicio,
-      SupervisorMina,
-      SupervisorEECC,
-      FechaInicio,
-      FechaFin,
-      HorasTotales,
-    } = serviceData;
-
-    // Build comprehensive context text for RAG
-    let ragText = `SERVICIO PRINCIPAL: ${NombreServicio || projectName}
-CÓDIGO: ${Codigo}
-TIPO DE PROYECTO: ${projectType}
-TIPO DE SERVICIO: ${TipoServicio}
-EMPRESA MINERA: ${EmpresaMinera}
-FECHAS: Desde ${FechaInicio} hasta ${FechaFin}
-SUPERVISOR MINA: ${SupervisorMina || "No asignado"}
-SUPERVISOR EECC: ${SupervisorEECC || "No asignado"}
-HORAS TOTALES: ${HorasTotales || "No especificado"}
-
-ACTIVIDADES INCLUIDAS:`;
-
-    // Add detailed activities information
-    activitiesData.forEach((activity, index) => {
-      ragText += `
-${index + 1}. ${activity.NombreServicio || "Actividad sin nombre"}
-   - Código: ${activity.Codigo || "N/A"}
-   - Fechas: ${
-     activity.FechaInicio
-       ? new Date(activity.FechaInicio.seconds * 1000).toLocaleDateString()
-       : "N/A"
-   } hasta ${
-        activity.FechaFin
-          ? new Date(activity.FechaFin.seconds * 1000).toLocaleDateString()
-          : "N/A"
-      }
-   - Empresa: ${EmpresaMinera || "N/A"}`;
-    });
-
-    // Add summary context
-    ragText += `
-
-RESUMEN DEL CONTEXTO:
-Este servicio forma parte del proyecto "${projectName}" de tipo "${projectType}" para la empresa minera "${EmpresaMinera}". 
-Incluye ${
-      activitiesData.length
-    } actividades principales relacionadas con ${TipoServicio}. 
-Las actividades van desde ${FechaInicio} hasta ${FechaFin} con un total de ${
-      HorasTotales || "N/A"
-    } horas programadas.
-Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
-      SupervisorEECC || "No asignado"
-    }.`;
-
-    return ragText;
-  };
-
-  // Function to generate embeddings for text content
-  const generateEmbedding = async (text: string): Promise<number[] | null> => {
-    try {
-      // Initialize Google GenAI (uncomment after installing the package)
-      // const ai = new GoogleGenAI({
-      //   apiKey: process.env.EXPO_PUBLIC_GOOGLE_AI_API_KEY, // Add your API key to .env
-      // });
-
-      // const response = await ai.models.embedContent({
-      //   model: 'gemini-embedding-001',
-      //   content: text,
-      //   outputDimensionality: 768,
-      // });
-
-      // return response.embedding.values;
-
-      // Temporary mock embedding for development (remove when implementing real embeddings)
-      return Array.from({ length: 768 }, () => Math.random() * 2 - 1);
-    } catch (error) {
-      console.error("Error generating embedding:", error);
-      return null;
-    }
-  };
-  // Function to save embedding to Supabase
-  const saveEmbeddingToSupabase = async (
-    serviceId: string,
-    content: string,
-    embedding: number[],
-    metadata: any
-  ) => {
-    try {
-      const { data, error } = await supabase
-        .from("activity_embeddings") // Make sure this table exists in your Supabase
-        .insert({
-          service_id: serviceId,
-          content: content,
-          embedding: embedding,
-          metadata: metadata,
-          created_at: new Date().toISOString(),
-        });
-
-      if (error) {
-        console.error("Error saving embedding to Supabase:", error);
-        return false;
-      }
-
-      console.log("Embedding saved successfully:", data);
-      return true;
-    } catch (error) {
-      console.error("Error in saveEmbeddingToSupabase:", error);
-      return false;
-    }
-  };
-
   const handleProjectFileUpload = async (
     projectName: string,
     projectType: string,
@@ -459,50 +337,6 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           createdAt: Timestamp.now(),
         };
 
-        // -----------------------🚀 NEW: Generate single comprehensive RAG embedding
-        const ragText = createRAGText(
-          {
-            NombreServicio,
-            Codigo,
-            EmpresaMinera,
-            TipoServicio,
-            SupervisorMina,
-            SupervisorEECC,
-            FechaInicio,
-            FechaFin,
-            HorasTotales,
-          },
-          filteredData,
-          projectName,
-          projectType
-        );
-
-        const embedding = await generateEmbedding(ragText);
-
-        if (embedding) {
-          await saveEmbeddingToSupabase(
-            newData.idServiciosAIT,
-            ragText,
-            embedding,
-            {
-              codigo: Codigo,
-              nombreServicio: NombreServicio || projectName,
-              empresaMinera: EmpresaMinera,
-              tipoServicio: TipoServicio,
-              projectId: newProjectDocID,
-              projectName: projectName,
-              projectType: projectType,
-              fechaInicio: fechaInicioDate?.toISOString(),
-              fechaFin: fechaFinDate?.toISOString(),
-              totalActivities: filteredData.length,
-              supervisorMina: SupervisorMina,
-              supervisorEECC: SupervisorEECC,
-              horasTotales: HorasTotales,
-              actividades: filterNamesActivities,
-            }
-          );
-        }
-
         // Directly submit to Firebase
         await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
 
@@ -513,7 +347,6 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
       Toast.show({
         type: "success",
         text1: "Proyecto global creado exitosamente",
-        text2: "Vectores de embeddings guardados en Supabase",
         visibilityTime: 3000,
       });
 
