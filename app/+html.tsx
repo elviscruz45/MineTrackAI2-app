@@ -25,7 +25,7 @@ export default function Root({ children }: PropsWithChildren) {
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="MineTrackAI" />
+        <meta name="apple-mobile-web-app-title" content="ConfiPetrolAI" />
         <link rel="apple-touch-icon" href="/confipetrol.png" />
 
         {/* Theme color for address bar */}

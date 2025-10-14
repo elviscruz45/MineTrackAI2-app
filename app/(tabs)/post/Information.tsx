@@ -189,15 +189,6 @@ function InformationRaw(props: any) {
         // Use setDoc to create or update a document
         await setDoc(doc(db, "events", uniqueID), newData);
 
-        // // Posting data to Firebase and adding the ID firestore
-        // const docRef = await addDoc(collection(db, "events"), newData);
-
-        // newData.idDocFirestoreDB = docRef.id;
-
-        // const RefFirebase = doc(db, "events", newData.idDocFirestoreDB);
-
-        // await updateDoc(RefFirebase, newData);
-
         //Modifying the Service State ServiciosAIT considering the LasEventPost events
         const RefFirebaseLasEventPostd = doc(
           db,
