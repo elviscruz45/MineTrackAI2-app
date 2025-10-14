@@ -1,6 +1,7 @@
 {
-  "short_name": "Confipetrol",
-  "name": "Confipetrol",
+  "short_name": "MineTrackAI",
+  "name": "MineTrackAI - Gestión Minera",
+  "description": "Aplicación para gestión de actividades y mantenimiento en operaciones mineras",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,16 +11,22 @@
     {
       "src": "confipetrol.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "confipetrol.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#2A3B76",
+  "background_color": "#2A3B76",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business"],
+  "lang": "es-ES"
 }

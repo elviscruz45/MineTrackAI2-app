@@ -16,6 +16,26 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
 
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* iOS specific meta tags for PWA */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="MineTrackAI" />
+        <link rel="apple-touch-icon" href="/confipetrol.png" />
+
+        {/* Theme color for address bar */}
+        <meta name="theme-color" content="#2A3B76" />
+        <meta name="msapplication-navbutton-color" content="#2A3B76" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+
         {/* Bootstrap the service worker. */}
         <script dangerouslySetInnerHTML={{ __html: sw }} />
 
