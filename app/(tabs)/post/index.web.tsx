@@ -16,7 +16,6 @@ import { screen } from "../../../utils";
 import * as ImagePicker from "expo-image-picker";
 import { savePhotoUri } from "../../../redux/actions/post";
 import * as ImageManipulator from "expo-image-manipulator";
-import ProjectUploadModal from "./components/ProjectUploadModal";
 import { areaLists } from "../../../utils/areaList";
 import { saveActualAITServicesFirebaseGlobalState } from "../../../redux/actions/post";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";

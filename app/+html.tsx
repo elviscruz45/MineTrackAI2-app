@@ -16,8 +16,8 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no"
         />
 
-        {/* Link the PWA manifest file. */}
-        <link rel="manifest" href="/manifest.json" />
+        {/* Bootstrap the service worker. */}
+        <script dangerouslySetInnerHTML={{ __html: sw }} />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -31,3 +31,105 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+const sw = `
+if ('serviceWorker' in navigator) {
+    let refreshing = false;
+    
+    // Listen for controlling service worker change
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+        }
+    });
+    
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+            
+            // Check for updates periodically
+            setInterval(() => {
+                registration.update();
+            }, 60000); // Check every minute
+            
+            // Listen for waiting service worker
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed') {
+                        if (navigator.serviceWorker.controller) {
+                            // New version available
+                            console.log('New version available');
+                            
+                            // Show update notification
+                            showUpdateNotification(newWorker);
+                        } else {
+                            // First install
+                            console.log('Content cached for offline use');
+                        }
+                    }
+                });
+            });
+        }).catch(error => {
+            console.error('Service Worker registration failed:', error);
+        });
+    });
+    
+    function showUpdateNotification(worker) {
+        // Create update notification
+        const updateBanner = document.createElement('div');
+        updateBanner.id = 'update-banner';
+        updateBanner.style.cssText = \`
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #2A3B76;
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        \`;
+        
+        updateBanner.innerHTML = \`
+            <span>🚀 Nueva versión disponible!</span>
+            <button id="update-btn" style="
+                background: white;
+                color: #2A3B76;
+                border: none;
+                padding: 6px 12px;
+                margin-left: 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: 600;
+            ">Actualizar</button>
+            <button id="dismiss-btn" style="
+                background: transparent;
+                color: white;
+                border: 1px solid white;
+                padding: 6px 12px;
+                margin-left: 8px;
+                border-radius: 4px;
+                cursor: pointer;
+            ">Después</button>
+        \`;
+        
+        document.body.appendChild(updateBanner);
+        
+        // Handle update button click
+        document.getElementById('update-btn').addEventListener('click', () => {
+            worker.postMessage({ type: 'SKIP_WAITING' });
+            updateBanner.remove();
+        });
+        
+        // Handle dismiss button click
+        document.getElementById('dismiss-btn').addEventListener('click', () => {
+            updateBanner.remove();
+        });
+    }
+}
+`;

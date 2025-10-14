@@ -9,7 +9,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:sw": "workbox injectManifest workbox-config.js",
+    "build:web": "expo export --platform web && npm run build:sw",
+    "deploy": "npm run build:web && vercel --prod"
   },
   "jest": {
     "preset": "jest-expo"
@@ -99,7 +102,8 @@
     "jest-expo": "~53.0.5",
     "react-app-rewired": "^2.2.1",
     "react-test-renderer": "18.3.1",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "workbox-cli": "^7.3.0"
   },
   "private": true
 }

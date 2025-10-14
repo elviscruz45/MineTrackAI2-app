@@ -752,7 +752,7 @@ const OnePageView: React.FC<OnePageReportProps> = ({ selectedProject }) => {
           <h4 style={{ fontSize: 18, margin: "0 0 20px 0", color: "#2A3B76" }}>
             RUTA CRÍTICA DEL PROYECTO
           </h4>
-          <CriticalRouteView selectedProject={selectedProject} />
+          <CriticalRouteView data={selectedProject} />
         </div>
 
         {/* Third row - Activity View */}
