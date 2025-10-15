@@ -51,6 +51,13 @@ interface OfflineFormOperation {
   data: any;
   timestamp: number;
   formType: "TitleForms" | "GeneralForms";
+  // Agregar campos para imágenes pendientes
+  pendingImages?: {
+    mainImage?: string; // URI local de imagen principal
+    additionalImages?: string[]; // URIs locales de imágenes adicionales
+    pdfFile?: string; // URI local de archivo PDF
+  };
+  needsImageUpload?: boolean;
 }
 
 // Función para verificar conectividad usando expo-network
@@ -138,6 +145,51 @@ const processOfflineFormsQueue = async (): Promise<void> => {
 
     for (const operation of queue) {
       try {
+        // Si hay imágenes pendientes, subirlas primero
+        if (operation.needsImageUpload && operation.pendingImages) {
+          console.log(`📷 Subiendo imágenes pendientes para ${operation.id}`);
+
+          // Subir imagen principal si es un URI local
+          if (
+            operation.pendingImages.mainImage &&
+            operation.pendingImages.mainImage.startsWith("file://")
+          ) {
+            const snapshot = await uploadImage(
+              operation.pendingImages.mainImage
+            );
+            const imagePath = snapshot.metadata.fullPath;
+            const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
+
+            // Actualizar los datos con la URL real
+            if (
+              operation.data.fotoPrincipal === operation.pendingImages.mainImage
+            ) {
+              operation.data.fotoPrincipal = imageUrl;
+            }
+          }
+
+          // Subir imágenes adicionales si son URIs locales
+          if (
+            operation.pendingImages.additionalImages &&
+            operation.pendingImages.additionalImages.length > 0
+          ) {
+            const uploadedImages = [];
+            for (const localUri of operation.pendingImages.additionalImages) {
+              if (localUri.startsWith("file://")) {
+                const snapshot = await uploadImage(localUri);
+                const imagePath = snapshot.metadata.fullPath;
+                const imageUrl = await getDownloadURL(
+                  ref(getStorage(), imagePath)
+                );
+                uploadedImages.push(imageUrl);
+              } else {
+                uploadedImages.push(localUri); // Ya es una URL
+              }
+            }
+            operation.data.newImages = uploadedImages;
+          }
+        }
+
         if (operation.type === "setDoc") {
           await setDoc(
             doc(db, operation.collection, operation.docId),
@@ -190,10 +242,69 @@ const processOfflineFormsQueue = async (): Promise<void> => {
   }
 };
 
+// Función para manejar subida de imágenes con fallback offline
+const handleImageUploadWithOffline = async (
+  imageUri: string
+): Promise<string> => {
+  const isOnline = await checkOnlineStatus();
+
+  if (isOnline) {
+    try {
+      const snapshot = await uploadImage(imageUri);
+      const imagePath = snapshot.metadata.fullPath;
+      const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
+      console.log("✅ Imagen subida online:", imageUrl);
+      return imageUrl;
+    } catch (error) {
+      console.error(
+        "❌ Error subiendo imagen online, usando URI local:",
+        error
+      );
+      return imageUri; // Fallback a URI local
+    }
+  } else {
+    console.log("📱 Offline: usando URI local para imagen");
+    return imageUri; // Usar URI local cuando esté offline
+  }
+};
+
+// Función para manejar subida de PDFs con fallback offline
+const handlePdfUploadWithOffline = async (
+  pdfFile: any,
+  filename: string,
+  date: string
+): Promise<string> => {
+  const isOnline = await checkOnlineStatus();
+
+  if (isOnline) {
+    try {
+      const snapshotPDF = await uploadPdf(pdfFile, filename, date);
+      const imagePathPDF = snapshotPDF?.metadata.fullPath;
+      const pdfUrl = await getDownloadURL(ref(getStorage(), imagePathPDF));
+      console.log("✅ PDF subido online:", pdfUrl);
+      return pdfUrl;
+    } catch (error) {
+      console.error(
+        "❌ Error subiendo PDF online, guardando referencia local:",
+        error
+      );
+      return `local_pdf_${filename}_${Date.now()}`; // Referencia local
+    }
+  } else {
+    console.log("📱 Offline: guardando referencia local para PDF");
+    return `local_pdf_${filename}_${Date.now()}`; // Referencia local cuando esté offline
+  }
+};
+
 // Función principal para manejar operaciones Firebase con offline
 const handleFirebaseOperationWithOffline = async (
   operation: () => Promise<void>,
-  operationData: Omit<OfflineFormOperation, "timestamp">
+  operationData: Omit<OfflineFormOperation, "timestamp">,
+  pendingImages?: {
+    mainImage?: string;
+    additionalImages?: string[];
+    pdfFile?: string;
+  }
 ): Promise<boolean> => {
   const isOnline = await checkOnlineStatus();
 
@@ -209,6 +320,8 @@ const handleFirebaseOperationWithOffline = async (
       await saveToOfflineQueue({
         ...operationData,
         timestamp: Date.now(),
+        pendingImages,
+        needsImageUpload: !!pendingImages,
       });
       return false;
     }
@@ -218,6 +331,8 @@ const handleFirebaseOperationWithOffline = async (
     await saveToOfflineQueue({
       ...operationData,
       timestamp: Date.now(),
+      pendingImages,
+      needsImageUpload: !!pendingImages,
     });
     return false;
   }
@@ -225,6 +340,7 @@ const handleFirebaseOperationWithOffline = async (
 
 function InformationRaw(props: any) {
   const [moreImages, setMoreImages] = useState([]);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   // const { expoPushToken, notification } = usePushNotifications();
 
   // Hook para verificar y procesar cola offline al cargar componente
@@ -242,6 +358,22 @@ function InformationRaw(props: any) {
     const interval = setInterval(checkAndProcessQueue, 30000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Hook para escuchar eventos de reconexión en web
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const handleOnline = async () => {
+        console.log("🌐 Reconectado a internet - procesando cola...");
+        await processOfflineFormsQueue();
+      };
+
+      window.addEventListener("online", handleOnline);
+
+      return () => {
+        window.removeEventListener("online", handleOnline);
+      };
+    }
   }, []);
 
   // Función para forzar sincronización manual
@@ -268,6 +400,9 @@ function InformationRaw(props: any) {
     validationSchema: validationSchema(),
     validateOnChange: false,
     onSubmit: async (formValue) => {
+      setIsFormSubmitting(true); // Iniciar loading manual
+      console.log("aaaaa");
+
       try {
         const newData = formValue;
         newData.fechaPostFormato = dateFormat();
@@ -280,6 +415,7 @@ function InformationRaw(props: any) {
         newData.AITNumero = props.actualServiceAIT?.NumeroAIT;
         newData.AITcompanyName = props.actualServiceAIT?.companyName;
         newData.projectId = props.actualServiceAIT?.projectId;
+        console.log("bbbbbb");
 
         //push notification
         // newData.pushNotification = expoPushToken?.data || "no token";
@@ -300,44 +436,44 @@ function InformationRaw(props: any) {
         newData.emailPerfil = props.email || "Anonimo";
         newData.nombrePerfil = props.firebase_user_name || "Anonimo";
         newData.fotoUsuarioPerfil = props.user_photo;
+        console.log("ccccc");
 
-        // upload the photo or an pickimage to firebase Storage
-        const snapshot = await uploadImage(props.savePhotoUri);
+        // Verificar conectividad antes de procesar imágenes
+        const isOnline = await checkOnlineStatus();
+        console.log("🌐 Estado de conexión:", isOnline ? "Online" : "Offline");
 
-        const imagePath = snapshot.metadata.fullPath;
-        const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
+        // Manejar imagen principal con fallback offline
+        const imageUrl = await handleImageUploadWithOffline(props.savePhotoUri);
 
-        //upload more Images to firebase Storage
+        // Manejar imágenes adicionales con fallback offline
         newData.newImages = [];
-
         for (let i = 0; i < moreImages.length; i++) {
-          const moreSnapshot = await uploadImage(moreImages[i]);
-          const moreImagePath = moreSnapshot.metadata.fullPath;
-          const moreImageUrl = await getDownloadURL(
-            ref(getStorage(), moreImagePath)
+          const moreImageUrl = await handleImageUploadWithOffline(
+            moreImages[i]
           );
           newData.newImages.push(moreImageUrl);
         }
 
+        console.log("dddddddd");
+
         //manage the file updated to ask for aprovals
-        let imageUrlPDF;
+        let imageUrlPDF = "";
         if (newData.pdfFile) {
-          const snapshotPDF = await uploadPdf(
+          imageUrlPDF = await handlePdfUploadWithOffline(
             newData.pdfFile,
             newData.FilenameTitle,
             newData.fechaPostFormato
           );
-          const imagePathPDF = snapshotPDF?.metadata.fullPath;
-          imageUrlPDF = await getDownloadURL(ref(getStorage(), imagePathPDF));
         }
         newData.pdfFile = "";
 
-        newData.pdfPrincipal = imageUrlPDF || "";
+        newData.pdfPrincipal = imageUrlPDF;
         //preparing data to upload to  firestore Database
         newData.fotoPrincipal = imageUrl;
         newData.createdAt = new Date();
         newData.likes = [];
         newData.comentariosUsuarios = [];
+        console.log("eeeeeee");
 
         //-------- a default newData porcentajeAvance-------
         if (
@@ -382,6 +518,13 @@ function InformationRaw(props: any) {
             docId: uniqueID,
             data: newData,
             formType: "TitleForms",
+          },
+          {
+            mainImage: props.savePhotoUri,
+            additionalImages: moreImages,
+            pdfFile: imageUrlPDF.startsWith("local_pdf_")
+              ? newData.FilenameTitle
+              : undefined,
           }
         );
         console.log("44444444");
@@ -495,7 +638,7 @@ function InformationRaw(props: any) {
           }
         );
 
-        router.back();
+        // router.back();
 
         setTimeout(() => {
           router.back();
@@ -518,11 +661,14 @@ function InformationRaw(props: any) {
           });
         }
       } catch (error) {
+        console.error("Error al enviar formulario:", error);
         Toast.show({
           type: "error",
           position: "bottom",
           text1: "Error al tratar de subir estos datos",
         });
+      } finally {
+        setIsFormSubmitting(false); // Terminar loading manual
       }
     },
   });
@@ -573,7 +719,7 @@ function InformationRaw(props: any) {
         title="Agregar Evento"
         buttonStyle={styles.addInformation}
         onPress={() => formik.handleSubmit()}
-        loading={formik.isSubmitting}
+        loading={isFormSubmitting}
       />
       {Platform.OS === "ios" && <View style={{ marginTop: 80 }}></View>}
     </KeyboardAwareScrollView>

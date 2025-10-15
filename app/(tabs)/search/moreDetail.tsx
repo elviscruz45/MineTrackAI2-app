@@ -33,9 +33,12 @@ import {
   onSnapshot,
   getDoc,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import Toast from "react-native-toast-message";
+import * as Network from "expo-network";
+import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
 // import {
 //   LineChart,
 //   BarChart,
@@ -45,6 +48,189 @@ import Toast from "react-native-toast-message";
 //   StackedBarChart,
 // } from "react-native-chart-kit";
 import * as Progress from "react-native-progress";
+
+// Funciones específicas para manejo offline
+const OFFLINE_FORMS_QUEUE_KEY = "offline_forms_queue";
+
+interface OfflineFormOperation {
+  id: string;
+  type: "setDoc" | "updateDoc";
+  collection: string;
+  docId: string;
+  data: any;
+  timestamp: number;
+  formType: "ActivitiesUpdate" | "GeneralUpdate";
+}
+
+// Función para verificar conectividad usando expo-network
+const checkOnlineStatus = async (): Promise<boolean> => {
+  try {
+    if (Platform.OS === "web") {
+      // En PWA web, usar navigator.onLine
+      return navigator.onLine;
+    } else {
+      // En mobile, usar expo-network
+      const networkState = await Network.getNetworkStateAsync();
+      return !!(networkState.isConnected && networkState.isInternetReachable);
+    }
+  } catch (error) {
+    console.error("Error checking network status:", error);
+    return false; // Asumir offline si hay error
+  }
+};
+
+// Función para guardar operación en localStorage (PWA) o AsyncStorage (mobile)
+const saveToOfflineQueue = async (
+  operation: OfflineFormOperation
+): Promise<void> => {
+  try {
+    let existingQueue: OfflineFormOperation[] = [];
+
+    if (Platform.OS === "web") {
+      // Usar localStorage para PWA
+      const stored = localStorage.getItem(OFFLINE_FORMS_QUEUE_KEY);
+      existingQueue = stored ? JSON.parse(stored) : [];
+    } else {
+      // Usar AsyncStorage para mobile
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
+      const stored = await AsyncStorage.getItem(OFFLINE_FORMS_QUEUE_KEY);
+      existingQueue = stored ? JSON.parse(stored) : [];
+    }
+
+    existingQueue.push(operation);
+
+    if (Platform.OS === "web") {
+      localStorage.setItem(
+        OFFLINE_FORMS_QUEUE_KEY,
+        JSON.stringify(existingQueue)
+      );
+    } else {
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
+      await AsyncStorage.setItem(
+        OFFLINE_FORMS_QUEUE_KEY,
+        JSON.stringify(existingQueue)
+      );
+    }
+
+    console.log(
+      `📱 Operación ${operation.formType} guardada offline:`,
+      operation.id
+    );
+  } catch (error) {
+    console.error("Error guardando en cola offline:", error);
+  }
+};
+
+// Función para procesar cola offline cuando hay conexión
+const processOfflineFormsQueue = async (): Promise<void> => {
+  try {
+    let queue: OfflineFormOperation[] = [];
+
+    if (Platform.OS === "web") {
+      const stored = localStorage.getItem(OFFLINE_FORMS_QUEUE_KEY);
+      queue = stored ? JSON.parse(stored) : [];
+    } else {
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
+      const stored = await AsyncStorage.getItem(OFFLINE_FORMS_QUEUE_KEY);
+      queue = stored ? JSON.parse(stored) : [];
+    }
+
+    if (queue.length === 0) return;
+
+    console.log(`🔄 Procesando ${queue.length} operaciones offline...`);
+
+    const processed: string[] = [];
+    const failed: OfflineFormOperation[] = [];
+
+    for (const operation of queue) {
+      try {
+        if (operation.type === "setDoc") {
+          await setDoc(
+            doc(db, operation.collection, operation.docId),
+            operation.data
+          );
+        } else if (operation.type === "updateDoc") {
+          const docRef = doc(db, operation.collection, operation.docId);
+          await updateDoc(docRef, operation.data);
+        }
+
+        processed.push(operation.id);
+        console.log(`✅ ${operation.formType} procesado:`, operation.id);
+      } catch (error) {
+        console.error(`❌ Error procesando ${operation.formType}:`, error);
+        failed.push(operation);
+      }
+    }
+
+    // Actualizar cola solo con operaciones fallidas
+    if (Platform.OS === "web") {
+      if (failed.length > 0) {
+        localStorage.setItem(OFFLINE_FORMS_QUEUE_KEY, JSON.stringify(failed));
+      } else {
+        localStorage.removeItem(OFFLINE_FORMS_QUEUE_KEY);
+      }
+    } else {
+      const AsyncStorage =
+        require("@react-native-async-storage/async-storage").default;
+      if (failed.length > 0) {
+        await AsyncStorage.setItem(
+          OFFLINE_FORMS_QUEUE_KEY,
+          JSON.stringify(failed)
+        );
+      } else {
+        await AsyncStorage.removeItem(OFFLINE_FORMS_QUEUE_KEY);
+      }
+    }
+
+    if (processed.length > 0) {
+      Toast.show({
+        type: "success",
+        text1: "Datos Sincronizados",
+        text2: `${processed.length} operaciones enviadas al servidor`,
+        position: "top",
+        visibilityTime: 4000,
+      });
+    }
+  } catch (error) {
+    console.error("Error procesando cola de operaciones:", error);
+  }
+};
+
+// Función principal para manejar operaciones Firebase con offline
+const handleFirebaseOperationWithOffline = async (
+  operation: () => Promise<void>,
+  operationData: Omit<OfflineFormOperation, "timestamp">
+): Promise<boolean> => {
+  const isOnline = await checkOnlineStatus();
+
+  if (isOnline) {
+    try {
+      // Intentar operación online
+      await operation();
+      console.log(`🌐 ${operationData.formType} enviado online`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Error en operación online, guardando offline:`, error);
+      // Si falla online, guardar offline
+      await saveToOfflineQueue({
+        ...operationData,
+        timestamp: Date.now(),
+      });
+      return false;
+    }
+  } else {
+    // Sin conexión, guardar offline directamente
+    console.log(`📱 Sin conexión, guardando ${operationData.formType} offline`);
+    await saveToOfflineQueue({
+      ...operationData,
+      timestamp: Date.now(),
+    });
+    return false;
+  }
+};
 
 type ZingChartType = React.ComponentType<{ data: any }>;
 interface ProgressChartProps {
@@ -84,6 +270,54 @@ function MoreDetailScreenNoRedux(props: any) {
   const [ZingChartComponent, setZingChartComponent] =
     useState<ZingChartType | null>(null);
   const onCloseOpenModal = () => setShowModal((prevState: any) => !prevState);
+
+  // Hook para verificar y procesar cola offline al cargar componente
+  useEffect(() => {
+    const checkAndProcessQueue = async () => {
+      const isOnline = await checkOnlineStatus();
+      if (isOnline) {
+        await processOfflineFormsQueue();
+      }
+    };
+
+    checkAndProcessQueue();
+
+    // Verificar cada 30 segundos si hay conexión para procesar cola
+    const interval = setInterval(checkAndProcessQueue, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Hook para escuchar eventos de reconexión en web
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const handleOnline = async () => {
+        console.log("🌐 Reconectado a internet - procesando cola...");
+        await processOfflineFormsQueue();
+      };
+
+      window.addEventListener("online", handleOnline);
+
+      return () => {
+        window.removeEventListener("online", handleOnline);
+      };
+    }
+  }, []);
+
+  // Función para forzar sincronización manual
+  const handleForceSync = async () => {
+    const isOnline = await checkOnlineStatus();
+    if (isOnline) {
+      await processOfflineFormsQueue();
+    } else {
+      Toast.show({
+        type: "warning",
+        text1: "Sin Conexión",
+        text2: "No se puede sincronizar sin conexión a internet",
+        position: "top",
+      });
+    }
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -712,25 +946,64 @@ function MoreDetailScreenNoRedux(props: any) {
   };
 
   const updateDates = async () => {
-    //updating events in ServiciosAIT to filter the deleted event
-    const Ref = doc(db, "ServiciosAIT", idServiciosAIT);
-    const docSnapshot: any = await getDoc(Ref);
-    const activitiesData = docSnapshot.data().activitiesData;
+    try {
+      setUpdating(true); // Mostrar loading
 
-    const updatedData = {
-      activitiesData: data,
-    };
+      // Verificar conectividad antes de proceder
+      const isOnline = await checkOnlineStatus();
+      console.log("🌐 Estado de conexión:", isOnline ? "Online" : "Offline");
 
-    await updateDoc(Ref, updatedData);
-    router.back();
+      const updatedData = {
+        activitiesData: data,
+      };
 
-    setUpdating((prev) => !prev);
+      // Operación updateDoc con manejo offline
+      const updateDocOperation = async () => {
+        const Ref = doc(db, "ServiciosAIT", idServiciosAIT);
+        await updateDoc(Ref, updatedData);
+      };
 
-    Toast.show({
-      type: "success",
-      position: "bottom",
-      text1: "Se ha guardado correctamente",
-    });
+      const isOnlineOperation = await handleFirebaseOperationWithOffline(
+        updateDocOperation,
+        {
+          id: `updateDoc-ServiciosAIT-activities-${idServiciosAIT}-${Date.now()}`,
+          type: "updateDoc",
+          collection: "ServiciosAIT",
+          docId: idServiciosAIT,
+          data: updatedData,
+          formType: "ActivitiesUpdate",
+        }
+      );
+
+      router.back();
+
+      // Mostrar mensaje apropiado según el estado de conectividad
+      if (isOnlineOperation) {
+        Toast.show({
+          type: "success",
+          position: "bottom",
+          text1: "Se ha guardado correctamente",
+          text2: "Datos sincronizados con el servidor",
+        });
+      } else {
+        Toast.show({
+          type: "info",
+          position: "bottom",
+          text1: "Datos guardados offline",
+          text2: "Se sincronizarán automáticamente cuando tengas conexión",
+        });
+      }
+    } catch (error) {
+      console.error("Error al actualizar fechas:", error);
+      Toast.show({
+        type: "error",
+        position: "bottom",
+        text1: "Error al guardar",
+        text2: "Intenta nuevamente",
+      });
+    } finally {
+      setUpdating(false); // Ocultar loading
+    }
   };
 
   const finalizeService = async () => {
@@ -764,6 +1037,9 @@ function MoreDetailScreenNoRedux(props: any) {
         showsVerticalScrollIndicator={true}
         bounces={true}
       >
+        {/* Indicador de estado offline */}
+        <OfflineFormsStatus onForceSync={handleForceSync} />
+
         {/* Header Section with Edit Button and Profile */}
         <View style={modernStyles.headerContainer}>
           {(props.email === emailPerfil ||
@@ -1019,11 +1295,17 @@ function MoreDetailScreenNoRedux(props: any) {
               {activitiesList(data)}
 
               <TouchableOpacity
-                style={modernStyles.saveButton}
+                style={[
+                  modernStyles.saveButton,
+                  updateing && { backgroundColor: "#999" },
+                ]}
                 onPress={() => updateDates()}
+                disabled={updateing}
               >
                 <Text style={modernStyles.saveButtonText}>
-                  💾 Guardar las fechas reales
+                  {updateing
+                    ? "⏳ Guardando..."
+                    : "💾 Guardar las fechas reales"}
                 </Text>
               </TouchableOpacity>
             </View>
