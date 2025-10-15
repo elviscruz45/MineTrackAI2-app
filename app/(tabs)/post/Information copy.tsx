@@ -332,6 +332,45 @@ function InformationRaw(props: any) {
         }
         newData.pdfFile = "";
 
+        //--------Uploading docs to a new collection called "aprovals" to manage doc aprovals
+        if (
+          newData.aprobacion &&
+          (newData.etapa === "Solicitud Aprobacion Doc" ||
+            newData.etapa === "Envio Cotizacion" ||
+            newData.etapa === "Solicitud Ampliacion Servicio" ||
+            newData.etapa === "Envio EDP")
+        ) {
+          const regex = /(?<=\()[^)]*(?=\))/g;
+          const matches = newData.aprobacion.match(regex);
+          const docData = {
+            solicitud: newData.etapa,
+            email: newData.emailPerfil,
+            solicitudComentario: newData.comentarios,
+            etapa: newData.etapa,
+            NombreServicio: props.actualServiceAIT?.NombreServicio,
+            NumeroServicio: props.actualServiceAIT?.NumeroAIT,
+            IdAITService: props.actualServiceAIT?.idServiciosAIT,
+            fileName: newData.FilenameTitle,
+            pdfFile: imageUrlPDF ?? "",
+            tipoFile: newData.tipoFile,
+            ApprovalRequestedBy: props.email,
+            ApprovalRequestSentTo: matches,
+            ApprovalPerformed: [],
+            RejectionPerformed: [],
+            date: new Date(),
+            fechaPostFormato: newData.fechaPostFormato,
+            AreaServicio: props.actualServiceAIT?.AreaServicio,
+            photoServiceURL: props.actualServiceAIT?.photoServiceURL,
+            status: "Pendiente",
+            idTimeApproval: new Date().getTime(),
+            companyName: props.actualServiceAIT.companyName,
+            idApproval: "",
+          };
+          const docRef = await addDoc(collection(db, "approvals"), docData);
+          docData.idApproval = docRef.id;
+          const RefFirebase = doc(db, "approvals", docData.idApproval);
+          await updateDoc(RefFirebase, docData);
+        }
         newData.pdfPrincipal = imageUrlPDF || "";
         //preparing data to upload to  firestore Database
         newData.fotoPrincipal = imageUrl;
@@ -358,20 +397,16 @@ function InformationRaw(props: any) {
           newData.porcentajeAvance = "100";
         }
 
-        console.log("111111111");
-
         const uniqueID = `${Date.now()}-${Math.random()
           .toString(36)
           .substring(2, 9)}`;
         newData.idDocFirestoreDB = uniqueID;
-        console.log("22222222");
 
         //nuevo approach - con manejo offline
         // Use setDoc to create or update a document
         const setDocOperation = async () => {
           await setDoc(doc(db, "events", uniqueID), newData);
         };
-        console.log("3333333");
 
         const isOnlineSetDoc = await handleFirebaseOperationWithOffline(
           setDocOperation,
@@ -384,7 +419,6 @@ function InformationRaw(props: any) {
             formType: "TitleForms",
           }
         );
-        console.log("44444444");
 
         //Modifying the Service State ServiciosAIT considering the LasEventPost events
         const RefFirebaseLasEventPostd = doc(

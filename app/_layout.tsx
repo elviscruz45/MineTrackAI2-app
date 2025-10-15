@@ -58,7 +58,9 @@ export default function RootLayout() {
           <Stack.Screen name="+not-found" />
         </Stack>
       </Provider>
-      {Platform.OS != "web" && <Toast />}
+      {/* {Platform.OS != "web" && <Toast />} */}
+      <Toast />
+
       <StatusBar style="auto" />
       {/* </ThemeProvider> */}
     </>
