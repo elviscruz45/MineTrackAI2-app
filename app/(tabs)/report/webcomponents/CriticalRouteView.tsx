@@ -81,7 +81,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
     if (!dateObj.date || !dateObj.time) return 0;
     const [day, month, year] = dateObj.date.split("/");
     const [hours, minutes] = dateObj.time.split(":");
-    const fullYear = year.length === 2 ? `20${year}` : year;
+    const fullYear = year?.length === 2 ? `20${year}` : year;
     return new Date(
       `${fullYear}-${month}-${day}T${hours}:${minutes}`
     ).getTime();

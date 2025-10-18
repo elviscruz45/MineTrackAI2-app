@@ -505,7 +505,7 @@ function parseAnyDate(value: any) {
     const match = str.match(regex);
     if (match) {
       let [, day, month, year, hour, minute, second = "0", ampm] = match;
-      if (year.length === 2) year = "20" + year;
+      if (year?.length === 2) year = "20" + year;
       if (ampm) {
         hour = String(
           ampm.toUpperCase() === "PM" && hour !== "12"

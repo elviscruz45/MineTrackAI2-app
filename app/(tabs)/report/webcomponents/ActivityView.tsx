@@ -1195,25 +1195,67 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
 
                             // Convertir "DD/MM/YY" a "YYYY-MM-DD"
                             const toISO = (d: string, t: string) => {
-                              const [day, month, year] = d.split("/");
-                              // Si el año es de 2 dígitos, asume 2000+
-                              const fullYear =
-                                year.length === 2 ? `20${year}` : year;
-                              return `${fullYear}-${month.padStart(
-                                2,
-                                "0"
-                              )}-${day.padStart(2, "0")}T${t}`;
+                              try {
+                                // Validar que la fecha tenga el formato correcto
+                                if (
+                                  !d ||
+                                  typeof d !== "string" ||
+                                  !d.includes("/")
+                                ) {
+                                  return null;
+                                }
+
+                                const parts = d.split("/");
+                                if (parts.length !== 3) {
+                                  return null;
+                                }
+
+                                const [day, month, year] = parts;
+
+                                // Validar que todas las partes existan y no sean undefined
+                                if (!day || !month || !year) {
+                                  return null;
+                                }
+
+                                // Si el año es de 2 dígitos, asume 2000+
+                                const fullYear =
+                                  year.length === 2 ? `20${year}` : year;
+
+                                return `${fullYear}-${month.padStart(
+                                  2,
+                                  "0"
+                                )}-${day.padStart(2, "0")}T${t}`;
+                              } catch (error) {
+                                console.error("Error parsing date:", d, error);
+                                return null;
+                              }
                             };
 
-                            const startProg = new Date(
-                              toISO(startDate, startTime)
-                            );
-                            const endProg = new Date(toISO(endDate, endTime));
+                            const startISO = toISO(startDate, startTime);
+                            const endISO = toISO(endDate, endTime);
+
+                            // Validar que las conversiones fueron exitosas
+                            if (!startISO || !endISO) {
+                              return "N/A";
+                            }
+
+                            const startProg = new Date(startISO);
+                            const endProg = new Date(endISO);
+
+                            // Validar que las fechas sean válidas
+                            if (
+                              isNaN(startProg.getTime()) ||
+                              isNaN(endProg.getTime())
+                            ) {
+                              return "N/A";
+                            }
+
                             const horasProgramadas =
                               (endProg.getTime() - startProg.getTime()) /
                               (1000 * 60 * 60);
 
-                            return isNaN(horasProgramadas)
+                            return isNaN(horasProgramadas) ||
+                              horasProgramadas < 0
                               ? "N/A"
                               : Math.round(horasProgramadas * 10) / 10;
                           })()}
@@ -1247,7 +1289,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                             const toISO = (d: string, t: string) => {
                               const [day, month, year] = d.split("/");
                               const fullYear =
-                                year.length === 2 ? `20${year}` : year;
+                                year?.length === 2 ? `20${year}` : year;
                               return `${fullYear}-${month.padStart(
                                 2,
                                 "0"
@@ -1366,19 +1408,65 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
 
                               // Convertir "DD/MM/YY" a "YYYY-MM-DD"
                               const toISO = (d: string, t: string) => {
-                                const [day, month, year] = d.split("/");
-                                const fullYear =
-                                  year.length === 2 ? `20${year}` : year;
-                                return `${fullYear}-${month.padStart(
-                                  2,
-                                  "0"
-                                )}-${day.padStart(2, "0")}T${t}`;
+                                try {
+                                  // Validar que la fecha tenga el formato correcto
+                                  if (
+                                    !d ||
+                                    typeof d !== "string" ||
+                                    !d.includes("/")
+                                  ) {
+                                    return null;
+                                  }
+
+                                  const parts = d.split("/");
+                                  if (parts.length !== 3) {
+                                    return null;
+                                  }
+
+                                  const [day, month, year] = parts;
+
+                                  // Validar que todas las partes existan y no sean undefined
+                                  if (!day || !month || !year) {
+                                    return null;
+                                  }
+
+                                  // Si el año es de 2 dígitos, asume 2000+
+                                  const fullYear =
+                                    year.length === 2 ? `20${year}` : year;
+
+                                  return `${fullYear}-${month.padStart(
+                                    2,
+                                    "0"
+                                  )}-${day.padStart(2, "0")}T${t}`;
+                                } catch (error) {
+                                  console.error(
+                                    "Error parsing date:",
+                                    d,
+                                    error
+                                  );
+                                  return null;
+                                }
                               };
 
-                              const startProg = new Date(
-                                toISO(startDate, startTime)
-                              );
-                              const endProg = new Date(toISO(endDate, endTime));
+                              const startISO = toISO(startDate, startTime);
+                              const endISO = toISO(endDate, endTime);
+
+                              // Validar que las conversiones fueron exitosas
+                              if (!startISO || !endISO) {
+                                return "N/A";
+                              }
+
+                              const startProg = new Date(startISO);
+                              const endProg = new Date(endISO);
+
+                              // Validar que las fechas sean válidas
+                              if (
+                                isNaN(startProg.getTime()) ||
+                                isNaN(endProg.getTime())
+                              ) {
+                                return "N/A";
+                              }
+
                               const now = new Date();
 
                               if (now <= startProg) return "0%";
@@ -1388,6 +1476,12 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                                 endProg.getTime() - startProg.getTime();
                               const transcurrido =
                                 now.getTime() - startProg.getTime();
+
+                              // Validar que total sea mayor que 0 para evitar división por 0
+                              if (total <= 0) {
+                                return "N/A";
+                              }
+
                               const porcentaje = Math.max(
                                 0,
                                 Math.min(

@@ -694,194 +694,192 @@ function MoreDetailScreenNoRedux(props: any) {
 
   const activitiesList = (array: any) => {
     return (
-      <View>
-        <FlatList
-          data={array}
-          renderItem={({ index, item }) => {
-            const FechaInicio = item.FechaInicio;
-            const FechaFin = item.FechaFin;
+      <FlatList
+        data={array}
+        renderItem={({ index, item }) => {
+          const FechaInicio = item.FechaInicio;
+          const FechaFin = item.FechaFin;
 
-            const InicioReal = item?.RealFechaInicio
-              ? new Date(item?.RealFechaInicio)?.toLocaleString("en-GB", {
-                  hour12: false,
-                })
-              : "";
-            const FinReal = item?.RealFechaFin
-              ? new Date(item?.RealFechaFin)?.toLocaleString("en-GB", {
-                  hour12: false,
-                })
-              : "";
+          const InicioReal = item?.RealFechaInicio
+            ? new Date(item?.RealFechaInicio)?.toLocaleString("en-GB", {
+                hour12: false,
+              })
+            : "";
+          const FinReal = item?.RealFechaFin
+            ? new Date(item?.RealFechaFin)?.toLocaleString("en-GB", {
+                hour12: false,
+              })
+            : "";
 
-            return (
-              <View style={modernStyles.activityCard}>
-                {/* Activity Header */}
-                <View style={modernStyles.activityHeader}>
-                  <Text style={modernStyles.activityCode}>{item.Codigo}</Text>
-                  <Text style={modernStyles.activityTitle}>
-                    {item.NombreServicio}
+          return (
+            <View style={modernStyles.activityCard}>
+              {/* Activity Header */}
+              <View style={modernStyles.activityHeader}>
+                <Text style={modernStyles.activityCode}>{item.Codigo}</Text>
+                <Text style={modernStyles.activityTitle}>
+                  {item.NombreServicio}
+                </Text>
+              </View>
+
+              {/* Dates Section */}
+              <View style={modernStyles.dateContainer}>
+                {/* Programmed Dates Column */}
+                <View style={modernStyles.dateColumn}>
+                  <Text style={modernStyles.dateLabel}>
+                    📅 Fechas Programadas
                   </Text>
-                </View>
 
-                {/* Dates Section */}
-                <View style={modernStyles.dateContainer}>
-                  {/* Programmed Dates Column */}
-                  <View style={modernStyles.dateColumn}>
-                    <Text style={modernStyles.dateLabel}>
-                      📅 Fechas Programadas
+                  <View style={{ marginBottom: 8 }}>
+                    <Text
+                      style={[
+                        modernStyles.dateLabel,
+                        { fontSize: 11, marginBottom: 2 },
+                      ]}
+                    >
+                      Inicio:
                     </Text>
-
-                    <View style={{ marginBottom: 8 }}>
-                      <Text
-                        style={[
-                          modernStyles.dateLabel,
-                          { fontSize: 11, marginBottom: 2 },
-                        ]}
-                      >
-                        Inicio:
-                      </Text>
-                      <Text style={modernStyles.dateValue}>
-                        {formatDateDisplay(FechaInicio)}
-                      </Text>
-                    </View>
-
-                    <View>
-                      <Text
-                        style={[
-                          modernStyles.dateLabel,
-                          { fontSize: 11, marginBottom: 2 },
-                        ]}
-                      >
-                        Fin:
-                      </Text>
-                      <Text style={modernStyles.dateValue}>
-                        {formatDateDisplay(FechaFin)}
-                      </Text>
-                    </View>
+                    <Text style={modernStyles.dateValue}>
+                      {formatDateDisplay(FechaInicio)}
+                    </Text>
                   </View>
 
-                  {/* Real Dates Column */}
-                  <View style={modernStyles.dateColumn}>
-                    <Text style={modernStyles.dateLabel}>✅ Fechas Reales</Text>
-
-                    <View style={{ marginBottom: 8 }}>
-                      <Text
-                        style={[
-                          modernStyles.dateLabel,
-                          { fontSize: 11, marginBottom: 2 },
-                        ]}
-                      >
-                        Inicio:
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setRenderComponent(
-                            <ChangeDisplayFechaReal
-                              onClose={onCloseOpenModal}
-                              setData={setData}
-                              data={data}
-                              codigo={item.Codigo}
-                              tipo={"Inicio"}
-                            />
-                          );
-                          onCloseOpenModal();
-                        }}
-                      >
-                        <Text
-                          style={
-                            InicioReal
-                              ? modernStyles.dateValueReal
-                              : modernStyles.editableDate
-                          }
-                        >
-                          {InicioReal || "Tap para agregar"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <View>
-                      <Text
-                        style={[
-                          modernStyles.dateLabel,
-                          { fontSize: 11, marginBottom: 2 },
-                        ]}
-                      >
-                        Fin:
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setRenderComponent(
-                            <ChangeDisplayFechaReal
-                              onClose={onCloseOpenModal}
-                              setData={setData}
-                              data={data}
-                              codigo={item.Codigo}
-                              tipo={"Fin"}
-                            />
-                          );
-                          onCloseOpenModal();
-                        }}
-                      >
-                        <Text
-                          style={
-                            FinReal
-                              ? modernStyles.dateValueReal
-                              : modernStyles.editableDate
-                          }
-                        >
-                          {FinReal || "Tap para agregar"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                  <View>
+                    <Text
+                      style={[
+                        modernStyles.dateLabel,
+                        { fontSize: 11, marginBottom: 2 },
+                      ]}
+                    >
+                      Fin:
+                    </Text>
+                    <Text style={modernStyles.dateValue}>
+                      {formatDateDisplay(FechaFin)}
+                    </Text>
                   </View>
                 </View>
 
-                {/* Status Indicator */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTopWidth: 1,
-                    borderTopColor: "#f0f0f0",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor:
-                        InicioReal && FinReal
-                          ? "#4caf50"
-                          : InicioReal
-                          ? "#ff9800"
-                          : "#f44336",
-                      marginRight: 8,
-                    }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#666",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {InicioReal && FinReal
-                      ? "Completado"
-                      : InicioReal
-                      ? "En progreso"
-                      : "Pendiente"}
-                  </Text>
+                {/* Real Dates Column */}
+                <View style={modernStyles.dateColumn}>
+                  <Text style={modernStyles.dateLabel}>✅ Fechas Reales</Text>
+
+                  <View style={{ marginBottom: 8 }}>
+                    <Text
+                      style={[
+                        modernStyles.dateLabel,
+                        { fontSize: 11, marginBottom: 2 },
+                      ]}
+                    >
+                      Inicio:
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setRenderComponent(
+                          <ChangeDisplayFechaReal
+                            onClose={onCloseOpenModal}
+                            setData={setData}
+                            data={data}
+                            codigo={item.Codigo}
+                            tipo={"Inicio"}
+                          />
+                        );
+                        onCloseOpenModal();
+                      }}
+                    >
+                      <Text
+                        style={
+                          InicioReal
+                            ? modernStyles.dateValueReal
+                            : modernStyles.editableDate
+                        }
+                      >
+                        {InicioReal || "Tap para agregar"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View>
+                    <Text
+                      style={[
+                        modernStyles.dateLabel,
+                        { fontSize: 11, marginBottom: 2 },
+                      ]}
+                    >
+                      Fin:
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setRenderComponent(
+                          <ChangeDisplayFechaReal
+                            onClose={onCloseOpenModal}
+                            setData={setData}
+                            data={data}
+                            codigo={item.Codigo}
+                            tipo={"Fin"}
+                          />
+                        );
+                        onCloseOpenModal();
+                      }}
+                    >
+                      <Text
+                        style={
+                          FinReal
+                            ? modernStyles.dateValueReal
+                            : modernStyles.editableDate
+                        }
+                      >
+                        {FinReal || "Tap para agregar"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            );
-          }}
-          keyExtractor={(item, index) => index.toString()}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+
+              {/* Status Indicator */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: "#f0f0f0",
+                }}
+              >
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor:
+                      InicioReal && FinReal
+                        ? "#4caf50"
+                        : InicioReal
+                        ? "#ff9800"
+                        : "#f44336",
+                    marginRight: 8,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#666",
+                    fontWeight: "500",
+                  }}
+                >
+                  {InicioReal && FinReal
+                    ? "Completado"
+                    : InicioReal
+                    ? "En progreso"
+                    : "Pendiente"}
+                </Text>
+              </View>
+            </View>
+          );
+        }}
+        keyExtractor={(item, index) => index.toString()}
+        scrollEnabled={true}
+        showsVerticalScrollIndicator={false}
+      />
     );
   };
   // //Algorithm to render the bar status
@@ -1292,7 +1290,15 @@ function MoreDetailScreenNoRedux(props: any) {
                 </Text>
               </View>
 
-              {activitiesList(data)}
+              <ScrollView
+              // style={modernStyles.activitiesScrollContainer}
+              // contentContainerStyle={modernStyles.activitiesScrollContent}
+              // showsVerticalScrollIndicator={true}
+              // nestedScrollEnabled={true}
+              // bounces={true}
+              >
+                {activitiesList(data)}
+              </ScrollView>
 
               <TouchableOpacity
                 style={[
@@ -1631,6 +1637,17 @@ const modernStyles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
+  activitiesScrollContainer: {
+    maxHeight: isMobile ? windowHeight * 0.4 : windowHeight * 0.6, // 40% de altura en móvil, 60% en tablet
+    borderRadius: 8,
+    backgroundColor: "#f8f9fa",
+    marginBottom: 16,
+  },
+  activitiesScrollContent: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    flexGrow: 1,
+  },
 });
 
 function parseCustomDate(dateStr: any) {
@@ -1658,7 +1675,7 @@ function parseCustomDate(dateStr: any) {
   let match = str.match(regex);
   if (match) {
     let [, day, month, year, hour, minute, second = "0", ampm] = match;
-    if (year.length === 2) year = "20" + year;
+    if (year?.length === 2) year = "20" + year;
     if (ampm) {
       hour = String(
         ampm.toUpperCase() === "PM" && hour !== "12"

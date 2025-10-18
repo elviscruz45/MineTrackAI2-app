@@ -1683,7 +1683,7 @@ function parseAnyDate(value: any) {
     if (match) {
       let [, day, month, year, hour = "0", minute = "0", second = "0", ampm] =
         match;
-      if (year.length === 2) year = "20" + year;
+      if (year?.length === 2) year = "20" + year;
       if (ampm) {
         hour = String(
           ampm.toUpperCase() === "PM" && hour !== "12"
