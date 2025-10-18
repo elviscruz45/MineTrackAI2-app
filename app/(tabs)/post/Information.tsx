@@ -37,7 +37,11 @@ import Toast from "react-native-toast-message";
 import { usePushNotifications } from "@/usePushNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import * as Network from "expo-network";
+
+let Network: typeof import("expo-network");
+if (Platform.OS !== "web") {
+  Network = require("expo-network");
+}
 
 // Workaround for expo-network on web
 // See: https://github.com/expo/expo/issues/18658#issuecomment-1463137837
