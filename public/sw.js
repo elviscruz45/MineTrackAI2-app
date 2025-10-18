@@ -1,5 +1,5 @@
-// Ultra-Aggressive Service Worker for PWA - Offline-First Experience
-const CACHE_VERSION = "v3.2"; // Cambiar para forzar actualización
+// Optimized Service Worker for PWA - Fast First Load 🚀
+const CACHE_VERSION = "v4.0"; // Cambiar para forzar actualización
 const CACHE_NAME = `minetrack-ai-${CACHE_VERSION}`;
 const STATIC_CACHE = `minetrack-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `minetrack-images-${CACHE_VERSION}`;
@@ -8,29 +8,14 @@ const FONTS_CACHE = `minetrack-fonts-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `minetrack-dynamic-${CACHE_VERSION}`;
 const ROUTES_CACHE = `minetrack-routes-${CACHE_VERSION}`;
 
-// URLs críticos para cachear inmediatamente
+// URLs MÍNIMOS críticos para cachear al instalar (SOLO LO ESENCIAL)
+// Estrategia: Cachear solo HTML shell + manifest, el resto se cachea bajo demanda
 const urlsToCache = [
   "/",
   "/manifest.json",
-  "/confipetrol.png",
   "/logo192.png",
-  "/logo512.png",
   "/favicon.ico",
-  "/index.txt",
-  // Expo/React essentials que siempre existen
-  "/_expo/",
-  "/static/",
-  // Rutas principales de la app
-  "/home",
-  "/search",
-  "/post",
-  "/profile",
-  "/report",
-  "/tabs/home",
-  "/tabs/search",
-  "/tabs/post",
-  "/tabs/profile",
-  "/tabs/report",
+  // El resto de assets se cachean automáticamente cuando se solicitan (runtime caching)
 ];
 
 // Cache strategies - ULTRA AGRESIVO

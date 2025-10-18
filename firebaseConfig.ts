@@ -1,11 +1,10 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
-// const { initializeApp } = require("firebase/app");
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
-import { ReactNativeAsyncStorage } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { enableNetwork } from "firebase/firestore";
+// Optimized Firebase imports - Solo lo esencial para arranque rápido
+import { initializeApp, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { initializeAuth, Auth } from "firebase/auth";
+
+// Analytics se carga lazy solo cuando se necesita (ahorra ~50KB al inicio)
+// import { getAnalytics } from "firebase/analytics";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -99,10 +98,16 @@ const firebaseConfig = {
 //   appId: "1:997153190348:web:e1b2494f61e601fce6ad69",
 // };
 
-// Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
-const auth = initializeAuth(app, {
-  // persistence: getReactNativePersistence(AsyncStorage),
+// Initialize Firebase - Solo lo esencial para arranque rápido
+export const app: FirebaseApp = initializeApp(firebaseConfig);
+
+// Auth sin persistencia en el inicio (se puede agregar después si es necesario)
+export const auth: Auth = initializeAuth(app, {
+  // persistence se agrega después para no ralentizar el inicio
 });
-export const db = getFirestore(app);
+
+// Firestore
+export const db: Firestore = getFirestore(app);
+
+// Analytics se inicializa lazy solo cuando se necesita
+// export const initAnalytics = () => getAnalytics(app);

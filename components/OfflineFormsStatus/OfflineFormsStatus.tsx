@@ -51,15 +51,23 @@ const OfflineFormsStatus: React.FC<OfflineFormsStatusProps> = ({
       if (Platform.OS === "web") {
         setIsOnline(navigator.onLine);
       } else {
-        const Network = require("expo-network");
-        const networkState = await Network.getNetworkStateAsync();
-        setIsOnline(
-          !!(networkState.isConnected && networkState.isInternetReachable)
-        );
+        // En mobile, intentar importar expo-network dinámicamente
+        try {
+          const Network = require("expo-network");
+          const networkState = await Network.getNetworkStateAsync();
+          setIsOnline(
+            !!(networkState.isConnected && networkState.isInternetReachable)
+          );
+        } catch (error) {
+          // Si expo-network no está disponible, asumir online
+          console.warn("expo-network not available, assuming online");
+          setIsOnline(true);
+        }
       }
     } catch (error) {
       console.error("Error checking network:", error);
-      setIsOnline(false);
+      // En caso de error, asumir online para no bloquear
+      setIsOnline(true);
     }
   };
 
