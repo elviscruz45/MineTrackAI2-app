@@ -1,5 +1,5 @@
 // Optimized Service Worker for PWA - Fast First Load 🚀
-const CACHE_VERSION = "v4.0"; // Cambiar para forzar actualización
+const CACHE_VERSION = "v5.0"; // Agregada MaterialCommunityIcons
 const CACHE_NAME = `minetrack-ai-${CACHE_VERSION}`;
 const STATIC_CACHE = `minetrack-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `minetrack-images-${CACHE_VERSION}`;
@@ -9,13 +9,13 @@ const DYNAMIC_CACHE = `minetrack-dynamic-${CACHE_VERSION}`;
 const ROUTES_CACHE = `minetrack-routes-${CACHE_VERSION}`;
 
 // URLs MÍNIMOS críticos para cachear al instalar (SOLO LO ESENCIAL)
-// Estrategia: Cachear solo HTML shell + manifest, el resto se cachea bajo demanda
+// Estrategia: Cachear solo HTML shell + manifest
 const urlsToCache = [
   "/",
   "/manifest.json",
   "/logo192.png",
   "/favicon.ico",
-  // El resto de assets se cachean automáticamente cuando se solicitan (runtime caching)
+  // Las fuentes de iconos NO se cachean - siempre se descargan fresh
 ];
 
 // Cache strategies - ULTRA AGRESIVO
@@ -72,7 +72,15 @@ function getCacheStrategy(request) {
     };
   }
 
-  // Fuentes - CACHE FIRST (permanente)
+  // Fuentes de ICONOS - NO CACHEAR (siempre desde red)
+  if (
+    pathname.includes("/fonts/") ||
+    pathname.match(/Ionicons|MaterialIcons|MaterialCommunityIcons|Feather/)
+  ) {
+    return null; // NO cachear, siempre fetch desde red
+  }
+
+  // Otras fuentes - CACHE FIRST (permanente)
   if (request.destination === "font" || CACHE_PATTERNS.FONTS.test(pathname)) {
     return {
       strategy: CACHE_STRATEGIES.CACHE_FIRST,
