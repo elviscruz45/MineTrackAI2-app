@@ -37,15 +37,6 @@ import Toast from "react-native-toast-message";
 import { usePushNotifications } from "@/usePushNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-
-let Network: typeof import("expo-network");
-if (Platform.OS !== "web") {
-  Network = require("expo-network");
-}
-
-// Workaround for expo-network on web
-// See: https://github.com/expo/expo/issues/18658#issuecomment-1463137837
-
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
 
 // Funciones específicas para manejo offline del formulario
@@ -68,20 +59,28 @@ interface OfflineFormOperation {
   needsImageUpload?: boolean;
 }
 
-// Función para verificar conectividad usando expo-network
+// Función para verificar conectividad - Solo para web/PWA
 const checkOnlineStatus = async (): Promise<boolean> => {
   try {
     if (Platform.OS === "web") {
       // En PWA web, usar navigator.onLine
       return navigator.onLine;
     } else {
-      // En mobile, usar expo-network
-      const networkState = await Network.getNetworkStateAsync();
-      return !!(networkState.isConnected && networkState.isInternetReachable);
+      // En mobile, importar dinámicamente expo-network
+      try {
+        const Network = require("expo-network");
+        const networkState = await Network.getNetworkStateAsync();
+        return !!(networkState.isConnected && networkState.isInternetReachable);
+      } catch (error) {
+        // Si expo-network falla, asumir online en mobile
+        console.warn("expo-network not available, assuming online");
+        return true;
+      }
     }
   } catch (error) {
     console.error("Error checking network status:", error);
-    return false; // Asumir offline si hay error
+    // En caso de error, asumir online para no bloquear la app
+    return true;
   }
 };
 

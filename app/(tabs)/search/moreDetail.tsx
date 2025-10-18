@@ -37,7 +37,6 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import Toast from "react-native-toast-message";
-import * as Network from "expo-network";
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
 // import {
 //   LineChart,
@@ -62,20 +61,28 @@ interface OfflineFormOperation {
   formType: "ActivitiesUpdate" | "GeneralUpdate";
 }
 
-// Función para verificar conectividad usando expo-network
+// Función para verificar conectividad - Solo para web/PWA
 const checkOnlineStatus = async (): Promise<boolean> => {
   try {
     if (Platform.OS === "web") {
       // En PWA web, usar navigator.onLine
       return navigator.onLine;
     } else {
-      // En mobile, usar expo-network
-      const networkState = await Network.getNetworkStateAsync();
-      return !!(networkState.isConnected && networkState.isInternetReachable);
+      // En mobile, importar dinámicamente expo-network
+      try {
+        const Network = require("expo-network");
+        const networkState = await Network.getNetworkStateAsync();
+        return !!(networkState.isConnected && networkState.isInternetReachable);
+      } catch (error) {
+        // Si expo-network falla, asumir online en mobile
+        console.warn("expo-network not available, assuming online");
+        return true;
+      }
     }
   } catch (error) {
     console.error("Error checking network status:", error);
-    return false; // Asumir offline si hay error
+    // En caso de error, asumir online para no bloquear la app
+    return true;
   }
 };
 
