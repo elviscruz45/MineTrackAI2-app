@@ -39,6 +39,15 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Bootstrap the service worker. */}
         <script dangerouslySetInnerHTML={{ __html: sw }} />
 
+        {/* Icon Fonts - CRITICAL: Must be loaded from /fonts/ not node_modules */}
+        <style dangerouslySetInnerHTML={{ __html: iconFonts }} />
+        
+        {/* Preload icon fonts for faster loading */}
+        <link rel="preload" href="/fonts/Ionicons.6148e7019854f3bde85b633cb88f3c25.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/MaterialIcons.4e85bc9ebe07e0340c9c4fc2f6c38908.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/MaterialCommunityIcons.b62641afc9ab487008e996a5c5865e56.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/Feather.a76d309774d33d9856f650bed4292a23.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
           However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
@@ -51,6 +60,37 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+const iconFonts = `
+  @font-face {
+    font-family: 'Ionicons';
+    src: url('/fonts/Ionicons.6148e7019854f3bde85b633cb88f3c25.ttf') format('truetype');
+    font-display: swap;
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'MaterialIcons';
+    src: url('/fonts/MaterialIcons.4e85bc9ebe07e0340c9c4fc2f6c38908.ttf') format('truetype');
+    font-display: swap;
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'MaterialCommunityIcons';
+    src: url('/fonts/MaterialCommunityIcons.b62641afc9ab487008e996a5c5865e56.ttf') format('truetype');
+    font-display: swap;
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Feather';
+    src: url('/fonts/Feather.a76d309774d33d9856f650bed4292a23.ttf') format('truetype');
+    font-display: swap;
+    font-weight: normal;
+    font-style: normal;
+  }
+`;
 
 const sw = `
 if ('serviceWorker' in navigator) {
