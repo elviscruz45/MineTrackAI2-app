@@ -38,6 +38,20 @@ import { usePushNotifications } from "@/usePushNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Network from "expo-network";
+
+// Workaround for expo-network on web
+// See: https://github.com/expo/expo/issues/18658#issuecomment-1463137837
+if (
+  process.env.NODE_ENV === "production" &&
+  process.env.EXPO_PUBLIC_BUILD_TARGET === "web"
+) {
+  console.log("Skipping expo-network on web production build");
+  // @ts-ignore
+  Network.getNetworkStateAsync = async () => ({
+    isConnected: true,
+    isInternetReachable: true,
+  });
+}
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
 
 // Funciones específicas para manejo offline del formulario
