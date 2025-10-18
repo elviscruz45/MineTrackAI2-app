@@ -1,9 +1,14 @@
 {
-  "buildCommand": "expo export -p web",
+  "buildCommand": "echo 'Using pre-built dist folder from local'",
+  "installCommand": "echo 'Skipping install - using local build'",
   "outputDirectory": "dist",
   "devCommand": "expo",
   "cleanUrls": true,
   "framework": null,
+  "env": {
+    "EXPO_USE_STATIC": "1",
+    "EXPO_NO_DOTENV": "1"
+  },
   "rewrites": [
     {
       "source": "/(.*)\\.([^/]+)$",

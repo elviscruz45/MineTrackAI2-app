@@ -13,10 +13,11 @@
     "test": "jest --watchAll",
     "lint": "expo lint",
     "clean": "rm -rf .expo node_modules/.cache",
-    "build:sw": "workbox injectManifest workbox-config.js",
-    "build:web": "expo export --platform web && npm run build:sw",
-    "build:web:optimized": "NODE_ENV=production expo export --platform web --clear && npm run build:sw",
-    "deploy": "yarn build:web:optimized && vercel --prod"
+    "build:sw": "cp public/sw.js dist/sw.js",
+    "build:web": "expo export --platform web && yarn build:sw",
+    "build:web:optimized": "NODE_ENV=production expo export --platform web --clear && yarn build:sw",
+    "deploy": "yarn build:web:optimized && vercel --prod",
+    "analyze": "npx webpack-bundle-analyzer .expo/web/production/stats.json"
   },
   "jest": {
     "preset": "jest-expo"
@@ -113,6 +114,12 @@
     "terser-webpack-plugin": "^5.3.14",
     "typescript": "~5.8.3",
     "workbox-cli": "^7.3.0"
+  },
+  "resolutions": {
+    "lightningcss": "1.27.0"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "1.27.0"
   },
   "private": true
 }

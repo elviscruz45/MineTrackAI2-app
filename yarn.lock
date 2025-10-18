@@ -5620,6 +5620,11 @@ expo-modules-core@2.3.13:
   dependencies:
     invariant "^2.2.4"
 
+expo-network@~7.1.5:
+  version "7.1.5"
+  resolved "https://registry.yarnpkg.com/expo-network/-/expo-network-7.1.5.tgz#ac3ba0dc723af2f366a84c0060e9c5b98c370001"
+  integrity sha512-VNgxNe3Y1xo00zMzFy7Q+35qWnSJnjZ9RRLtW3Nu/ITtv9ak+BIghfWj1PANLYB3ZkWzY5656R1YIkkRkeDukg==
+
 expo-notifications@~0.31.2:
   version "0.31.2"
   resolved "https://registry.npmjs.org/expo-notifications/-/expo-notifications-0.31.2.tgz"
@@ -8189,9 +8194,9 @@ lightningcss-win32-x64-msvc@1.27.0:
   resolved "https://registry.yarnpkg.com/lightningcss-win32-x64-msvc/-/lightningcss-win32-x64-msvc-1.27.0.tgz#237d0dc87d9cdc9cf82536bcbc07426fa9f3f422"
   integrity sha512-/OJLj94Zm/waZShL8nB5jsNj3CfNATLCTyFxZyouilfTmSoLDX7VlVAmhPHoZWVFp4vdmoiEbPEYC8HID3m6yw==
 
-lightningcss@~1.27.0:
+lightningcss@1.27.0, lightningcss@~1.27.0:
   version "1.27.0"
-  resolved "https://registry.npmjs.org/lightningcss/-/lightningcss-1.27.0.tgz"
+  resolved "https://registry.yarnpkg.com/lightningcss/-/lightningcss-1.27.0.tgz#d4608e63044343836dd9769f6c8b5d607867649a"
   integrity sha512-8f7aNmS1+etYSLHht0fQApPc2kNO8qGRutifN5rVIc6Xo6ABsEbqOr758UwI7ALVbTt4x1fllKt0PYgzD9S3yQ==
   dependencies:
     detect-libc "^1.0.3"
