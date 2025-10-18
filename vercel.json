@@ -17,37 +17,34 @@
   ],
   "headers": [
     {
-      "source": "/sw.js",
+      "source": "/fonts/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, max-age=0"
+          "value": "public, max-age=31536000, immutable"
         },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Expires", "value": "0" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Content-Type", "value": "font/ttf" }
       ]
     },
     {
-      "source": "/api/version",
+      "source": "/assets/(.*).ttf",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, max-age=0"
+          "value": "public, max-age=31536000, immutable"
         },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Expires", "value": "0" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/_expo/(.*).ttf",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, max-age=0"
+          "value": "public, max-age=31536000, immutable"
         },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Expires", "value": "0" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
@@ -60,46 +57,14 @@
       ]
     },
     {
-      "source": "/assets/(.*).ttf",
+      "source": "/sw.js",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
         },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
-    },
-    {
-      "source": "/_expo/(.*).ttf",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
-    },
-    {
-      "source": "/fonts/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Content-Type",
-          "value": "font/ttf"
-        }
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
       ]
     }
   ]
