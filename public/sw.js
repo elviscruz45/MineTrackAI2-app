@@ -1,5 +1,5 @@
 // Optimized Service Worker for PWA - Fast First Load 🚀
-const CACHE_VERSION = "v5.0"; // Agregada MaterialCommunityIcons
+const CACHE_VERSION = "v5.1"; // Fix: Forzar recarga al actualizar SW
 const CACHE_NAME = `minetrack-ai-${CACHE_VERSION}`;
 const STATIC_CACHE = `minetrack-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `minetrack-images-${CACHE_VERSION}`;
@@ -172,7 +172,9 @@ self.addEventListener("install", (event) => {
 
 // Activate event - Limpieza inteligente manteniendo compatibilidad con deploys
 self.addEventListener("activate", (event) => {
-  console.log("🔄 Service Worker v3.2 activating - Cleaning old caches");
+  console.log(
+    `🔄 Service Worker ${CACHE_VERSION} activating - Cleaning old caches`
+  );
 
   event.waitUntil(
     caches
@@ -196,6 +198,15 @@ self.addEventListener("activate", (event) => {
       .then(() => {
         console.log("✅ Cache cleanup complete, taking control");
         return self.clients.claim();
+      })
+      .then(() => {
+        // Notificar a todos los clientes para que recarguen
+        return self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => {
+            console.log(`[SW] Sending reload message to client`);
+            client.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
+          });
+        });
       })
   );
 });
