@@ -115,11 +115,5 @@
     "typescript": "~5.8.3",
     "workbox-cli": "^7.3.0"
   },
-  "resolutions": {
-    "lightningcss": "1.27.0"
-  },
-  "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.27.0"
-  },
   "private": true
 }
