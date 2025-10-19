@@ -897,6 +897,12 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
         >
           Completadas
         </button>
+        <button
+          style={buttonStyle(activeFilter === "Atrasadas")}
+          onClick={() => setActiveFilter("Atrasadas")}
+        >
+          Atrasadas
+        </button>
       </div>
 
       {/* Action button */}

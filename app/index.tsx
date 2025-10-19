@@ -57,13 +57,20 @@ export default function AuthScreen() {
         <View style={styles.footerContainer}>
           <ImageExpo
             testID="image"
+            source={require("../assets/login/confipetrol.png")}
+            style={[styles.mainLogo, { width: 200, height: 120 }]}
+            cachePolicy={"memory-disk"}
+            contentFit="cover"
+            transition={300}
+          />
+          <ImageExpo
+            testID="image"
             source={require("../assets/login/logoPandora_1024.jpg")}
             style={styles.footerLogo}
             cachePolicy={"memory-disk"}
             contentFit="cover"
             transition={300}
           />
-
           <Text style={styles.footerText}>
             Powered by Pandora Software Company
           </Text>

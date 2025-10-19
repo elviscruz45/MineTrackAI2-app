@@ -35,8 +35,9 @@ function AITNoReduxScreen(props: any) {
   const [area, setArea] = useState();
   const router = useRouter();
 
-  const emptyimage = require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
-
+  const emptyimage = require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+  const projectId = props.servicesData?.[0]?.projectId || "";
+  console.log("projectId en AIT ", projectId);
   //fetching data from firebase to retrieve all users
 
   useEffect(() => {
@@ -154,6 +155,7 @@ function AITNoReduxScreen(props: any) {
         //Monto and HH updated in the proccess of the service
         newData.HHModificado = 0;
         newData.MontoModificado = 0;
+        newData.projectId = projectId;
 
         const uniqueID = `${Date.now()}-${Math.random()
           .toString(36)
@@ -170,6 +172,7 @@ function AITNoReduxScreen(props: any) {
 
         // this hedlps to go to the begining of the process
         // navigation.navigate(screen.post.post);
+        console.log("Oaaaaa");
         router.back();
 
         // navigation.navigate(screen.home.tab, {
@@ -242,6 +245,7 @@ const mapStateToProps = (reducers: any) => {
     firebase_user_name: reducers.profile.firebase_user_name,
     email: reducers.profile.email,
     getTotalUsers: reducers.post.saveTotalUsers,
+    servicesData: reducers.home.servicesData,
   };
 };
 

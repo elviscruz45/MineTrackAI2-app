@@ -181,12 +181,12 @@ export const areaLists = [
   {
     value: "Otra Area",
     tag: "OTRO",
-    image: require("../assets/equipmentplant/ImageIcons/fhIcon1.jpeg"),
+    image: require("../assets/equipmentplant/ImageIcons/confipetrolLogos.png"),
   },
   {
     value: "Parada",
     tag: "Parada",
-    image: require("../assets/equipmentplant/ImageIcons/fhIcon1.jpeg"),
+    image: require("../assets/equipmentplant/ImageIcons/confipetrolLogos.png"),
     // image: require("../assets/equipmentplant/ImageIcons/c2cr001.jpeg"),
   },
 ];

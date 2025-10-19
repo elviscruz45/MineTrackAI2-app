@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View } from "react-native";
-import { Input, Icon, Button } from "@rneui/themed";
+import { Input, Button } from "@rneui/themed";
 import { useFormik } from "formik";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import Toast from "react-native-toast-message";
@@ -14,6 +14,7 @@ import { doc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { saveTotalActivities } from "@/redux/actions/post";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 
 function LoginForm(props: any) {
   const [showPassword, setShowPassword] = useState(false);
@@ -111,9 +112,7 @@ function LoginForm(props: any) {
         placeholder="Correo electronico"
         autoCapitalize="none"
         containerStyle={styles.input}
-        rightIcon={
-          <Icon type="material-community" name="at" iconStyle={styles.icon} />
-        }
+        rightIcon={<MaterialCommunityIcon name="at" iconStyle={styles.icon} />}
         onChangeText={(text) => formik.setFieldValue("email", text)}
         errorMessage={formik.errors.email}
       />
@@ -124,8 +123,7 @@ function LoginForm(props: any) {
         containerStyle={styles.input}
         secureTextEntry={showPassword ? false : true}
         rightIcon={
-          <Icon
-            type="material-community"
+          <MaterialCommunityIcon
             name={showPassword ? "eye-off-outline" : "eye-outline"}
             iconStyle={styles.icon}
             onPress={onShowHidePassword}

@@ -685,7 +685,7 @@ function InformationRaw(props: any) {
   const indexareaList = areaLists.findIndex((item) => item.value === area);
   const imageSource =
     areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
 
   return (
     // <SafeAreaView style={{ flex: 1, backgroundColor: "red" }}>

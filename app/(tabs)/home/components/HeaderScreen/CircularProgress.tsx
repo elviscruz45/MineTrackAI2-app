@@ -37,7 +37,7 @@ const CircularProgress = ({
         <ImageExpo
           source={
             imageSource ||
-            require("../../../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg")
+            require("../../../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png")
           }
           style={{
             marginLeft: 20,

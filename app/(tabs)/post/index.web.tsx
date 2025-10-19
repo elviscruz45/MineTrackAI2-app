@@ -232,7 +232,7 @@ function PublishRaw(props: any) {
     const indexareaList = areaLists.findIndex((item) => item.value === area);
     const imageSource =
       areaLists[indexareaList]?.image ||
-      require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+      require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
     const imageUpdated = AIT.photoServiceURL;
     if (imageUpdated) {
       setEquipment({ uri: imageUpdated });
@@ -404,7 +404,7 @@ function PublishRaw(props: any) {
             );
             const imageSource =
               areaLists[indexareaList]?.image ||
-              require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+              require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
 
             return (
               <TouchableOpacity
@@ -422,7 +422,7 @@ function PublishRaw(props: any) {
                     <ImageExpo
                       source={
                         imageSource ||
-                        require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg")
+                        require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png")
                       }
                       style={styles.image}
                       cachePolicy={"memory-disk"}

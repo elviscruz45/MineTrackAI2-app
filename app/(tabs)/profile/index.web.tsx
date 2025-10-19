@@ -24,6 +24,7 @@ import ProfileDateScreen from "./components/ProfileDateScreen/ProfileDateScreen"
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Tabs, Redirect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { FeatherIcon } from "@/components/FeatherIcon";
 // import OpenAI from "openai";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RagScreen } from "./components/RagScreen/RagScreen";
@@ -206,7 +207,7 @@ function ProfileRaw(props: any) {
           </Text>
           <Button
             icon={
-              <Feather
+              <FeatherIcon
                 name="cpu"
                 size={16}
                 color="white"
@@ -292,7 +293,7 @@ function ProfileRaw(props: any) {
             <View
               style={[styles.statIconContainer, { backgroundColor: "#E6F7FF" }]}
             >
-              <Feather name="file-text" size={24} color="#1890FF" />
+              <FeatherIcon name="file-text" size={24} color="#1890FF" />
             </View>
             <View style={styles.statTextContainer}>
               <Text style={styles.statValue}>124</Text>
@@ -305,7 +306,7 @@ function ProfileRaw(props: any) {
             <View
               style={[styles.statIconContainer, { backgroundColor: "#F6FFED" }]}
             >
-              <Feather name="calendar" size={24} color="#52C41A" />
+              <FeatherIcon name="calendar" size={24} color="#52C41A" />
             </View>
             <View style={styles.statTextContainer}>
               <Text style={styles.statValue}>57</Text>
@@ -318,7 +319,7 @@ function ProfileRaw(props: any) {
             <View
               style={[styles.statIconContainer, { backgroundColor: "#FFF7E6" }]}
             >
-              <Feather name="briefcase" size={24} color="#FA8C16" />
+              <FeatherIcon name="briefcase" size={24} color="#FA8C16" />
             </View>
             <View style={styles.statTextContainer}>
               <Text style={styles.statValue}>8</Text>
@@ -331,7 +332,7 @@ function ProfileRaw(props: any) {
             <View
               style={[styles.statIconContainer, { backgroundColor: "#F9F0FF" }]}
             >
-              <Feather name="check-circle" size={24} color="#722ED1" />
+              <FeatherIcon name="check-circle" size={24} color="#722ED1" />
             </View>
             <View style={styles.statTextContainer}>
               <Text style={styles.statValue}>36</Text>
@@ -473,7 +474,7 @@ function ProfileRaw(props: any) {
             onPress={() => setShowRagModal(false)}
             accessibilityLabel="Cerrar asistente IA"
           >
-            <Feather name="x" size={20} color="#333" />
+            <FeatherIcon name="x" size={20} color="#333" />
           </TouchableOpacity>
           <RagScreen />
         </View>

@@ -45,6 +45,7 @@ export default function initialValues() {
     proyecto: "",
     activities: [],
     activitiesData: [],
+    projectId: "",
   };
 }
 

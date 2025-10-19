@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import styles from "./moreDetail.styles";
 import { screen } from "../../../utils";
 import { connect } from "react-redux";
@@ -664,7 +665,7 @@ function MoreDetailScreenNoRedux(props: any) {
   const indexareaList = areaLists.findIndex((item) => item.value === area);
   const imageSource =
     areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
 
   const photoServiceURLDecoded = photoServiceURL.replace(/abcdefg/g, "%2F");
 
@@ -1075,7 +1076,7 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Información General Card */}
           <View style={modernStyles.infoCard}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
+              <MaterialIcon
                 name="business"
                 size={20}
                 color="#007AFF"
@@ -1105,7 +1106,7 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Fechas Card */}
           <View style={modernStyles.infoCard}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
+              <MaterialIcon
                 name="schedule"
                 size={20}
                 color="#007AFF"
@@ -1138,7 +1139,7 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Personal Cotizado Card */}
           <View style={modernStyles.infoCard}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
+              <MaterialIcon
                 name="people"
                 size={20}
                 color="#007AFF"
@@ -1178,7 +1179,7 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Horas Hombre Card */}
           <View style={modernStyles.infoCard}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
+              <MaterialIcon
                 name="access-time"
                 size={20}
                 color="#007AFF"
@@ -1286,7 +1287,7 @@ function MoreDetailScreenNoRedux(props: any) {
                   marginBottom: 16,
                 }}
               >
-                <MaterialIcons
+                <MaterialIcon
                   name="assignment"
                   size={20}
                   color="#007AFF"
@@ -1335,7 +1336,7 @@ function MoreDetailScreenNoRedux(props: any) {
                   marginBottom: 16,
                 }}
               >
-                <MaterialIcons
+                <MaterialIcon
                   name="bar-chart"
                   size={20}
                   color="#007AFF"
@@ -1350,7 +1351,7 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Responsables Section */}
           <View style={modernStyles.infoCard}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcons
+              <MaterialIcon
                 name="supervisor-account"
                 size={20}
                 color="#007AFF"

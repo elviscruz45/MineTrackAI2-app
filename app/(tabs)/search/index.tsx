@@ -137,7 +137,7 @@ function SearchAssetRaw(props: any) {
           );
           const imageSource =
             areaLists[indexareaList]?.image ||
-            require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+            require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
           // the algorithm to retrieve the amount with format
           const formattedAmount = new Intl.NumberFormat("en-US", {
             style: "decimal",
@@ -162,7 +162,7 @@ function SearchAssetRaw(props: any) {
                   <ImageExpo
                     source={
                       imageSource ||
-                      require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg")
+                      require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png")
                     }
                     style={styles.image}
                     cachePolicy={"memory-disk"}

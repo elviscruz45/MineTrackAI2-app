@@ -38,6 +38,8 @@ import HeaderScreen from "./components/HeaderScreen/HeaderScreen";
 import styles from "./_styles/index.styles";
 import { Image as ImageExpo } from "expo-image";
 import { Icon } from "@rneui/themed";
+import { MaterialIcon } from "@/components/MaterialIcon";
+import { FeatherIcon } from "@/components/FeatherIcon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ProjectFilterModal from "./components/ProjectFilterModal";
 import ProjectUploadModal from "./components/ProjectUploadModal";
@@ -1224,8 +1226,6 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               flex: 1,
             }}
           >
-            {/* Dashboard Header with Search and Quick Actions */}
-
             <View
               style={{
                 flexDirection: "row",
@@ -1246,10 +1246,9 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               >
                 Actividad Reciente
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Icon
+              {/* <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcon
                   name="filter-list"
-                  type="material"
                   color="#2A3B76"
                   size={24}
                   style={{ marginRight: 8 }}
@@ -1257,7 +1256,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 <Text style={{ color: "#2A3B76", fontWeight: "600" }}>
                   Filtrar
                 </Text>
-              </View>
+              </View> */}
             </View>
 
             {/* Summary Stats Section */}
@@ -1342,9 +1341,8 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                         alignItems: "center",
                       }}
                     >
-                      <Icon
+                      <FeatherIcon
                         name={stat.icon}
-                        type="feather"
                         size={20}
                         color={stat.color}
                       />
@@ -1368,13 +1366,12 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                       alignItems: "center",
                     }}
                   >
-                    <Icon
+                    <FeatherIcon
                       name={
                         stat.change.includes("+")
                           ? "trending-up"
                           : "trending-down"
                       }
-                      type="feather"
                       size={16}
                       color={stat.change.includes("+") ? "#4CAF50" : "#F44336"}
                       style={{ marginRight: 4 }}
@@ -1419,7 +1416,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 );
                 const imageSource =
                   areaLists[indexareaList]?.image ??
-                  require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+                  require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
                 return (
                   <View
                     style={{
@@ -1459,7 +1456,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                         shadowRadius: 2,
                       }}
                     >
-                      <View
+                      {/* <View
                         style={{
                           width: 24,
                           height: 24,
@@ -1479,7 +1476,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                         >
                           FH
                         </Text>
-                      </View>
+                      </View> */}
                       <Text
                         style={{
                           color: "#fff",
@@ -1611,9 +1608,8 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                           }}
                           onPress={() => commentPost(item)}
                         >
-                          <Icon
+                          <MaterialIcon
                             name="arrow-forward"
-                            type="material"
                             size={14}
                             color="#fff"
                           />

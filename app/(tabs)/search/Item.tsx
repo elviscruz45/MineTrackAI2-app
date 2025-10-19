@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import styles from "./Item.styles";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -282,8 +283,7 @@ function ItemScreenNotRedux(props: any) {
   const indexareaList = areaLists?.findIndex((item) => item.value === area);
   const imageSource =
     areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
-  // require("../assets/equipmentplant/ImageIcons/fhIcon1.jpeg");
+    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
   /// the algorithm to retrieve the amount with format
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "decimal",
@@ -660,7 +660,7 @@ function ItemScreenNotRedux(props: any) {
 
                 {/* Service Number */}
                 <View style={modernStyles.infoRow}>
-                  <MaterialIcons
+                  <MaterialIcon
                     name="confirmation-number"
                     size={16}
                     color="#007AFF"
@@ -677,7 +677,7 @@ function ItemScreenNotRedux(props: any) {
                 {/* Start Date */}
                 <View style={modernStyles.dateCard}>
                   <View style={modernStyles.infoRow}>
-                    <MaterialIcons
+                    <MaterialIcon
                       name="play-arrow"
                       size={16}
                       color="#4caf50"
@@ -693,7 +693,7 @@ function ItemScreenNotRedux(props: any) {
                 {/* End Date */}
                 <View style={modernStyles.dateCard}>
                   <View style={modernStyles.infoRow}>
-                    <MaterialIcons
+                    <MaterialIcon
                       name="stop"
                       size={16}
                       color="#f44336"
@@ -733,7 +733,7 @@ function ItemScreenNotRedux(props: any) {
                 style={modernStyles.actionButton}
                 onPress={() => Detalles(serviceInfo)}
               >
-                <MaterialIcons name="info" size={24} color="#007AFF" />
+                <MaterialIcon name="info" size={24} color="#007AFF" />
                 <Text style={modernStyles.actionButtonLabel}>
                   Más Información
                 </Text>
@@ -743,7 +743,7 @@ function ItemScreenNotRedux(props: any) {
                 style={modernStyles.actionButton}
                 onPress={() => goToDocs(serviceInfo)}
               >
-                <MaterialIcons name="folder" size={24} color="#007AFF" />
+                <MaterialIcon name="folder" size={24} color="#007AFF" />
                 <Text style={modernStyles.actionButtonLabel}>Documentos</Text>
               </TouchableOpacity>
 
@@ -751,7 +751,7 @@ function ItemScreenNotRedux(props: any) {
                 style={modernStyles.actionButton}
                 onPress={() => createReport(post, serviceInfo)}
               >
-                <MaterialIcons name="description" size={24} color="#007AFF" />
+                <MaterialIcon name="description" size={24} color="#007AFF" />
                 <Text style={modernStyles.actionButtonLabel}>
                   Generar Reporte
                 </Text>
@@ -769,7 +769,7 @@ function ItemScreenNotRedux(props: any) {
                 justifyContent: "center",
               }}
             >
-              <MaterialIcons name="history" size={20} color="#007AFF" />
+              <MaterialIcon name="history" size={20} color="#007AFF" />
               <Text
                 style={{
                   fontSize: 18,
