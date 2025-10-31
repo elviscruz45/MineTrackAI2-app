@@ -55,14 +55,14 @@ export default function AuthScreen() {
 
         {/* Footer with company info */}
         <View style={styles.footerContainer}>
-          <ImageExpo
+          {/* <ImageExpo
             testID="image"
             source={require("../assets/login/confipetrol.png")}
             style={[styles.mainLogo, { width: 200, height: 120 }]}
             cachePolicy={"memory-disk"}
             contentFit="cover"
             transition={300}
-          />
+          /> */}
           <ImageExpo
             testID="image"
             source={require("../assets/login/logoPandora_1024.jpg")}

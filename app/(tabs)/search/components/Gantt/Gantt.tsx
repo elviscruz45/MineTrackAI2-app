@@ -188,7 +188,7 @@ const GanttHistorial = (props: any) => {
               ]}
             >
               {/* Antamina badge */}
-              <View
+              {/* <View
                 style={{
                   position: "absolute",
                   top: 8,
@@ -207,7 +207,7 @@ const GanttHistorial = (props: any) => {
                 >
                   FH
                 </Text>
-              </View>
+              </View> */}
 
               {/* Header with title and date in Antamina style */}
               <View

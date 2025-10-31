@@ -193,6 +193,65 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
     return date < new Date();
   };
 
+  // Function to update task status and progress
+  const updateTaskStatus = (
+    sectionId: string,
+    taskId: string,
+    newStatus: string,
+    newAvance: string
+  ) => {
+    setSections((prevSections: any) =>
+      prevSections.map((section: any) => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            tasks: section.tasks.map((task: any) => {
+              if (task.id === taskId) {
+                return {
+                  ...task,
+                  status: newStatus,
+                  avance: newAvance,
+                  // Add real start date if task is starting
+                  startDateReal:
+                    newStatus === "En Progreso" &&
+                    Object.keys(task.startDateReal).length === 0
+                      ? {
+                          date: new Date().toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                          }),
+                          time: new Date().toLocaleTimeString("es-ES", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }),
+                        }
+                      : task.startDateReal,
+                  // Add real end date if task is completed
+                  endDateReal:
+                    newStatus === "Completada"
+                      ? {
+                          date: new Date().toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                          }),
+                          time: new Date().toLocaleTimeString("es-ES", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }),
+                        }
+                      : task.endDateReal,
+                };
+              }
+              return task;
+            }),
+          };
+        }
+        return section;
+      })
+    );
+  }; // Apply filters to tasks
   const getFilteredSections = () => {
     return sections.map((section: any) => {
       const filteredTasks = section.tasks.filter((task: any) => {

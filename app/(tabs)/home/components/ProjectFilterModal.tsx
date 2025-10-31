@@ -65,7 +65,6 @@ const ProjectFilterModal = ({
   const [firebaseProjects, setFirebaseProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
 
-  console.log("oooaaa besho", firebaseProjects);
   // NEW: Fetch projects from Firestore on mount
   useEffect(() => {
     const fetchProjects = async () => {

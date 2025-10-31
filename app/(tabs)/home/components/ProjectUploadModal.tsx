@@ -21,6 +21,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 interface ProjectUploadModalProps {
@@ -87,7 +88,6 @@ const ProjectUploadModal = ({
   };
 
   const handleSubmit = async () => {
-    console.log("1111 este el primer paso", projectName);
     if (!projectName.trim()) {
       Toast.show({
         type: "error",
@@ -95,8 +95,6 @@ const ProjectUploadModal = ({
       });
       return;
     }
-    console.log("2222 este el primer paso", selectedFile);
-
     if (!selectedFile) {
       Toast.show({
         type: "error",
@@ -108,22 +106,29 @@ const ProjectUploadModal = ({
 
     setIsLoading(true);
 
+    // Variable para almacenar el ID del proyecto (solo se crea si pasa validación)
+    let newProjectDocId: string | null = null;
+
     try {
       //-------------------------------------------------------------------
 
-      // 1. Create new project document
+      // 1. PRIMERO: Crear proyecto en Firebase
       const proyectosRef = collection(db, "proyectos");
       const newProjectDoc = await addDoc(proyectosRef, {
         projectName,
         projectType,
         createdAt: new Date().toISOString(),
       });
+
+      // Guardar el ID para posible limpieza
+      newProjectDocId = newProjectDoc.id;
+
       // Add the document ID to the document fields
       await updateDoc(newProjectDoc, {
         id: newProjectDoc.id,
       });
 
-      // 4. Continue with file upload logic
+      // 2. DESPUÉS: Validar y procesar el archivo (esto lanzará error si hay problemas)
       await onUploadFile(
         projectName,
         projectType,
@@ -131,6 +136,7 @@ const ProjectUploadModal = ({
         newProjectDoc.id
       );
 
+      // ✅ Solo cerrar modal y mostrar éxito si no hubo errores
       handleClose();
       Toast.show({
         type: "success",
@@ -138,10 +144,33 @@ const ProjectUploadModal = ({
       });
     } catch (error) {
       console.error("Error uploading file:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error al cargar el archivo",
-      });
+
+      // 🧹 LIMPIEZA: Si se creó el proyecto pero falló la validación, eliminarlo
+      if (newProjectDocId) {
+        try {
+          await deleteDoc(doc(db, "proyectos", newProjectDocId));
+          console.log(
+            `🗑️ Proyecto ${newProjectDocId} eliminado debido a error de validación`
+          );
+        } catch (deleteError) {
+          console.error("Error al eliminar proyecto fallido:", deleteError);
+        }
+      }
+
+      // El Toast ya fue mostrado en handleProjectFileUpload si fue error de validación
+      // Solo mostrar Toast genérico si es otro tipo de error
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
+
+      if (!errorMessage.includes("Validación fallida")) {
+        Toast.show({
+          type: "error",
+          text1: "Error al cargar el archivo",
+          text2: errorMessage,
+        });
+      }
+
+      // No cerrar el modal para que el usuario pueda corregir el archivo
     } finally {
       setIsLoading(false);
     }

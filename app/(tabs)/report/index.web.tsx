@@ -31,14 +31,7 @@ import { Modal } from "@/components/Modal/Modal";
 import ChangeDisplayCompany from "./components/ChangeCompany/ChangeCompany";
 import Toast from "react-native-toast-message";
 import { useRouter } from "expo-router";
-import {
-  LineChart,
-  BarChart,
-  PieChart,
-  ProgressChart,
-  ContributionGraph,
-  StackedBarChart,
-} from "react-native-chart-kit";
+
 import ReportHeader from "./webcomponents/ReportHeader";
 import ReportNavbar from "./webcomponents/ReportNavbar";
 import ProjectSelector from "./webcomponents/ProjectSelector";
@@ -48,35 +41,6 @@ import OnePageView from "./webcomponents/OnePageView";
 import CriticalRouteView from "./webcomponents/CriticalRouteView";
 import SafetyView from "./webcomponents/SafetyView";
 import EnvironmentView from "./webcomponents/EnvironmentView";
-const screenWidth = Dimensions.get("window").width;
-
-const chartConfig = {
-  backgroundGradientFrom: "white", // Negro puro
-  backgroundGradientFromOpacity: 1,
-  backgroundGradientTo: "white",
-  backgroundGradientToOpacity: 1,
-  color: (opacity = 1) => `blue`, // Gris claro para contraste sin ser blanco puro
-  strokeWidth: 1, // optional, default 3
-  barPercentage: 0.5,
-  useShadowColorFromDataset: false, // optional
-};
-
-const dataLineChart = {
-  labels: ["0", "4", "8", "12", "16", "20", "24", "28", "32", "36", "40"],
-  datasets: [
-    {
-      data: [0, 2, 4, 8, 15, 22, 30, 40, 55, 70, 80, 88, 93, 96, 98, 100],
-      color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
-      strokeWidth: 2, // optional
-    },
-    {
-      data: [0, 1, 3, 6, 12, 13, 14],
-      color: (opacity = 1) => `rgba(132, 243, 122, ${opacity})`, // optional
-      strokeWidth: 2, // optional
-    },
-  ],
-  legend: ["Programado", "Real"], // optional
-};
 
 // Mock data for projects
 const AVAILABLE_PROJECTS = [
@@ -103,16 +67,7 @@ function ReportnoRedux(props: any) {
   const [companyList, setCompanyList] = useState<any>();
   // const onCloseOpenModal = () => setShowModal((prevState) => !prevState);
   const userType = props.profile?.userType;
-  // const update_Data = () => {
-  //   setRenderComponent(
-  //     <ChangeDisplayCompany
-  //       onClose={onCloseOpenModal}
-  //       setCompany={setCompany}
-  //       companyList={companyList}
-  //     />
-  //   );
-  //   setShowModal(true);
-  // };
+
   //real time updates
   const [data, setData] = useState();
 
@@ -149,31 +104,11 @@ function ReportnoRedux(props: any) {
   console.log("Data in Report Screenn:", data);
 
   // go to a history screen
-  const goToHistoryScreen = () => {
-    // navigation.navigate(screen.report.tab, {
-    //   screen: screen.report.history,
-    // });
-    router.push({
-      pathname: "/report/History",
-    });
-  };
-  const userTypeWarn = () => {
-    Toast.show({
-      type: "error",
-      position: "bottom",
-      text1: "No autorizado para esta accion",
-    });
-  };
 
   const handleProjectChange = (project: string) => {
     setSelectedProject(project);
     // Here you would typically fetch or filter data based on the selected project
     console.log(`Selected project: ${project}`);
-  };
-
-  // Format the project title in the desired format
-  const getFormattedProjectTitle = () => {
-    return `${selectedCompany} - ${selectedType} - Chancado Primario - ${selectedDate}`;
   };
 
   if (!data) {
@@ -210,29 +145,6 @@ function ReportnoRedux(props: any) {
             <OnePageView selectedProject={selectedProject} />
           ) : (
             <div style={{ width: "100%" }}>
-              {/* <h2
-                style={{
-                  ...styles.company,
-                  fontSize: 24,
-                  marginBottom: 8,
-                  color: "#2A3B76",
-                  textAlign: "center",
-                }}
-              >
-                EMPRESA MINERA ANTAPACCAY SA
-              </h2> */}
-              {/* <h3
-                style={{
-                  ...styles.company,
-                  fontSize: 18,
-                  marginTop: 0,
-                  color: "#555",
-                  textAlign: "center",
-                }}
-              >
-                PARADA DE PLANTA JULIO 2025
-              </h3> */}
-
               <div
                 style={{
                   marginTop: 32,
@@ -267,75 +179,7 @@ function ReportnoRedux(props: any) {
                       display: "flex",
                       gap: 12,
                     }}
-                  >
-                    {/* <button
-                      style={{
-                        backgroundColor: "#2A3B76",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 4,
-                        padding: "8px 16px",
-                        fontSize: 14,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
-                      }}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12 4V20M4 12H20"
-                          stroke="white"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Exportar
-                    </button> */}
-
-                    {/* <button
-                      // onClick={() =>
-                      //   window.ZingChart.exec("myChart", "exportPDF")
-                      // }
-                      style={{
-                        backgroundColor: "white",
-                        color: "#2A3B76",
-                        border: "1px solid #2A3B76",
-                        borderRadius: 4,
-                        padding: "8px 16px",
-                        fontSize: 14,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M4 17V19C4 19.5304 4.21071 20.0391 4.58579 20.4142C4.96086 20.7893 5.46957 21 6 21H18C18.5304 21 19.0391 20.7893 19.4142 20.4142C19.7893 20.0391 20 19.5304 20 19V17M7 11L12 16M12 16L17 11M12 16V4"
-                          stroke="#2A3B76"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Imprimir
-                    </button> */}
-                  </div>
+                  ></div>
                 </div>
 
                 {/* Show content based on active tab */}

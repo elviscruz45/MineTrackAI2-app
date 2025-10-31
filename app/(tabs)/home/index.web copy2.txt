@@ -341,10 +341,9 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           // 📊 Parse Excel con XLSX
           const workbook = XLSX.read(arrayBuffer, {
             type: "array",
-            cellDates: true, // 🔥 Convierte seriales de fecha a objetos Date
+            cellDates: true,
             cellText: false,
             raw: false,
-            dateNF: "dd/mm/yyyy", // Formato de fecha
           });
 
           // Obtener la primera hoja
@@ -363,10 +362,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           data = (jsonData.slice(1) as any[]).map((row: any[]) => {
             const obj: any = {};
             headers.forEach((header, index) => {
-              // 🔥 FIX 1: Limpiar espacios iniciales y finales de strings
-              const value = row[index];
-              obj[header] =
-                typeof value === "string" ? value.trim() : value || "";
+              obj[header] = row[index] || "";
             });
             return obj;
           });
@@ -378,10 +374,6 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           const result = Papa.parse<CSVRow>(fileContent, {
             header: true,
             skipEmptyLines: true,
-            transform: (value) => {
-              // 🔥 FIX 1: Limpiar espacios iniciales y finales de strings
-              return typeof value === "string" ? value.trim() : value;
-            },
           });
 
           data = result.data;
@@ -399,68 +391,6 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         });
 
         data = result.data;
-      }
-
-      // ✅ VALIDACIÓN: Verificar que todas las filas tengan los campos requeridos
-      const requiredFields = [
-        "Codigo",
-        "NombreServicio",
-        "FechaInicio",
-        "FechaFin",
-      ];
-      const invalidRows: { row: number; missing: string[] }[] = [];
-      console.log("dataaaa validacion", data);
-      data.forEach((row, index) => {
-        const rowData = row as any;
-        const missingFields = requiredFields.filter((field) => {
-          const value = rowData[field];
-          console.log("dataaaa value--->>", value);
-          // Verificar si es null, undefined, vacío, o solo espacios en blanco
-          if (value === null || value === undefined || value === "") {
-            return true;
-          }
-          // Si es string, verificar que no sea solo espacios
-          if (typeof value === "string" && value.trim() === "") {
-            return true;
-          }
-          return false;
-        });
-
-        if (missingFields.length > 0) {
-          invalidRows.push({
-            row: index + 2, // +2: +1 por índice 0-based, +1 por header
-            missing: missingFields,
-          });
-        }
-      });
-
-      if (invalidRows.length > 0) {
-        setIsLoading(false);
-        const rowNumbers = invalidRows
-          .map((r) => r.row)
-          .slice(0, 10)
-          .join(", ");
-        const firstRowMissing = invalidRows[0].missing.join(", ");
-
-        // Log detallado en consola para debug
-        console.error("❌ Validación fallida - Filas con campos faltantes:");
-        invalidRows.forEach((item) => {
-          console.error(
-            `  Fila ${item.row}: Faltan campos [${item.missing.join(", ")}]`
-          );
-        });
-
-        Toast.show({
-          type: "error",
-          text1: "❌ Archivo incompleto",
-          text2: `Fila ${invalidRows[0].row}: Faltan "${firstRowMissing}". Total de filas con errores: ${invalidRows.length}`,
-          visibilityTime: 6000,
-        });
-
-        // Lanzar error para que sea capturado en handleSubmit
-        throw new Error(
-          `Validación fallida: Fila ${invalidRows[0].row} - Faltan campos: ${firstRowMissing}. Total de filas con errores: ${invalidRows.length}`
-        );
       }
 
       // 2️⃣ Filter activities
@@ -629,23 +559,12 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
       setIsLoading(false);
     } catch (error) {
       console.error("Error al procesar el archivo:", error);
-
-      // Si es un error de validación, ya se mostró el Toast, solo relanzar
-      const errorMessage =
-        error instanceof Error ? error.message : "Error desconocido";
-
-      if (!errorMessage.includes("Validación fallida")) {
-        Toast.show({
-          type: "error",
-          text1: "Error al procesar el archivo",
-          text2: errorMessage,
-        });
-      }
-
+      Toast.show({
+        type: "error",
+        text1: "Error al procesar el archivo",
+        text2: error instanceof Error ? error.message : "Error desconocido",
+      });
       setIsLoading(false);
-
-      // ⚠️ IMPORTANTE: Relanzar el error para que handleSubmit lo capture
-      throw error;
     }
   };
 
@@ -1775,80 +1694,39 @@ const HomeScreen = connect(mapStateToProps, {
 
 // Intenta parsear fechas en múltiples formatos y seriales de Excel
 function parseAnyDate(value: any) {
-  // 🔥 FIX 2: Log para debug
-  console.log("parseAnyDate - Input:", value, "Type:", typeof value);
+  if (!value) return null;
 
-  if (!value) {
-    console.log("parseAnyDate - Empty value, returning null");
-    return null;
-  }
-
-  // 1. Si es un objeto Date de JavaScript (común en Excel parseado)
-  if (value instanceof Date) {
-    console.log("parseAnyDate - Already a Date object:", value);
-    return value;
-  }
-
-  // 2. Si es número (serial Excel)
+  // 1. Si es número (serial Excel)
   if (typeof value === "number") {
-    try {
-      const date = XLSX.SSF.parse_date_code(value);
-      if (date) {
-        const parsedDate = new Date(
-          date.y,
-          date.m - 1,
-          date.d,
-          date.H || 0,
-          date.M || 0,
-          date.S || 0
-        );
-        console.log("parseAnyDate - Parsed from Excel serial:", parsedDate);
-        return parsedDate;
-      }
-    } catch (error) {
-      console.error("parseAnyDate - Error parsing Excel serial:", error);
+    const date = XLSX.SSF.parse_date_code(value);
+    if (date) {
+      return new Date(date.y, date.m - 1, date.d, date.H, date.M, date.S);
     }
   }
 
-  // 3. Si es string, prueba varios formatos
+  // 2. Si es string, prueba varios formatos
   if (typeof value === "string") {
-    // Normaliza separador y limpia espacios múltiples
-    let str = value.trim().replace(/,/g, "").replace(/\s+/g, " ");
+    // Normaliza separador
+    let str = value.replace(",", " ").replace("  ", " ").trim();
 
-    if (!str) {
-      console.log("parseAnyDate - Empty string after trim");
-      return null;
-    }
-
-    // 🔥 Regex mejorado para soportar múltiples formatos:
-    // 19/10/2025 10:00:00 PM
-    // 19/10/25 22:00:00
-    // 19/10/2025 10:00 PM
-    // 19/10/2025
+    // Siempre intenta primero con DD/MM/YYYY (o DD/MM/YY) con o sin hora
     const regex =
-      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i;
+      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?)?$/i;
     const match = str.match(regex);
-
     if (match) {
       let [, day, month, year, hour = "0", minute = "0", second = "0", ampm] =
         match;
-
-      // Normalizar año de 2 dígitos a 4
-      if (year?.length === 2) {
-        year = "20" + year;
-      }
-
-      // Convertir hora en formato 12h a 24h si hay AM/PM
+      if (year?.length === 2) year = "20" + year;
       if (ampm) {
-        const hourNum = Number(hour);
-        if (ampm.toUpperCase() === "PM" && hourNum !== 12) {
-          hour = String(hourNum + 12);
-        } else if (ampm.toUpperCase() === "AM" && hourNum === 12) {
-          hour = "0";
-        }
+        hour = String(
+          ampm.toUpperCase() === "PM" && hour !== "12"
+            ? Number(hour) + 12
+            : hour === "12" && ampm.toUpperCase() === "AM"
+            ? 0
+            : hour
+        );
       }
-
-      const parsedDate = new Date(
+      return new Date(
         Number(year),
         Number(month) - 1,
         Number(day),
@@ -1856,29 +1734,14 @@ function parseAnyDate(value: any) {
         Number(minute),
         Number(second)
       );
-
-      // Validar que la fecha sea válida
-      if (!isNaN(parsedDate.getTime())) {
-        console.log(
-          "parseAnyDate - Parsed from DD/MM/YYYY format:",
-          parsedDate
-        );
-        return parsedDate;
-      } else {
-        console.log("parseAnyDate - Invalid date after parsing");
-      }
     }
 
-    // Si no funcionó el regex, intenta con Date.parse (ISO, etc)
+    // Si no es formato DD/MM/YYYY, intenta con Date.parse (ISO, etc)
     let d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      console.log("parseAnyDate - Parsed with Date.parse:", d);
-      return d;
-    }
+    if (!isNaN(d.getTime())) return d;
   }
 
   // Si nada funcionó, retorna null
-  console.log("parseAnyDate - Could not parse, returning null");
   return null;
 }
 

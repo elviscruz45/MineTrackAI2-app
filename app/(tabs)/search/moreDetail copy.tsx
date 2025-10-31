@@ -657,7 +657,12 @@ function MoreDetailScreenNoRedux(props: any) {
 
   //retrieving serviceAIT list data from firebase
   useEffect(() => {
+    console.log("moreDetail activitiesData", activitiesData);
+    console.log("11111111111");
+    console.log("2222222222");
+
     const listaActividades = JSON.parse(activitiesData || "[]");
+    console.log("3333333333");
 
     console.log("listaActividades", listaActividades);
 
@@ -704,16 +709,12 @@ function MoreDetailScreenNoRedux(props: any) {
     );
   };
 
-  const activitiesList = () => {
-    console.log("pppppppppp-----", data);
-
-    console.log("pppppppppp", data);
-
-    console.log("ELVIS", data);
+  const activitiesList = (array: any) => {
+    console.log("ELVIS", array);
 
     return (
       <FlatList
-        data={data}
+        data={array}
         renderItem={({ index, item }) => {
           const FechaInicio = item.FechaInicio;
           const FechaFin = item.FechaFin;
@@ -900,6 +901,24 @@ function MoreDetailScreenNoRedux(props: any) {
       />
     );
   };
+  // //Algorithm to render the bar status
+  // const BarProgress = (percentage: any) => {
+  //   const TotalSizeCompleted = windowWidth - 20;
+  //   const percentajeNormalized = (percentage * TotalSizeCompleted) / 100;
+
+  //   return (
+  //     <View style={{ flexDirection: "row", height: 10, margin: 10 }}>
+  //       <View
+  //         style={{
+  //           backgroundColor:
+  //             AvanceEjecucion >= AvanceProyected ? "blue" : "red",
+  //           width: percentajeNormalized ? percentajeNormalized : 0,
+  //           borderRadius: 5,
+  //         }}
+  //       />
+  //     </View>
+  //   );
+  // };
 
   // go to edit screen
   const goToEditAITScreen = () => {
@@ -1004,6 +1023,29 @@ function MoreDetailScreenNoRedux(props: any) {
     }
   };
 
+  const finalizeService = async () => {
+    Alert.alert(
+      "Finalizar Servicio",
+      "Estas Seguro que desear Finalizar la actividad?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Aceptar",
+          onPress: async () => {
+            Toast.show({
+              type: "success",
+              position: "bottom",
+              text1: "Se ha Finalizado correctamente",
+            });
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
   return (
     <View style={modernStyles.mainContainer}>
       <KeyboardAwareScrollView
@@ -1247,48 +1289,52 @@ function MoreDetailScreenNoRedux(props: any) {
             )}
           </View>
 
-          <View style={modernStyles.infoCard}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <MaterialIcon
-                name="assignment"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>
-                REPORTE DE ACTIVIDADES
-              </Text>
+          {TipoServicio === "Parada de Planta" && (
+            <View style={modernStyles.infoCard}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <MaterialIcon
+                  name="assignment"
+                  size={20}
+                  color="#007AFF"
+                  style={modernStyles.iconStyle}
+                />
+                <Text style={modernStyles.infoCardTitle}>
+                  REPORTE DE ACTIVIDADES
+                </Text>
+              </View>
+
+              <ScrollView
+              // style={modernStyles.activitiesScrollContainer}
+              // contentContainerStyle={modernStyles.activitiesScrollContent}
+              // showsVerticalScrollIndicator={true}
+              // nestedScrollEnabled={true}
+              // bounces={true}
+              >
+                {activitiesList(data)}
+              </ScrollView>
+
+              <TouchableOpacity
+                style={[
+                  modernStyles.saveButton,
+                  updateing && { backgroundColor: "#999" },
+                ]}
+                onPress={() => updateDates()}
+                disabled={updateing}
+              >
+                <Text style={modernStyles.saveButtonText}>
+                  {updateing
+                    ? "⏳ Guardando..."
+                    : "💾 Guardar las fechas reales"}
+                </Text>
+              </TouchableOpacity>
             </View>
-
-            <ScrollView
-            // style={modernStyles.activitiesScrollContainer}
-            // contentContainerStyle={modernStyles.activitiesScrollContent}
-            // showsVerticalScrollIndicator={true}
-            // nestedScrollEnabled={true}
-            // bounces={true}
-            >
-              {activitiesList()}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[
-                modernStyles.saveButton,
-                updateing && { backgroundColor: "#999" },
-              ]}
-              onPress={() => updateDates()}
-              disabled={updateing}
-            >
-              <Text style={modernStyles.saveButtonText}>
-                {updateing ? "⏳ Guardando..." : "💾 Guardar las fechas reales"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          )}
 
           {/* Recursos Humanos Chart */}
           {events && (
@@ -1351,7 +1397,6 @@ const mapStateToProps = (reducers: any) => {
   return {
     email: reducers.profile.email,
     profile: reducers.profile.profile,
-    // servicesData: reducers.home.servicesData,
   };
 };
 
