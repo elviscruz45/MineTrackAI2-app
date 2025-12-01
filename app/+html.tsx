@@ -37,7 +37,11 @@ export default function Root({ children }: PropsWithChildren) {
         />
 
         {/* Bootstrap the service worker. */}
-        <script dangerouslySetInnerHTML={{ __html: sw }} />
+        {/* DESACTIVADO TEMPORALMENTE - Descomentar para habilitar offline mode */}
+        {/* <script dangerouslySetInnerHTML={{ __html: sw }} /> */}
+
+        {/* Script para DESREGISTRAR Service Workers existentes */}
+        <script dangerouslySetInnerHTML={{ __html: unregisterSW }} />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -51,6 +55,35 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+// Script para DESREGISTRAR todos los Service Workers
+const unregisterSW = `
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) {
+                registration.unregister().then(success => {
+                    if (success) {
+                        console.log('✅ Service Worker desregistrado exitosamente');
+                    }
+                });
+            }
+        });
+        
+        // Limpiar todo el caché
+        if ('caches' in window) {
+            caches.keys().then(cacheNames => {
+                cacheNames.forEach(cacheName => {
+                    caches.delete(cacheName);
+                    console.log('🧹 Caché eliminado:', cacheName);
+                });
+            });
+        }
+        
+        console.log('🔓 Service Worker completamente desactivado - Sin caché');
+    });
+}
+`;
 
 const sw = `
 if ('serviceWorker' in navigator) {
