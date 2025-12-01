@@ -221,5 +221,101 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
+  // Nuevos estilos para diseño responsive con tarjetas
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#f5f5f5",
+  },
+  searchBarContainer: {
+    backgroundColor: "transparent",
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    paddingHorizontal: 0,
+  },
+  searchBarInput: {
+    backgroundColor: "#ffffff",
+    borderRadius: 25,
+    paddingHorizontal: 10,
+  },
+  searchBarText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  columnWrapper: {
+    justifyContent: "flex-start",
+    gap: 16,
+    marginBottom: 16,
+  },
+  cardContainer: {
+    flex: 1,
+    minWidth: width >= 768 ? 200 : "100%",
+    maxWidth: width >= 768 ? 400 : "100%",
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#e8e8e8",
+    padding: 12,
+    alignItems: "center",
+    minHeight: 100,
+  },
+  cardImageContainer: {
+    width: 70,
+    height: 70,
+    backgroundColor: "#f8f8f8",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#2A3B76",
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  cardInfo: {
+    gap: 4,
+  },
+  infoText: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  infoLabel: {
+    fontWeight: "600",
+    color: "#666",
+  },
+  infoValue: {
+    color: "#333",
+    fontWeight: "400",
+  },
 });
 export default styles;

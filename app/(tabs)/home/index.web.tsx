@@ -926,17 +926,30 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
             >
               {/* Logo con efecto de sombra */}
               <View
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 20,
-                  elevation: 15,
-                  marginBottom: 30,
-                }}
+                style={
+                  {
+                    // shadowColor: "#000",
+                    // shadowOffset: { width: 0, height: 10 },
+                    // shadowOpacity: 0.3,
+                    // shadowRadius: 20,
+                    // elevation: 15,
+                    // marginBottom: 30,
+                  }
+                }
               >
-                <ImageExpo
+                {/* <ImageExpo
                   source={require("../../../assets/logoPandora.jpg")}
+                  style={{
+                    width: windowWidth > 768 ? 180 : 140,
+                    height: windowWidth > 768 ? 180 : 140,
+                    borderRadius: windowWidth > 768 ? 90 : 70,
+                    borderWidth: 4,
+                    borderColor: "white",
+                  }}
+                  cachePolicy={"memory-disk"}
+                /> */}
+                <ImageExpo
+                  source={require("../../../assets/login/logoMetso4.png")}
                   style={{
                     width: windowWidth > 768 ? 180 : 140,
                     height: windowWidth > 768 ? 180 : 140,
@@ -1202,31 +1215,33 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         <div
           style={{
             backgroundColor: "white",
-            padding: "12px 24px",
+            padding: windowWidth > 768 ? "12px 24px" : "8px 12px",
             borderBottom: "1px solid #eaeaeaff",
             display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
+            flexDirection: windowWidth > 768 ? "row" : "column",
+            justifyContent: windowWidth > 768 ? "space-between" : "flex-start",
+            alignItems: windowWidth > 768 ? "center" : "stretch",
+            gap: windowWidth > 768 ? "12px" : "8px",
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
-              justifyContent: "flex-start",
-              padding: "8px 20px",
+              justifyContent: windowWidth > 768 ? "flex-start" : "center",
+              padding: windowWidth > 768 ? "8px 20px" : "4px 0",
+              marginBottom: windowWidth > 768 ? 0 : 8,
             }}
           >
             <span
               style={{
-                fontSize: 18,
+                fontSize: windowWidth > 768 ? 18 : 15,
                 fontWeight: 600,
                 color: "#2A3B76",
                 fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
-                marginLeft: 4,
-                textAlign: "left",
+                textAlign: windowWidth > 768 ? "left" : "center",
                 letterSpacing: 0.2,
+                wordBreak: "break-word",
               }}
             >
               {selectedProject?.projectName
@@ -1234,76 +1249,90 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 : "Selecciona un Proyecto"}
             </span>
           </div>
-          <button
-            onClick={() => msProject()}
+          
+          <div
             style={{
-              backgroundColor: "green",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 16px",
-              fontSize: 14,
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+              flexDirection: windowWidth > 768 ? "row" : "column",
+              gap: windowWidth > 768 ? "8px" : "8px",
+              alignItems: "stretch",
             }}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ marginRight: 6 }}
+            <button
+              onClick={() => msProject()}
+              style={{
+                backgroundColor: "green",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: windowWidth > 768 ? "8px 16px" : "10px 12px",
+                fontSize: windowWidth > 768 ? 14 : 13,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+                whiteSpace: "nowrap",
+                fontWeight: "600",
+              }}
             >
-              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              <path
-                d="M12 8V16M8 12H16"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Crear Proyecto
-          </button>
-          <Text> </Text>
-          <Text> </Text>
-          <button
-            onClick={() => setShowProjectModal(true)}
-            style={{
-              backgroundColor: "#2A3B76",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 16px",
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+              <svg
+                width={windowWidth > 768 ? "18" : "16"}
+                height={windowWidth > 768 ? "18" : "16"}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+                <path
+                  d="M12 8V16M8 12H16"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Crear Proyecto
+            </button>
+            
+            <button
+              onClick={() => setShowProjectModal(true)}
+              style={{
+                backgroundColor: "#2A3B76",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: windowWidth > 768 ? "8px 16px" : "10px 12px",
+                fontSize: windowWidth > 768 ? 14 : 13,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+                whiteSpace: "nowrap",
+                fontWeight: "600",
+              }}
             >
-              <path
-                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Cambiar Proyecto
-          </button>
+              <svg
+                width={windowWidth > 768 ? "16" : "14"}
+                height={windowWidth > 768 ? "16" : "14"}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Cambiar Proyecto
+            </button>
+          </div>
 
           {/* Project Filter Modal */}
           {showProjectModal && (
@@ -1534,7 +1563,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 );
                 const imageSource =
                   areaLists[indexareaList]?.image ??
-                  require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+                  require("../../../assets/equipmentplant/logoMetso4.png");
                 return (
                   <View
                     style={{

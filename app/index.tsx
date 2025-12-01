@@ -38,13 +38,13 @@ export default function AuthScreen() {
               transition={300}
             />
 
-            {/* <ImageExpo
-              source={require("../assets/login/logofhingenieros.png")}
-              style={[styles.secondaryLogo, { width: 180, height: 30 }]}
+            <ImageExpo
+              source={require("../assets/login/logoMetso3.png")}
+              style={[styles.secondaryLogo, { width: 480, height: 120 }]}
               cachePolicy={"memory-disk"}
               contentFit="contain"
               transition={300}
-            /> */}
+            />
           </View>
         </View>
 

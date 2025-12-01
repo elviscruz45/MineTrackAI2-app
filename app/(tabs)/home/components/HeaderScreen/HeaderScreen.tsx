@@ -115,7 +115,9 @@ function HeaderScreenNoRedux(props: any) {
         );
         const imageSource =
           areaLists[indexareaList]?.image ||
-          require("../../../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+          require("../../../../../assets/equipmentplant/logoMetso4.png");
+
+        // require("../../../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
         return (
           <TouchableOpacity onPress={() => selectAsset(item.idServiciosAIT)}>
             <View style={styles.textImage}>

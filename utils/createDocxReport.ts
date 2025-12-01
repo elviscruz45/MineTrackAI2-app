@@ -24,7 +24,7 @@ import {
 const mockServiceInfo = {
   EmpresaMinera: "ANTAMINA",
   NombreServicio: "SERVICIO DE CAMBIO DE REDUCTOR B CVB-758",
-  Codigo: "FH-PROY-ANT-01",
+  Codigo: "METSO-ANT-01",
   Version: "00",
   Pagina: "1 de 1",
   ElaboradoPor: "RM",
@@ -35,7 +35,7 @@ const mockServiceInfo = {
   Direccion:
     "Jr. María Parado de Bellido Grupo18 Mz 2 Semirrural Pachacútec, Cerro Colorado - Arequipa",
   Telefono: "054 - 574755",
-  Email: "ventas@fhingenieros.com.pe",
+  Email: "ventas@metso.com.pe",
   OS: "4000009532",
   PO: "-",
   Area: "CHANCADO",
@@ -130,7 +130,7 @@ function createHeader(serviceInfo: any, catBlob: any) {
     new Paragraph({
       children: [
         new TextRun({
-          text: "FH INGENIEROS Y CONTRATISTAS GENERALES SAC",
+          text: "METSO MINERALS SAC",
           bold: true,
           size: 30,
           color: COLORS.primary,
@@ -178,7 +178,7 @@ function createHeader(serviceInfo: any, catBlob: any) {
           color: COLORS.darkGray,
         }),
         new TextRun({
-          text: `ventas@fhingenieros.com.pe`,
+          text: `ventas@metso.com.pe`,
           size: 22,
           color: COLORS.secondary,
           underline: {
@@ -607,7 +607,7 @@ function createObjectiveAndScope(serviceInfo: any) {
             serviceInfo.NombreServicio
           } cumpliendo con los estándares de ${
             serviceInfo.EmpresaMinera
-          } y los propios de FH INGENIEROS`
+          } y los propios de METSO MINERALS SAC`
         ),
       ],
       spacing: { after: 200 },
@@ -647,7 +647,7 @@ function createObjectiveAndScope(serviceInfo: any) {
     new Paragraph({
       children: [
         new TextRun(
-          "Supervisor Operativo FH (día): Ing. ....................."
+          "Supervisor Operativo METSO MINERALS SAC (día): Ing. ....................."
         ),
       ],
       spacing: { after: 50 },
@@ -655,7 +655,7 @@ function createObjectiveAndScope(serviceInfo: any) {
     new Paragraph({
       children: [
         new TextRun(
-          "Supervisor de Seguridad FH (día): Ing. ......................"
+          "Supervisor de Seguridad METSO MINERALS SAC (día): Ing. ......................"
         ),
       ],
       spacing: { after: 100 },
@@ -722,7 +722,7 @@ function createObjectiveAndScope(serviceInfo: any) {
     new Paragraph({
       children: [
         new TextRun(
-          `FH INGENIEROS Y CONTRATISTAS GENERALES fue contratada por ${
+          `METSO MINERALS SAC fue contratada por ${
             serviceInfo.EmpresaMinera
           } para realizar los trabajos de mantenimiento en la Parada de Planta del ${
             // Handle Firestore Timestamp object

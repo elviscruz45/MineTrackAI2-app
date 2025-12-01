@@ -255,8 +255,6 @@ const handleImageUploadWithOffline = async (
 ): Promise<string> => {
   const isOnline = await checkOnlineStatus();
 
-  console.log("como estas que tal te va.... ");
-
   if (isOnline) {
     try {
       const snapshot = await uploadImage(imageUri);

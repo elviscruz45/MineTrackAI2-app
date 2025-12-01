@@ -6,6 +6,7 @@ import {
   FlatList,
   SafeAreaView,
   Platform,
+  Dimensions,
 } from "react-native";
 import { Icon, SearchBar } from "@rneui/themed";
 import React, { useEffect, useState } from "react";
@@ -45,6 +46,18 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import * as XLSX from "xlsx";
+
+const windowWidth = Dimensions.get("window").width;
+
+// Función para calcular el número de columnas basado en el ancho de pantalla
+const getNumColumns = () => {
+  if (windowWidth >= 1400) return 4;
+  if (windowWidth >= 1024) return 3;
+  if (windowWidth >= 768) return 2;
+  return 1;
+};
+
+const numColumns = getNumColumns();
 
 interface CSVRow {
   Codigo: string;
@@ -232,7 +245,8 @@ function PublishRaw(props: any) {
     const indexareaList = areaLists.findIndex((item) => item.value === area);
     const imageSource =
       areaLists[indexareaList]?.image ||
-      require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+      // require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+      require("../../../assets/equipmentplant/logoMetso4.png");
     const imageUpdated = AIT.photoServiceURL;
     if (imageUpdated) {
       setEquipment({ uri: imageUpdated });
@@ -249,21 +263,24 @@ function PublishRaw(props: any) {
 
   return (
     <SafeAreaView
-      style={[{ flex: 1, backgroundColor: "white" }, styles.AndroidSafeArea]}
+      style={[{ flex: 1, backgroundColor: "#f5f5f5" }, styles.AndroidSafeArea]}
     >
       <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: "white", marginTop: 10 }}
+        style={{ backgroundColor: "#f5f5f5", marginTop: 10 }}
       >
-        <Text></Text>
-        <Text></Text>
-        <SearchBar
-          placeholder="Buscar por referencia o Servicio"
-          value={searchText}
-          onChangeText={(text) => setSearchText(text)}
-          lightTheme={true}
-          inputContainerStyle={{ backgroundColor: "white" }}
-        />
+        <View style={styles.searchContainer}>
+          <SearchBar
+            placeholder="Buscar por referencia o Servicio"
+            value={searchText}
+            onChangeText={(text) => setSearchText(text)}
+            lightTheme={true}
+            containerStyle={styles.searchBarContainer}
+            inputContainerStyle={styles.searchBarInput}
+            inputStyle={styles.searchBarText}
+            round
+          />
+        </View>
 
         {props.firebase_user_name && (
           <View style={styles.equipments2}>
@@ -277,14 +294,10 @@ function PublishRaw(props: any) {
                 <Text style={styles.name2}>
                   {equipment ? AIT?.NombreServicio : "Escoge El Servicio"}
                 </Text>
-                {/* <Text style={styles.info}>
-                {equipment ? `Serv:${AIT?.NumeroAIT}` : "de la lista"}
-              </Text> */}
               </View>
             </View>
           </View>
         )}
-        <Text> </Text>
         {props.firebase_user_name && (
           <View
             style={{
@@ -392,11 +405,14 @@ function PublishRaw(props: any) {
             </TouchableOpacity> */}
           </View>
         )}
-        <Text> </Text>
 
         <FlatList
           data={searchResults}
-          scrollEnabled={true}
+          key={numColumns}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+          // scrollEnabled={true}
+          contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
             const area = item.AreaServicio;
             const indexareaList = areaLists.findIndex(
@@ -404,57 +420,65 @@ function PublishRaw(props: any) {
             );
             const imageSource =
               areaLists[indexareaList]?.image ||
-              require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+              require("../../../assets/equipmentplant/logoMetso4.png");
 
             return (
               <TouchableOpacity
                 onPress={() => selectAsset(item)}
-                style={{ backgroundColor: "white" }} // Add backgroundColor here
+                style={styles.cardContainer}
+                activeOpacity={0.7}
               >
-                <View style={styles.equipments}>
-                  {item.photoServiceURL ? (
-                    <ImageExpo
-                      source={{ uri: item.photoServiceURL }}
-                      style={styles.image}
-                      cachePolicy={"memory-disk"}
-                    />
-                  ) : (
-                    <ImageExpo
-                      source={
-                        imageSource ||
-                        require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png")
-                      }
-                      style={styles.image}
-                      cachePolicy={"memory-disk"}
-                    />
-                  )}
+                <View style={styles.card}>
+                  <View style={styles.cardImageContainer}>
+                    {item.photoServiceURL ? (
+                      <ImageExpo
+                        source={{ uri: item.photoServiceURL }}
+                        style={styles.cardImage}
+                        cachePolicy={"memory-disk"}
+                      />
+                    ) : (
+                      <ImageExpo
+                        source={
+                          imageSource ||
+                          require("../../../assets/equipmentplant/logoMetso4.png")
+                        }
+                        style={styles.cardImage}
+                        cachePolicy={"memory-disk"}
+                      />
+                    )}
+                  </View>
 
-                  <View>
-                    <Text style={styles.name}>{item.NombreServicio}</Text>
-                    <Text style={styles.info}>
-                      {"Codigo Servicio: "}
-                      {item.NumeroAIT}
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.NombreServicio}
                     </Text>
-                    <Text style={styles.info}>
-                      {"Tipo: "}
-                      {item.TipoServicio}
-                    </Text>
-                    <Text style={styles.info}>
-                      {"Empresa Minera: "}
-                      {item.EmpresaMinera}
-                    </Text>
-                    {/* {companyName !== item.companyName && (
-                      <Text style={styles.info}>
-                        {"Empresa: "}
-                        {item.companyName}
+
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={styles.infoLabel}>Código: </Text>
+                        <Text style={styles.infoValue}>{item.NumeroAIT}</Text>
                       </Text>
-                    )} */}
+
+                      <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={styles.infoLabel}>Tipo: </Text>
+                        <Text style={styles.infoValue}>
+                          {item.TipoServicio}
+                        </Text>
+                      </Text>
+
+                      <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={styles.infoLabel}>Minera: </Text>
+                        <Text style={styles.infoValue}>
+                          {item.EmpresaMinera}
+                        </Text>
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
             );
           }}
-          keyExtractor={(item, index) => `${index}-${item.fechaPostFormato}`} // Provide a unique key for each item
+          keyExtractor={(item, index) => `${index}-${item.fechaPostFormato}`}
         />
       </KeyboardAwareScrollView>
     </SafeAreaView>

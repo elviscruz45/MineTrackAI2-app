@@ -283,7 +283,8 @@ function ItemScreenNotRedux(props: any) {
   const indexareaList = areaLists?.findIndex((item) => item.value === area);
   const imageSource =
     areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+    require("../../../assets/equipmentplant/logoMetso4.png");
+  // require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
   /// the algorithm to retrieve the amount with format
   const formattedAmount = new Intl.NumberFormat("en-US", {
     style: "decimal",
