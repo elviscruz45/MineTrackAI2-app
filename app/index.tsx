@@ -74,7 +74,7 @@ export default function AuthScreen() {
           <Text style={styles.footerText}>
             Powered by Pandora Software Company
           </Text>
-          <Text style={styles.versionText}>Version 2.0.1</Text>
+          <Text style={styles.versionText}>Version 3.0.2</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -37,7 +37,7 @@ export default function Root({ children }: PropsWithChildren) {
         />
 
         {/* Bootstrap the service worker. */}
-        <script dangerouslySetInnerHTML={{ __html: sw }} />
+        {/* <script dangerouslySetInnerHTML={{ __html: sw }} /> */}
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.

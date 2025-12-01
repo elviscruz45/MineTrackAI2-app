@@ -24,7 +24,7 @@ import {
 const mockServiceInfo = {
   EmpresaMinera: "ANTAMINA",
   NombreServicio: "SERVICIO DE CAMBIO DE REDUCTOR B CVB-758",
-  Codigo: "METSO-ANT-01",
+  Codigo: "METSO-ANT-01-1",
   Version: "00",
   Pagina: "1 de 1",
   ElaboradoPor: "RM",
