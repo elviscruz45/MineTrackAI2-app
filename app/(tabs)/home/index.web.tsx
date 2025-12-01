@@ -1249,7 +1249,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 : "Selecciona un Proyecto"}
             </span>
           </div>
-          
+
           <div
             style={{
               display: "flex",
@@ -1295,7 +1295,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               </svg>
               Crear Proyecto
             </button>
-            
+
             <button
               onClick={() => setShowProjectModal(true)}
               style={{

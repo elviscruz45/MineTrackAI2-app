@@ -11,7 +11,7 @@ const ROUTES_CACHE = `minetrack-routes-${CACHE_VERSION}`;
 // URLs MÍNIMOS críticos para cachear al instalar (SOLO LO ESENCIAL)
 // Estrategia: Cachear solo HTML shell + manifest
 const urlsToCache = [
-  "/",
+  // "/",
   "/manifest.json",
   "/logo192.png",
   "/favicon.ico",
