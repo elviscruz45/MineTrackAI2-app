@@ -1,5 +1,5 @@
 // Optimized Service Worker for PWA - Fast First Load 🚀
-const CACHE_VERSION = "v5.1"; // Fix: Forzar recarga al actualizar SW
+const CACHE_VERSION = "v5.2"; // Fix: Forzar recarga al actualizar SW
 const CACHE_NAME = `minetrack-ai-${CACHE_VERSION}`;
 const STATIC_CACHE = `minetrack-static-${CACHE_VERSION}`;
 const IMAGES_CACHE = `minetrack-images-${CACHE_VERSION}`;
