@@ -1,6 +1,6 @@
 {
-  "buildCommand": "mv package.json package.json.bak && echo 'Using pre-built dist folder'",
-  "installCommand": "echo 'No install needed'",
+  "buildCommand": "npm run build:web:optimized",
+  "installCommand": "npm install",
   "outputDirectory": "dist",
   "devCommand": "expo",
   "cleanUrls": true,
