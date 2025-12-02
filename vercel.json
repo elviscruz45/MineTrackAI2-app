@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm run build:web:optimized",
-  "installCommand": "npm install",
+  "buildCommand": "yarn build:web:optimized",
+  "installCommand": "yarn install",
   "outputDirectory": "dist",
   "devCommand": "expo",
   "cleanUrls": true,
