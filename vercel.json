@@ -1,6 +1,6 @@
 {
   "buildCommand": "yarn build:web:optimized",
-  "installCommand": "yarn install",
+  "installCommand": "yarn install --ignore-optional --network-timeout 100000",
   "outputDirectory": "dist",
   "devCommand": "expo",
   "cleanUrls": true,
