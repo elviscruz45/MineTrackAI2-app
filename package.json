@@ -110,7 +110,8 @@
     "react-test-renderer": "19.0.0",
     "terser-webpack-plugin": "^5.3.14",
     "typescript": "~5.8.3",
-    "workbox-cli": "^7.3.0"
+    "workbox-cli": "^7.3.0",
+    "babel-plugin-transform-remove-console": "^7.10.4"
   },
   "resolutions": {
     "lightningcss": "1.27.0",
