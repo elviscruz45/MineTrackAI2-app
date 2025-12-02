@@ -117,7 +117,8 @@
     "workbox-cli": "^7.3.0"
   },
   "resolutions": {
-    "lightningcss": "1.27.0"
+    "lightningcss": "1.27.0",
+    "webpack": "5.93.0"
   },
   "optionalDependencies": {
     "lightningcss-linux-x64-gnu": "1.27.0"
