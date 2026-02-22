@@ -20,7 +20,7 @@ interface UploadZIPWhatsappProps {
     projectName: string,
     projectType: string,
     file: any,
-    projectId: string
+    projectId: string,
   ) => Promise<void>;
 }
 
@@ -99,12 +99,12 @@ const UploadZIPWhatsapp = ({ isVisible, onClose }: UploadZIPWhatsappProps) => {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
 
-        // Verificar tamaño del archivo (400MB = 419430400 bytes)
-        if (file.size && file.size > 419430400) {
+        // Verificar tamaño del archivo (500MB = 524288000 bytes)
+        if (file.size && file.size > 524288000) {
           Toast.show({
             type: "error",
             text1: "Archivo muy grande",
-            text2: "El archivo no puede exceder 400MB",
+            text2: "El archivo no puede exceder 500MB",
           });
           return;
         }
@@ -137,200 +137,372 @@ const UploadZIPWhatsapp = ({ isVisible, onClose }: UploadZIPWhatsappProps) => {
     setIsLoading(true);
 
     try {
-      console.log("=== INICIANDO UPLOAD ver 1===");
-      console.log("Archivo seleccionado:", {
+      console.log("=== 🚀 INICIANDO UPLOAD (4 PASOS) ===");
+      console.log("📁 Archivo seleccionado:", {
         name: selectedFile.name,
-        size: selectedFile.size,
+        size: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`,
         type: selectedFile.type,
-        uri: selectedFile.uri,
+        hasFile: !!selectedFile.file,
+        hasUri: !!selectedFile.uri,
       });
 
-      const formData = new FormData();
+      const API_BASE_URL =
+        "https://whatsapp-analyzer-api-mamncpt54a-uc.a.run.app";
 
+      console.log("🌐 API Base URL:", API_BASE_URL);
+      console.log("⏰ Timestamp:", new Date().toISOString());
+
+      // Paso 1 y 2: Timeout de 5 minutos
+      const controller = new AbortController();
+      let timeoutId = setTimeout(
+        () => {
+          console.log(
+            "TIMEOUT: Abortando petición después de 5 minutos (Pasos 1-2)",
+          );
+          controller.abort();
+        },
+        5 * 60 * 1000,
+      );
+
+      // ====== PASO 1: Obtener URL firmada ======
+      console.log("\n=== 📝 PASO 1/4: Obteniendo URL firmada ===");
+      setProgress(10);
+      setCurrentStage("🔐 Obteniendo URL de subida...");
+      setEstimatedTimeLeft("~3 minutos");
+
+      const step1Payload = {
+        filename: selectedFile.name,
+        content_type: "application/zip",
+      };
+      console.log("Payload Paso 1:", step1Payload);
+
+      const step1Response = await fetch(`${API_BASE_URL}/get-upload-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(step1Payload),
+        signal: controller.signal,
+      });
+
+      console.log("✓ Respuesta Paso 1:", {
+        status: step1Response.status,
+        ok: step1Response.ok,
+      });
+
+      if (!step1Response.ok) {
+        const errorText = await step1Response.text();
+        console.error("❌ Error en Paso 1:", errorText);
+        throw new Error(
+          `Error obteniendo URL firmada: ${step1Response.status} - ${errorText}`,
+        );
+      }
+
+      const { upload_url, file_id, expires_in_minutes } =
+        await step1Response.json();
+      console.log("URL firmada obtenida:", { file_id, expires_in_minutes });
+
+      // Validar que recibimos los datos necesarios
+      if (!upload_url || !file_id) {
+        throw new Error(
+          `Respuesta incompleta del servidor. upload_url: ${!!upload_url}, file_id: ${!!file_id}`,
+        );
+      }
+
+      console.log("upload_url válida:", upload_url.substring(0, 50) + "...");
+      console.log("file_id:", file_id);
+
+      // ====== PASO 2: Subir archivo a Cloud Storage ======
+      console.log("\n=== 📤 PASO 2/4: Subiendo a Cloud Storage ===");
+      setProgress(20);
+      setCurrentStage(
+        `📤 Subiendo ${(selectedFile.size / 1024 / 1024).toFixed(1)} MB...`,
+      );
+      setEstimatedTimeLeft("~2 minutos");
+
+      // Obtener el archivo como blob
+      let fileBlob: Blob;
       if (Platform.OS === "web") {
-        // Para web, usar el archivo directamente
-        console.log("Plataforma WEB - usando selectedFile.file");
-        console.log("Archivo web:", selectedFile.file);
-
-        // Verificar que el archivo sea válido
         if (!selectedFile.file) {
           throw new Error("No se pudo obtener el archivo para web");
         }
-
-        formData.append("file", selectedFile.file, selectedFile.name);
+        fileBlob = selectedFile.file;
+        console.log("📱 Plataforma: WEB");
       } else {
-        // Para móvil, usar la URI
-        console.log("Plataforma MÓVIL - usando URI");
-        formData.append("file", {
-          uri: selectedFile.uri,
-          type: "application/zip",
-          name: selectedFile.name || "archivo.zip",
-        } as any);
+        // Para móvil, convertir URI a blob
+        const response = await fetch(selectedFile.uri);
+        fileBlob = await response.blob();
+        console.log("📱 Plataforma: MOBILE");
       }
 
-      // Debug: Log del archivo que se está enviando
-      console.log("FormData creado, enviando archivo:", {
-        name: selectedFile.name,
-        size: selectedFile.size,
-        type: selectedFile.type || "application/zip",
+      console.log("Blob creado:", {
+        size: `${(fileBlob.size / 1024 / 1024).toFixed(2)} MB`,
+        type: fileBlob.type,
+      });
+      console.log("Subiendo a URL firmada...");
+
+      const uploadStartTime = Date.now();
+      const step2Response = await fetch(upload_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/zip",
+        },
+        body: fileBlob,
+        signal: controller.signal,
+      });
+      const uploadEndTime = Date.now();
+
+      console.log(
+        `⏱️ Upload completado en ${((uploadEndTime - uploadStartTime) / 1000).toFixed(1)}s`,
+      );
+      console.log("✓ Respuesta Paso 2:", {
+        status: step2Response.status,
+        ok: step2Response.ok,
       });
 
-      // Crear AbortController para timeout personalizado
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log("TIMEOUT: Abortando petición después de 10 minutos");
-        controller.abort();
-      }, 20 * 60 * 1000); // 10 minutos timeout
+      if (!step2Response.ok) {
+        const errorText = await step2Response.text();
+        console.error("❌ Error en Paso 2:", errorText);
+        throw new Error(
+          `Error subiendo archivo: ${step2Response.status} - ${errorText}`,
+        );
+      }
 
-      console.log("Enviando petición a API...");
-      const startTime = Date.now();
+      console.log("✅ Archivo subido exitosamente a Cloud Storage");
+      console.log("🔑 file_id para proceso:", file_id);
+      setProgress(50);
+      setCurrentStage("✅ Archivo subido, procesando...");
+      setEstimatedTimeLeft("~1 minuto");
 
-      //"https://api.minetrack.site/crear-informe-final",
-      //"http://34.176.107.100:8000/crear-informe-final",
+      // Pequeña pausa para asegurar que Cloud Storage procesó el archivo
+      console.log("⏸️ Esperando 2 segundos antes de procesar...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const response = await fetch(
-        "https://api.minetrack.site/crear-informe-final",
+      // ====== PASO 3: Procesar archivo y obtener PDF ======
+      console.log("\n=== 🔄 PASO 3/4: Procesando y generando PDF ===");
+      console.log(
+        "⚠️ Este paso puede tomar hasta 5 minutos, por favor espere...",
+      );
+
+      // Cancelar timeout anterior y crear uno nuevo más largo para el procesamiento
+      clearTimeout(timeoutId);
+      console.log("✓ Timeout anterior cancelado");
+
+      const step3Controller = new AbortController();
+      const step3TimeoutId = setTimeout(
+        () => {
+          console.log("TIMEOUT: Abortando procesamiento después de 15 minutos");
+          step3Controller.abort();
+        },
+        15 * 60 * 1000, // 15 minutos para el procesamiento del PDF
+      );
+      console.log("✓ Nuevo timeout configurado: 15 minutos");
+
+      setProgress(60);
+      setCurrentStage("🔄 Generando informe PDF...");
+      setEstimatedTimeLeft("2-5 minutos (procesando imágenes)");
+
+      const step3Payload = {
+        file_id: file_id,
+        filename: selectedFile.name,
+      };
+
+      console.log("📦 Payload:", JSON.stringify(step3Payload, null, 2));
+      console.log("🌐 Endpoint:", `${API_BASE_URL}/process-uploaded-file`);
+      console.log("🔌 Iniciando petición de procesamiento...");
+      console.log("🔌 Iniciando petición de procesamiento... ver2");
+
+      const fetchStartTime = Date.now();
+
+      const step3Response = await fetch(
+        `${API_BASE_URL}/process-uploaded-file`,
         {
           method: "POST",
-          body: formData,
-          signal: controller.signal,
-          // NO establecer Content-Type header - let browser set it automatically with boundary
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(step3Payload),
+          signal: step3Controller.signal,
+        },
+      );
+
+      const fetchEndTime = Date.now();
+      const durationSeconds = (fetchEndTime - fetchStartTime) / 1000;
+      console.log(
+        `⏱️ Procesamiento completado en ${durationSeconds.toFixed(1)}s (${(durationSeconds / 60).toFixed(1)} min)`,
+      );
+
+      // Limpiar timeout del paso 3
+      clearTimeout(step3TimeoutId);
+
+      console.log(
+        "🔍 Verificando Content-Type:",
+        step3Response.headers.get("content-type"),
+      );
+      console.log("🔍 Status:", step3Response.status);
+
+      if (step3Response.ok) {
+        // Recibir JSON con download_url (NO blob directo)
+        console.log("📦 Parseando respuesta como JSON...");
+        const result = await step3Response.json();
+        console.log("✅ JSON parseado:", result);
+        console.log("✅ Respuesta del servidor:", {
+          filename: result.filename,
+          file_size_mb: result.file_size_mb,
+          expires_in_minutes: result.expires_in_minutes,
+          has_download_url: !!result.download_url,
+          download_url_preview: result.download_url
+            ? result.download_url.substring(0, 80) + "..."
+            : "N/A",
+        });
+
+        if (!result.download_url) {
+          throw new Error("El servidor no devolvió la URL de descarga del PDF");
         }
-      );
 
-      // Limpiar timeout si la petición completó
-      clearTimeout(timeoutId);
-      const endTime = Date.now();
-      console.log(
-        `Petición completada en ${(endTime - startTime) / 1000} segundos`
-      );
+        // ====== PASO 4: Descargar PDF desde Cloud Storage ======
+        console.log("\n=== 📥 PASO 4/4: Descargando PDF ===");
+        setProgress(90);
+        setCurrentStage("📥 Descargando PDF...");
+        setEstimatedTimeLeft("~10 segundos");
 
-      console.log("Response status:", response);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
+        console.log(`📊 Tamaño del PDF: ${result.file_size_mb} MB`);
+        console.log("🔗 Descargando desde URL firmada...");
+        console.log("🌐 URL completa:", result.download_url);
 
-      if (response.ok) {
-        // // Obtener el JSON del body
-        // const data = await response.json();
+        const pdfDownloadStart = Date.now();
+        const pdfResponse = await fetch(result.download_url);
+        const pdfDownloadEnd = Date.now();
 
-        // console.log("Data:", data);
+        console.log(
+          `⏱️ Descarga completada en ${((pdfDownloadEnd - pdfDownloadStart) / 1000).toFixed(1)}s`,
+        );
+        console.log("📋 Headers de descarga:", {
+          "content-type": pdfResponse.headers.get("content-type"),
+          "content-length": pdfResponse.headers.get("content-length"),
+          status: pdfResponse.status,
+        });
 
-        // Completar progreso al 100%
-        setProgress(100);
-        setCurrentStage("✅ Descargando reporte...");
-        setEstimatedTimeLeft("Finalizando...");
+        if (!pdfResponse.ok) {
+          throw new Error(
+            `Error descargando PDF: ${pdfResponse.status} ${pdfResponse.statusText}`,
+          );
+        }
 
-        // Obtener el PDF como blob
-        const pdfBlob = await response.blob();
+        console.log("🔄 Convirtiendo a blob...");
+        const pdfBlob = await pdfResponse.blob();
+        console.log("✅ PDF descargado:", {
+          size: `${(pdfBlob.size / 1024 / 1024).toFixed(2)} MB`,
+          sizeBytes: pdfBlob.size,
+          type: pdfBlob.type,
+        });
+
+        // Validar que el blob tenga contenido
+        if (pdfBlob.size === 0) {
+          throw new Error("El PDF descargado está vacío");
+        }
 
         if (Platform.OS === "web") {
-          // Para web, crear URL para descargar el PDF
+          // Descargar el PDF automáticamente
           const url = window.URL.createObjectURL(pdfBlob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = `informe-final-${Date.now()}.pdf`;
+          link.download =
+            result.filename || `informe-whatsapp-${Date.now()}.pdf`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
           window.URL.revokeObjectURL(url);
+          console.log("💾 PDF descargado automáticamente");
+        } else {
+          // TODO: Implementar descarga para móvil usando FileSystem
+          console.log("📱 Descarga móvil pendiente de implementar");
         }
+
+        setProgress(100);
+        setCurrentStage("✅ Reporte descargado");
+        setEstimatedTimeLeft("Completado");
+
+        console.log("🎉 Proceso completado exitosamente\n");
 
         Toast.show({
           type: "success",
           text1: "Reporte generado exitosamente",
-          text2: "El PDF se ha descargado automáticamente",
+          text2: `PDF de ${result.file_size_mb} MB descargado`,
         });
 
-        // Esperar un poco para mostrar el progreso completo
         setTimeout(() => {
           handleClose();
         }, 1500);
       } else {
-        // Obtener más información del error
-        const errorText = await response.text();
-        console.error("Error response body:", errorText);
+        // Error del servidor
+        const contentType = step3Response.headers.get("content-type");
+        let errorMessage = step3Response.statusText;
+
+        try {
+          if (contentType?.includes("application/json")) {
+            const errorData = await step3Response.json();
+            errorMessage = errorData.detail || errorMessage;
+          } else {
+            errorMessage = await step3Response.text();
+          }
+        } catch {
+          // Si no se puede leer el error, usar statusText
+        }
+
         throw new Error(
-          `Error del servidor: ${response.status} - ${errorText}`
+          `Error del servidor (${step3Response.status}): ${errorMessage}`,
         );
       }
     } catch (error) {
-      console.error("Error al generar reporte:", error);
+      console.error("\n❌ === ERROR EN PROCESO DE UPLOAD ===");
+      console.error("Error completo:", error);
+      console.error(
+        "Tipo de error:",
+        error instanceof Error ? error.constructor.name : typeof error,
+      );
 
       let errorMessage = "Error desconocido";
+      let errorTitle = "Error al generar reporte";
+
       if (error instanceof Error) {
+        console.error("Error.name:", error.name);
+        console.error("Error.message:", error.message);
+
         if (error.name === "AbortError") {
-          errorMessage = "La operación excedió el tiempo límite (10 minutos)";
+          errorMessage =
+            "La operación excedió el tiempo límite (15 minutos máximo para procesamiento)";
+          errorTitle = "Tiempo agotado";
+        } else if (error.message.includes("No se pudo conectar")) {
+          errorMessage = "El servidor no está disponible. Intente más tarde.";
+          errorTitle = "Error de conexión";
+        } else if (error.message.includes("Error del servidor")) {
+          // Extraer el detalle del error si existe
+          const match = error.message.match(/Error del servidor \(\d+\): (.+)/);
+          errorMessage = match ? match[1] : error.message;
+          errorTitle = "Error del servidor";
         } else {
           errorMessage = error.message;
         }
       }
 
+      console.error(`🔴 ${errorTitle}: ${errorMessage}\n`);
+
       Toast.show({
         type: "error",
-        text1: "Error al generar reporte",
+        text1: errorTitle,
         text2: errorMessage,
+        visibilityTime: 8000,
+        position: "top",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Simulador de progreso
+  // Limpiar estados cuando no está cargando
   useEffect(() => {
-    if (isLoading) {
-      const stages = [
-        { name: "📤 Subiendo archivo...", duration: 15 },
-        { name: "🔍 Analizando contenido...", duration: 45 },
-        { name: "📊 Procesando datos...", duration: 60 },
-        { name: "📈 Generando gráficos...", duration: 40 },
-        { name: "📝 Creando reporte...", duration: 20 },
-      ];
-
-      let totalTime = 0;
-      let currentTime = 0;
-
-      stages.forEach((stage) => (totalTime += stage.duration));
-
-      const updateProgress = () => {
-        let accumulatedTime = 0;
-
-        for (let i = 0; i < stages.length; i++) {
-          const stage = stages[i];
-
-          if (
-            currentTime >= accumulatedTime &&
-            currentTime < accumulatedTime + stage.duration
-          ) {
-            setCurrentStage(stage.name);
-            const stageProgress =
-              ((currentTime - accumulatedTime) / stage.duration) * 100;
-            const totalProgress =
-              ((accumulatedTime + (currentTime - accumulatedTime)) /
-                totalTime) *
-              100;
-            setProgress(Math.min(totalProgress, 95)); // Never reach 100% until actually done
-
-            const remaining = totalTime - currentTime;
-            const minutes = Math.floor(remaining / 60);
-            const seconds = Math.floor(remaining % 60);
-            setEstimatedTimeLeft(
-              `${minutes}:${seconds.toString().padStart(2, "0")}`
-            );
-
-            break;
-          }
-          accumulatedTime += stage.duration;
-        }
-
-        currentTime += 1;
-      };
-
-      const interval = setInterval(updateProgress, 1000);
-
-      return () => clearInterval(interval);
-    } else {
+    if (!isLoading) {
       setProgress(0);
       setCurrentStage("");
       setEstimatedTimeLeft("");
@@ -387,7 +559,7 @@ const UploadZIPWhatsapp = ({ isVisible, onClose }: UploadZIPWhatsappProps) => {
 
             <View style={styles.modalBody}>
               <Text style={styles.description}>
-                Seleccione un archivo ZIP (máximo 400MB) para generar el reporte
+                Seleccione un archivo ZIP (máximo 500MB) para generar el reporte
                 automático en PDF.
               </Text>
 
@@ -424,7 +596,7 @@ const UploadZIPWhatsapp = ({ isVisible, onClose }: UploadZIPWhatsappProps) => {
                     )}
                     {!selectedFile && (
                       <Text style={styles.fileHint}>
-                        Archivos ZIP de hasta 400MB
+                        Archivos ZIP de hasta 500MB
                       </Text>
                     )}
                   </View>

@@ -38,6 +38,7 @@ import { usePushNotifications } from "@/usePushNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
+import { syncServiciosAITDocument } from "@/services/minetrackai-sync";
 
 // Funciones específicas para manejo offline del formulario
 const OFFLINE_FORMS_QUEUE_KEY = "offline_forms_queue";
@@ -86,7 +87,7 @@ const checkOnlineStatus = async (): Promise<boolean> => {
 
 // Función para guardar operación en localStorage (PWA) o AsyncStorage (mobile)
 const saveToOfflineQueue = async (
-  operation: OfflineFormOperation
+  operation: OfflineFormOperation,
 ): Promise<void> => {
   try {
     let existingQueue: OfflineFormOperation[] = [];
@@ -108,20 +109,20 @@ const saveToOfflineQueue = async (
     if (Platform.OS === "web") {
       localStorage.setItem(
         OFFLINE_FORMS_QUEUE_KEY,
-        JSON.stringify(existingQueue)
+        JSON.stringify(existingQueue),
       );
     } else {
       const AsyncStorage =
         require("@react-native-async-storage/async-storage").default;
       await AsyncStorage.setItem(
         OFFLINE_FORMS_QUEUE_KEY,
-        JSON.stringify(existingQueue)
+        JSON.stringify(existingQueue),
       );
     }
 
     console.log(
       `📱 Operación ${operation.formType} guardada offline:`,
-      operation.id
+      operation.id,
     );
   } catch (error) {
     console.error("Error guardando en cola offline:", error);
@@ -162,7 +163,7 @@ const processOfflineFormsQueue = async (): Promise<void> => {
             operation.pendingImages.mainImage.startsWith("file://")
           ) {
             const snapshot = await uploadImage(
-              operation.pendingImages.mainImage
+              operation.pendingImages.mainImage,
             );
             const imagePath = snapshot.metadata.fullPath;
             const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
@@ -186,7 +187,7 @@ const processOfflineFormsQueue = async (): Promise<void> => {
                 const snapshot = await uploadImage(localUri);
                 const imagePath = snapshot.metadata.fullPath;
                 const imageUrl = await getDownloadURL(
-                  ref(getStorage(), imagePath)
+                  ref(getStorage(), imagePath),
                 );
                 uploadedImages.push(imageUrl);
               } else {
@@ -200,7 +201,7 @@ const processOfflineFormsQueue = async (): Promise<void> => {
         if (operation.type === "setDoc") {
           await setDoc(
             doc(db, operation.collection, operation.docId),
-            operation.data
+            operation.data,
           );
         } else if (operation.type === "updateDoc") {
           const docRef = doc(db, operation.collection, operation.docId);
@@ -228,7 +229,7 @@ const processOfflineFormsQueue = async (): Promise<void> => {
       if (failed.length > 0) {
         await AsyncStorage.setItem(
           OFFLINE_FORMS_QUEUE_KEY,
-          JSON.stringify(failed)
+          JSON.stringify(failed),
         );
       } else {
         await AsyncStorage.removeItem(OFFLINE_FORMS_QUEUE_KEY);
@@ -251,7 +252,7 @@ const processOfflineFormsQueue = async (): Promise<void> => {
 
 // Función para manejar subida de imágenes con fallback offline
 const handleImageUploadWithOffline = async (
-  imageUri: string
+  imageUri: string,
 ): Promise<string> => {
   const isOnline = await checkOnlineStatus();
 
@@ -267,7 +268,7 @@ const handleImageUploadWithOffline = async (
     } catch (error) {
       console.error(
         "❌ Error subiendo imagen online, usando URI local:",
-        error
+        error,
       );
       return imageUri; // Fallback a URI local
     }
@@ -281,7 +282,7 @@ const handleImageUploadWithOffline = async (
 const handlePdfUploadWithOffline = async (
   pdfFile: any,
   filename: string,
-  date: string
+  date: string,
 ): Promise<string> => {
   const isOnline = await checkOnlineStatus();
 
@@ -295,7 +296,7 @@ const handlePdfUploadWithOffline = async (
     } catch (error) {
       console.error(
         "❌ Error subiendo PDF online, guardando referencia local:",
-        error
+        error,
       );
       return `local_pdf_${filename}_${Date.now()}`; // Referencia local
     }
@@ -313,7 +314,7 @@ const handleFirebaseOperationWithOffline = async (
     mainImage?: string;
     additionalImages?: string[];
     pdfFile?: string;
-  }
+  },
 ): Promise<boolean> => {
   const isOnline = await checkOnlineStatus();
 
@@ -458,7 +459,7 @@ function InformationRaw(props: any) {
         newData.newImages = [];
         for (let i = 0; i < moreImages.length; i++) {
           const moreImageUrl = await handleImageUploadWithOffline(
-            moreImages[i]
+            moreImages[i],
           );
           newData.newImages.push(moreImageUrl);
         }
@@ -471,7 +472,7 @@ function InformationRaw(props: any) {
           imageUrlPDF = await handlePdfUploadWithOffline(
             newData.pdfFile,
             newData.FilenameTitle,
-            newData.fechaPostFormato
+            newData.fechaPostFormato,
           );
         }
         newData.pdfFile = "";
@@ -534,7 +535,7 @@ function InformationRaw(props: any) {
             pdfFile: imageUrlPDF.startsWith("local_pdf_")
               ? newData.FilenameTitle
               : undefined,
-          }
+          },
         );
         console.log("44444444");
 
@@ -542,7 +543,7 @@ function InformationRaw(props: any) {
         const RefFirebaseLasEventPostd = doc(
           db,
           "ServiciosAIT",
-          props.actualServiceAIT?.idServiciosAIT
+          props.actualServiceAIT?.idServiciosAIT,
         );
         const eventSchema = {
           idDocFirestoreDB: newData.idDocFirestoreDB ?? "",
@@ -633,6 +634,8 @@ function InformationRaw(props: any) {
           await updateDoc(RefFirebaseLasEventPostd, updateDataLasEventPost);
         };
 
+        console.log("esto es nuevo con google file search 1");
+
         const isOnlineUpdateDoc = await handleFirebaseOperationWithOffline(
           updateDocOperation,
           {
@@ -644,8 +647,34 @@ function InformationRaw(props: any) {
             docId: props.actualServiceAIT?.idServiciosAIT,
             data: updateDataLasEventPost,
             formType: "GeneralForms",
-          }
+          },
         );
+
+        console.log(
+          "esto es nuevo con google file search 2",
+          isOnlineUpdateDoc,
+        );
+
+        // Auto-sync ServiciosAIT completo con MineTrackAI
+        // Elimina versión anterior y sube la nueva versión actualizada
+        if (isOnlineUpdateDoc) {
+          try {
+            const syncResult = await syncServiciosAITDocument(
+              props.actualServiceAIT?.idServiciosAIT,
+            );
+
+            if (syncResult.apiSuccess) {
+              console.log(
+                "✅ ServiciosAIT synced successfully with MineTrackAI",
+              );
+            } else if (syncResult.queuedForSync) {
+              console.log("📱 ServiciosAIT sync queued for later");
+            }
+          } catch (syncError) {
+            console.warn("⚠️ Error syncing ServiciosAIT:", syncError);
+          }
+        }
+        console.log("esto es nuevo con google file search 3");
 
         // router.back();
 

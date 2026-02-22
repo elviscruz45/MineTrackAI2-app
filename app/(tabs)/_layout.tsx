@@ -180,6 +180,26 @@ function TabLayoutRaw(props: any) {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat AI",
+          headerTitle: () => (
+            <TouchableOpacity onPress={() => home_screen()}>
+              <Image
+                source={require("../../assets/screens/Pandora.png")}
+                style={{ width: 200, height: 30 }}
+              />
+            </TouchableOpacity>
+          ),
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon
+              name={focused ? "chatbubbles" : "chatbubbles-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Perfil",

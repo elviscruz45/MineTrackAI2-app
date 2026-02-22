@@ -93,7 +93,8 @@
     "xlsx": "^0.18.5",
     "yup": "^1.4.0",
     "zingchart": "^2.9.16-1",
-    "zingchart-react": "^3.2.0"
+    "zingchart-react": "^3.2.0",
+    "lightningcss-linux-x64-gnu": "1.27.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -111,14 +112,11 @@
     "terser-webpack-plugin": "^5.3.14",
     "typescript": "~5.8.3",
     "workbox-cli": "^7.3.0",
-    "babel-plugin-transform-remove-console": "^7.10.4"
+    "babel-plugin-transform-remove-console": "^6.9.4"
   },
   "resolutions": {
     "lightningcss": "1.27.0",
     "webpack": "5.93.0"
-  },
-  "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.27.0"
   },
   "private": true
 }
