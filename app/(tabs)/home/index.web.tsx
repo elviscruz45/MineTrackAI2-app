@@ -97,7 +97,7 @@ function HomeScreenRaw(props: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [companyName, setCompanyName] = useState("");
   const [selectedProject, setSelectedProject] = useState<any>(
-    AVAILABLE_PROJECTS[0]
+    AVAILABLE_PROJECTS[0],
   );
   // const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
   const [selectedCompany, setSelectedCompany] = useState("");
@@ -140,7 +140,7 @@ function HomeScreenRaw(props: any) {
           //   "==",
           //   mineraCorreosList[companyNameLowercase]
           // ),
-          orderBy("createdAt", "desc")
+          orderBy("createdAt", "desc"),
         );
 
         unsubscribe = onSnapshot(queryRef, async (ItemFirebase) => {
@@ -178,7 +178,7 @@ function HomeScreenRaw(props: any) {
           collection(db, "approvals"),
           orderBy("date", "desc"),
           where("ApprovalRequestSentTo", "array-contains", props.email),
-          limit(20)
+          limit(20),
         );
         unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
           const lista: any = [];
@@ -209,7 +209,7 @@ function HomeScreenRaw(props: any) {
     serviceData: any,
     activitiesData: any[],
     projectName: string,
-    projectType: string
+    projectType: string,
   ): string => {
     const {
       NombreServicio,
@@ -246,10 +246,10 @@ ${index + 1}. ${activity.NombreServicio || "Actividad sin nombre"}
        ? new Date(activity.FechaInicio.seconds * 1000).toLocaleDateString()
        : "N/A"
    } hasta ${
-        activity.FechaFin
-          ? new Date(activity.FechaFin.seconds * 1000).toLocaleDateString()
-          : "N/A"
-      }
+     activity.FechaFin
+       ? new Date(activity.FechaFin.seconds * 1000).toLocaleDateString()
+       : "N/A"
+   }
    - Empresa: ${EmpresaMinera || "N/A"}`;
     });
 
@@ -286,7 +286,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
     serviceId: string,
     content: string,
     embedding: number[],
-    metadata: any
+    metadata: any,
   ) => {
     try {
       const { data, error } = await supabase
@@ -316,7 +316,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
     projectName: string,
     projectType: string,
     fileAsset: any,
-    newProjectDocID: any
+    newProjectDocID: any,
   ) => {
     try {
       setIsLoading(true);
@@ -334,7 +334,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               resolve(event.target?.result as ArrayBuffer);
             reader.onerror = (e) => reject(e);
             reader.readAsArrayBuffer(webFile);
-          }
+          },
         );
 
         if (isExcel) {
@@ -446,7 +446,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         console.error("❌ Validación fallida - Filas con campos faltantes:");
         invalidRows.forEach((item) => {
           console.error(
-            `  Fila ${item.row}: Faltan campos [${item.missing.join(", ")}]`
+            `  Fila ${item.row}: Faltan campos [${item.missing.join(", ")}]`,
           );
         });
 
@@ -459,7 +459,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
 
         // Lanzar error para que sea capturado en handleSubmit
         throw new Error(
-          `Validación fallida: Fila ${invalidRows[0].row} - Faltan campos: ${firstRowMissing}. Total de filas con errores: ${invalidRows.length}`
+          `Validación fallida: Fila ${invalidRows[0].row} - Faltan campos: ${firstRowMissing}. Total de filas con errores: ${invalidRows.length}`,
         );
       }
 
@@ -509,11 +509,11 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
 
               console.log(
                 "fechaInicioDatefechaInicioDatefechaInicioDate",
-                Timestamp.fromDate(fechaInicioDate ?? new Date())
+                Timestamp.fromDate(fechaInicioDate ?? new Date()),
               );
               console.log(
                 "fechaFinDatefechaFinDatefechaFinDatefechaFinDate",
-                Timestamp.fromDate(fechaFinDate ?? new Date())
+                Timestamp.fromDate(fechaFinDate ?? new Date()),
               );
               return {
                 ...item,
@@ -527,7 +527,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
             }) ?? [];
 
         const filterNamesActivities = filteredData.map(
-          (item: any) => item.NombreServicio
+          (item: any) => item.NombreServicio,
         );
 
         // Create a new data object with all required fields
@@ -583,7 +583,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           },
           filteredData,
           projectName,
-          projectType
+          projectType,
         );
 
         const embedding = await generateEmbedding(ragText);
@@ -608,7 +608,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               supervisorEECC: SupervisorEECC,
               horasTotales: HorasTotales,
               actividades: filterNamesActivities,
-            }
+            },
           );
         }
 
@@ -948,7 +948,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                   }}
                   cachePolicy={"memory-disk"}
                 /> */}
-                <ImageExpo
+                {/* <ImageExpo
                   source={require("../../../assets/login/logoMetso4.png")}
                   style={{
                     width: windowWidth > 768 ? 180 : 140,
@@ -958,7 +958,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                     borderColor: "white",
                   }}
                   cachePolicy={"memory-disk"}
-                />
+                /> */}
               </View>
 
               {/* Título principal */}
@@ -1559,7 +1559,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 //the algoritm to retrieve the image source to render the icon
                 const area = item?.AITAreaServicio;
                 const indexareaList = areaLists.findIndex(
-                  (item) => item.value === area
+                  (item) => item.value === area,
                 );
                 const imageSource =
                   areaLists[indexareaList]?.image ??
@@ -1829,7 +1829,7 @@ function parseAnyDate(value: any) {
           date.d,
           date.H || 0,
           date.M || 0,
-          date.S || 0
+          date.S || 0,
         );
         console.log("parseAnyDate - Parsed from Excel serial:", parsedDate);
         return parsedDate;
@@ -1883,14 +1883,14 @@ function parseAnyDate(value: any) {
         Number(day),
         Number(hour),
         Number(minute),
-        Number(second)
+        Number(second),
       );
 
       // Validar que la fecha sea válida
       if (!isNaN(parsedDate.getTime())) {
         console.log(
           "parseAnyDate - Parsed from DD/MM/YYYY format:",
-          parsedDate
+          parsedDate,
         );
         return parsedDate;
       } else {
