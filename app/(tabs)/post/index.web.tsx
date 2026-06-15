@@ -307,7 +307,7 @@ function PublishRaw(props: any) {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "white",
+              // backgroundColor: "white",
               justifyContent: "space-between",
               paddingHorizontal: 20,
               marginTop: 10,

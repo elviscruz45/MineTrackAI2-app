@@ -122,7 +122,8 @@ const SelectExampleBare = (props: any) => {
 
         if (docSnap.exists()) {
           const documentData = docSnap.data();
-          setData(documentData.activities || []);
+          setData((documentData.activities || []).map((s: string) => s.trimStart()));
+          console.log("Document data:", documentData.activities);
         } else {
         }
       } catch (error) {

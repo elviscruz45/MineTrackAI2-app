@@ -13,14 +13,14 @@ import styles from "./GeneralForms.styles";
 import { Input } from "@rneui/themed";
 import * as DocumentPicker from "expo-document-picker";
 import { Modal } from "../../../../../components/Modal/Modal";
-import ChangeDisplayEtapa from "../FormsGeneral/ChangeEtapa/ChangeDisplayEtapa";
-import ChangeDisplayAvance from "../FormsGeneral/ChangeAvance/ChangeDisplayAvance";
-import ChangeDisplayAprobadores from "../FormsGeneral/ChangeAprobadores/ChangeDisplayAprobadores";
 import ChangeDisplayMonto from "../FormsGeneral/ChangeNumeroMonto/ChangeDisplayMonto";
 import ChangeDisplayFechaFin from "../FormsGeneral/ChangeFechaFin/ChangeDisplayFechaFin";
 import ChangeDisplayHH from "../FormsGeneral/ChangeNumeroHH/ChangeDisplayHH";
 import ChangeDisplayFileTipo from "../FormsGeneral/ChangeFIleTipo/ChangeDisplayFileTipo";
 import ChangeDisplayVisibility from "../FormsGeneral/ChangeVisibility/ChangeDisplayVisibility";
+import ChangeDisplayCausa from "../FormsGeneral/ChangeCausa/ChangeDisplayCausa";
+import ChangeDisplayTipoEvento from "../FormsGeneral/ChangeTipoEvento/ChangeDisplayTipoEvento";
+import ChangeDisplayClasificacionHSE from "../FormsGeneral/ChangeClasificacionHSE/ChangeDisplayClasificacionHSE";
 import { connect } from "react-redux";
 import { userTypeList } from "../../../../../utils/userTypeList";
 import Toast from "react-native-toast-message";
@@ -36,9 +36,6 @@ function GeneralFormsBare(props: any) {
   const { formik, setMoreImages, agregarImagenes } = props;
   const [pickedDocument, setPickedDocument] = useState(null);
   const [renderComponent, setRenderComponent] = useState<any>(null);
-  const [aprobadores, setAprobadores] = useState("");
-  const [etapa, setEtapa] = useState<string>("");
-  const [avance, setAvance] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
   const [fechafin, setFechafin] = useState(null);
   const [monto, setMonto] = useState(null);
@@ -46,6 +43,9 @@ function GeneralFormsBare(props: any) {
   const [aditional, setAditional] = useState(false);
   const [tipoFile, setTipoFile] = useState("");
   const [visibilidad, setVisibilidad] = useState("");
+  const [causa, setCausa] = useState("");
+  const [tipoEvento, setTipoEvento] = useState("");
+  const [clasificacionHSE, setClasificacionHSE] = useState("");
   const [shortNameFileUpdated, setShortNameFileUpdated] = useState("");
   const [images, setImages] = useState([]);
   const [pdfFileURL, setPdfFileURL] = useState("");
@@ -118,51 +118,12 @@ function GeneralFormsBare(props: any) {
   };
 
   const selectComponent = (key: string) => {
-    if (key === "visibilidad") {
-      setRenderComponent(
-        <ChangeDisplayVisibility
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setVisibilidad={setVisibilidad}
-        />
-      );
-    }
-    if (key === "etapa") {
-      setRenderComponent(
-        <ChangeDisplayEtapa
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setEtapa={setEtapa}
-          setAprobadores={setAprobadores}
-          etapa={etapa}
-        />
-      );
-    }
     if (key === "tipoFile") {
       setRenderComponent(
         <ChangeDisplayFileTipo
           onClose={onCloseOpenModal}
           formik={formik}
           setTipoFile={setTipoFile}
-        />
-      );
-    }
-    if (key === "porcentajeAvance") {
-      setRenderComponent(
-        <ChangeDisplayAvance
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setAvance={setAvance}
-        />
-      );
-    }
-    if (key === "aprobacion") {
-      setRenderComponent(
-        <ChangeDisplayAprobadores
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setAprobadores={setAprobadores}
-          etapa={etapa}
         />
       );
     }
@@ -190,6 +151,33 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setHorashombre={setHorashombre}
+        />
+      );
+    }
+    if (key === "causa") {
+      setRenderComponent(
+        <ChangeDisplayCausa
+          onClose={onCloseOpenModal}
+          formik={formik}
+          setCausa={setCausa}
+        />
+      );
+    }
+    if (key === "tipoEvento") {
+      setRenderComponent(
+        <ChangeDisplayTipoEvento
+          onClose={onCloseOpenModal}
+          formik={formik}
+          setTipoEvento={setTipoEvento}
+        />
+      );
+    }
+    if (key === "clasificacionHSE") {
+      setRenderComponent(
+        <ChangeDisplayClasificacionHSE
+          onClose={onCloseOpenModal}
+          formik={formik}
+          setClasificacionHSE={setClasificacionHSE}
         />
       );
     }
@@ -314,91 +302,8 @@ function GeneralFormsBare(props: any) {
             formik.setFieldValue("id", numericText);
           }}
         /> */}
-        {agregarImagenes !== "editar" && (
-          <Input
-            value={formik.values.etapa}
-            label="Etapa del Evento"
-            editable={false}
-            errorMessage={formik.errors.etapa}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => selectComponent("etapa"),
-            }}
-          />
-        )}
-        {/* {(formik.values.etapa === "Avance Ejecucion" ||
-          formik.values.etapa === "Avance Ejecucion" ||
-          etapa === "Solicitud Aprobacion Doc" ||
-          etapa === "Aprobacion Doc" ||
-          etapa === "Solicitud Ampliacion Servicio" ||
-          etapa === "Aprobacion Ampliacion" ||
-          etapa === "Stand by" ||
-          etapa === "Cancelacion") && ( */}
 
-        <Input
-          value={`${formik.values.porcentajeAvance} %`}
-          label="Avance de ejecucion (0 a 100)"
-          editable={false}
-          // errorMessage={formik.errors.porcentajeAvance}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("porcentajeAvance"),
-          }}
-        />
 
-        {/* )} */}
-        {(etapa === "Envio Solicitud Servicio" ||
-          etapa === "Envio Cotizacion" ||
-          etapa === "Solicitud Aprobacion Doc" ||
-          etapa === "Solicitud Ampliacion Servicio" ||
-          etapa === "Envio EDP") && (
-          <Input
-            value={formik.values.aprobacion}
-            label="Aprobador"
-            editable={false}
-            multiline={true}
-            // errorMessage={formik.errors.aprobacion}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => selectComponent("aprobacion"),
-            }}
-          />
-        )}
-
-        {/* <Text style={styles.subtitleForm}>Opcional</Text> */}
-
-        {/* <Input
-          label="Visibilidad del evento"
-          value={formik.values.visibilidad}
-          editable={false}
-          // errorMessage={formik.errors.visibilidad}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("visibilidad"),
-          }}
-        /> */}
-
-        {(formik.values.etapa === "Envio Solicitud Servicio" ||
-          formik.values.etapa === "Solicitud Aprobacion Doc" ||
-          formik.values.etapa === "Envio Cotizacion") && (
-          <Input
-            value={shortNameFileUpdated}
-            label="Adjuntar PDF"
-            multiline={true}
-            editable={false}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => {
-                pickDocument();
-              },
-            }}
-          />
-        )}
 
         {shortNameFileUpdated && (
           <Input
@@ -412,6 +317,74 @@ function GeneralFormsBare(props: any) {
               onPress: () => selectComponent("tipoFile"),
             }}
           />
+        )}
+
+        <Input
+          value={formik.values.tipoEvento}
+          label="Tipo de Evento"
+          editable={false}
+          rightIcon={{
+            type: "material-community",
+            name: "arrow-right-circle-outline",
+            onPress: () => selectComponent("tipoEvento"),
+          }}
+        />
+
+        <Input
+          value={formik.values.causa}
+          label="Causa del evento"
+          editable={false}
+          rightIcon={{
+            type: "material-community",
+            name: "arrow-right-circle-outline",
+            onPress: () => selectComponent("causa"),
+          }}
+        />
+
+                <Input
+          value={shortNameFileUpdated}
+          label="Adjuntar PDF (Opcional)"
+          multiline={true}
+          editable={false}
+          rightIcon={{
+            type: "material-community",
+            name: "arrow-right-circle-outline",
+            onPress: () => {
+              pickDocument();
+            },
+          }}
+        />
+
+        {tipoEvento === "HSE" && (
+          <Input
+            value={formik.values.clasificacionHSE}
+            label="Clasificación HSE"
+            editable={false}
+            rightIcon={{
+              type: "material-community",
+              name: "arrow-right-circle-outline",
+              onPress: () => selectComponent("clasificacionHSE"),
+            }}
+          />
+        )}
+
+        {(tipoEvento === "HSE" || tipoEvento === "Técnico") && (
+          <>
+            <Input
+              label="Equipo afectado"
+              value={formik.values.equipoAfectado}
+              onChangeText={(text) => formik.setFieldValue("equipoAfectado", text)}
+            />
+            <Input
+              label="Horas perdidas"
+              value={formik.values.horasPerdidas}
+              keyboardType="numeric"
+              onChangeText={(text) => {
+                const numericText = text.replace(/[^0-9.]/g, "");
+                formik.setFieldValue("horasPerdidas", numericText);
+              }}
+            />
+          </>
         )}
 
         <Text> </Text>

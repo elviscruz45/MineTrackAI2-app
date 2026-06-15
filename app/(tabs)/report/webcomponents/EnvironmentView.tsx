@@ -397,638 +397,195 @@ const EnvironmentView: React.FC<Props> = ({ selectedProject }) => {
   const medidasPromedio =
     Math.round((medidasAmbientales / totalEventosMantenimiento) * 10) / 10;
 
-  return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Título del Proyecto */}
-      {selectedProject && (
-        <h1
-          style={{
-            marginBottom: "20px",
-            color: "#2A3B76",
-            fontSize: "24px",
-            borderBottom: "2px solid #e9ecef",
-            paddingBottom: "10px",
-          }}
-        >
-          Monitoreo Ambiental: {selectedProject}
-        </h1>
-      )}
+  // ── Design tokens ──
+  const D = { navy: "#2A3B76", teal: "#00897b", green: "#198754", red: "#e53935", amber: "#f9a825", blue: "#1976d2", bg: "#f0f4f8", card: "#ffffff", border: "#e9ecef" };
+  const catColors: Record<string, string> = { "Gestión del Agua": "#0288d1", "Calidad del Aire": "#43a047", "Gestión de Residuos": "#6d4c41", "Eficiencia Energética": "#f9a825" };
+  const catIcons: Record<string, string> = { "Gestión del Agua": "💧", "Calidad del Aire": "🌿", "Gestión de Residuos": "♻️", "Eficiencia Energética": "⚡" };
 
-      {/* Navegación entre pestañas */}
-      <div
-        style={{
-          display: "flex",
-          marginBottom: "30px",
-          borderBottom: "1px solid #dee2e6",
-        }}
-      >
-        <div
-          onClick={() => setActiveTab("Indicadores")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "Indicadores" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Indicadores" ? "2px solid #1976d2" : "none",
-          }}
-        >
-          Indicadores Ambientales
-        </div>
-        <div
-          onClick={() => setActiveTab("Incidentes")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "Incidentes" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Incidentes" ? "2px solid #1976d2" : "none",
-          }}
-        >
-          Incidentes Ambientales
-        </div>
-        <div
-          onClick={() => setActiveTab("Mantenimiento")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "Mantenimiento" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Mantenimiento" ? "2px solid #1976d2" : "none",
-          }}
-        >
-          Mantenimiento con Impacto Ambiental
+  const heroEnv = [
+    { label: "Agua Reciclada", value: "85%", trend: "+5%", good: true, sub: "Meta 80% · Consumo 850 m³/d", color: "#0288d1" },
+    { label: "Emisiones CO₂", value: "95 t/d", trend: "-5%", good: true, sub: "Meta ≤100 t/d", color: "#43a047" },
+    { label: "Reciclaje Residuos", value: "75%", trend: "+3%", good: false, sub: "Meta 80%", color: "#6d4c41" },
+    { label: "Energía Renovable", value: "28%", trend: "+2%", good: false, sub: "Meta 30%", color: "#f9a825" },
+    { label: "Alto Impacto Ambiental", value: `${porcentajeAltoImpacto}%`, trend: "", good: porcentajeAltoImpacto <= 20, sub: `${eventosAltoImpacto}/${totalEventosMantenimiento} actividades`, color: porcentajeAltoImpacto > 20 ? D.red : D.green },
+    { label: "Medidas de Control", value: `${medidasAmbientales}`, trend: "", good: true, sub: `${medidasPromedio} promedio/actividad`, color: D.teal },
+  ];
+
+  return (
+    <div style={{ background: D.bg, minHeight: "100%", paddingBottom: 32 }}>
+      <style>{`
+        .ev-tab { padding: 7px 16px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; border: none; transition: all 0.2s; }
+        .ev-table th { background: linear-gradient(135deg, #00695c, #00897b); color: white; padding: 10px 14px; font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
+        .ev-table td { padding: 10px 14px; font-size: 12px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+        .ev-table tr:hover td { background: #f0faf8; }
+        .ev-badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; color: white; white-space: nowrap; }
+      `}</style>
+
+      {/* ── PAGE HEADER ──────────────────────────────────────────────── */}
+      <div style={{ background: "linear-gradient(135deg, #004d40 0%, #00695c 100%)", padding: "20px 20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "white" }}>
+              🌿 &nbsp;Medio Ambiente & Sostenibilidad
+            </h2>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+              {selectedProject ? `Proyecto: ${selectedProject} · ` : ""}Indicadores ambientales y gestión de riesgos · {new Date().toLocaleDateString("es-ES")}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {(["Indicadores", "Incidentes", "Mantenimiento"] as const).map((t) => (
+              <button key={t} className="ev-tab" onClick={() => setActiveTab(t)}
+                style={{ background: activeTab === t ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)", color: activeTab === t ? "white" : "rgba(255,255,255,0.6)", border: activeTab === t ? "1px solid rgba(255,255,255,0.4)" : "1px solid transparent" }}>
+                {t === "Indicadores" ? "📊 Indicadores" : t === "Incidentes" ? "⚠️ Incidentes" : "🔧 Mantenimiento"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Cuadrícula de KPIs Ambientales */}
-      {activeTab === "Indicadores" && (
-        <div style={{ marginBottom: "40px" }}>
-          {kpisAmbientales.map((categoria) => (
-            <div key={categoria.categoria} style={{ marginBottom: "30px" }}>
-              <h2
-                style={{
-                  marginBottom: "20px",
-                  color: "#1976d2",
-                  fontSize: "18px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <span>{categoria.categoria}</span>
-              </h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                  gap: "20px",
-                }}
-              >
-                {categoria.metricas.map((metrica) => (
-                  <div
-                    key={metrica.etiqueta}
-                    style={{
-                      background: "white",
-                      padding: "20px",
-                      borderRadius: "8px",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                      border: `1px solid ${getComplianceColor(
-                        metrica.cumplimiento
-                      )}`,
-                    }}
-                  >
-                    <div style={{ fontSize: "14px", color: "#666" }}>
-                      {metrica.etiqueta}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "24px",
-                        fontWeight: "bold",
-                        color: getComplianceColor(metrica.cumplimiento),
-                        marginTop: "8px",
-                        display: "flex",
-                        alignItems: "baseline",
-                        gap: "5px",
-                      }}
-                    >
-                      {metrica.actual}
-                      <span style={{ fontSize: "14px", color: "#666" }}>
-                        {metrica.unidad}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                        marginTop: "4px",
-                      }}
-                    >
-                      Meta: {metrica.meta} {metrica.unidad}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color:
-                          metrica.tendencia === "mejorando"
-                            ? "#198754"
-                            : metrica.tendencia === "declinando"
-                            ? "#dc3545"
-                            : "#666",
-                        marginTop: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      {metrica.tendencia === "mejorando"
-                        ? "▲"
-                        : metrica.tendencia === "declinando"
-                        ? "▼"
-                        : "►"}
-                      {metrica.tendencia.charAt(0).toUpperCase() +
-                        metrica.tendencia.slice(1)}
-                    </div>
-                  </div>
-                ))}
+      {/* ── HERO KPI STRIP ───────────────────────────────────────────── */}
+      <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+          {heroEnv.map((k, i) => (
+            <div key={i} style={{ background: D.card, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
+              <div style={{ background: k.color, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+                  {["💧","🌿","♻️","⚡","⚠️","🛡️"][i]}
+                </div>
+                <span style={{ color: "white", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, lineHeight: 1.2 }}>{k.label}</span>
+              </div>
+              <div style={{ padding: "8px 12px" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#1a1a2e" }}>{k.value}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                  {k.trend && <span style={{ fontSize: 10, fontWeight: 700, color: k.good ? D.green : D.red }}>{k.good ? "▲" : "▼"} {k.trend}</span>}
+                  <span style={{ fontSize: 9, color: "#999", lineHeight: 1.3 }}>{k.sub}</span>
+                </div>
               </div>
             </div>
           ))}
-
-          {/* Estadísticas de impacto ambiental en mantenimiento */}
-          <h2
-            style={{
-              marginBottom: "20px",
-              color: "#1976d2",
-              fontSize: "18px",
-            }}
-          >
-            Indicadores de Mantenimiento y Medio Ambiente
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "20px",
-              marginBottom: "30px",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Actividades con Alto Impacto Ambiental
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: porcentajeAltoImpacto > 20 ? "#dc3545" : "#198754",
-                  marginTop: "8px",
-                }}
-              >
-                {porcentajeAltoImpacto}%
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                {eventosAltoImpacto} de {totalEventosMantenimiento} actividades
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Medidas de Control Ambiental
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: "#1976d2",
-                  marginTop: "8px",
-                }}
-              >
-                {medidasAmbientales}
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                Promedio: {medidasPromedio} por actividad
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Monitoreo de Impacto
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: "#198754",
-                  marginTop: "8px",
-                }}
-              >
-                100%
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                Cobertura de actividades de mantenimiento
-              </div>
-            </div>
-          </div>
         </div>
-      )}
+      </div>
 
-      {/* Sección de Incidentes Ambientales */}
-      {activeTab === "Incidentes" && (
-        <div>
-          <h2
-            style={{
-              marginBottom: "20px",
-              color: "#1976d2",
-              fontSize: "18px",
-            }}
-          >
-            Incidentes y Acciones Ambientales
-          </h2>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {incidentesAmbientales.map((incidente) => (
-              <div
-                key={incidente.id}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getStatusColor(incidente.estado),
-                        color: "white",
-                      }}
-                    >
-                      {incidente.estado}
-                    </div>
-                    <div
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getSeverityColor(incidente.gravedad),
-                        color: "white",
-                      }}
-                    >
-                      {incidente.gravedad}
-                    </div>
+      <div style={{ padding: "0 16px 16px" }}>
+
+        {/* ── INDICADORES TAB ───────────────────────────────────────── */}
+        {activeTab === "Indicadores" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {kpisAmbientales.map((cat) => {
+              const color = catColors[cat.categoria] || D.teal;
+              const icon = catIcons[cat.categoria] || "📊";
+              return (
+                <div key={cat.categoria} style={{ background: D.card, borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                  <div style={{ background: `linear-gradient(135deg, ${color}dd, ${color})`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>{icon}</span>
+                    <h3 style={{ margin: 0, color: "white", fontSize: 14, fontWeight: 700 }}>{cat.categoria}</h3>
                   </div>
-                  <div style={{ color: "#666", fontSize: "14px" }}>
-                    {incidente.id}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 0 }}>
+                    {cat.metricas.map((m, mi) => {
+                      const pct = Math.min(100, Math.round((m.actual / m.meta) * 100));
+                      const cc = getComplianceColor(m.cumplimiento);
+                      const trendColor = m.tendencia === "mejorando" ? D.green : m.tendencia === "declinando" ? D.red : "#888";
+                      return (
+                        <div key={mi} style={{ padding: "16px 20px", borderRight: mi < cat.metricas.length - 1 ? `1px solid ${D.border}` : "none", borderBottom: `1px solid ${D.border}` }}>
+                          <p style={{ margin: 0, fontSize: 11, color: "#888", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{m.etiqueta}</p>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 4px" }}>
+                            <span style={{ fontSize: 24, fontWeight: 800, color: cc }}>{m.actual}</span>
+                            <span style={{ fontSize: 12, color: "#888" }}>{m.unidad}</span>
+                          </div>
+                          <div style={{ height: 5, background: "#eee", borderRadius: 3, marginBottom: 6 }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: cc, borderRadius: 3 }} />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 10, color: trendColor, fontWeight: 600 }}>{m.tendencia === "mejorando" ? "▲" : m.tendencia === "declinando" ? "▼" : "►"} {m.tendencia}</span>
+                            <span style={{ fontSize: 10, color: "#aaa" }}>Meta: {m.meta} {m.unidad}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-
-                <div
-                  style={{
-                    marginBottom: "8px",
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Incidente de {incidente.tipo}
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Fecha:</strong> {incidente.fecha}
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Ubicación:</strong> {incidente.ubicacion}
-                </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Descripción:</strong> {incidente.descripcion}
-                </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Áreas de Impacto:</strong>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      marginTop: "4px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {incidente.areaImpacto.map((area, index) => (
-                      <span
-                        key={index}
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          backgroundColor: "#e9ecef",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        {area}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Acciones de Mitigación:</strong>
-                  <ul
-                    style={{
-                      margin: "8px 0 0 20px",
-                      padding: 0,
-                      fontSize: "13px",
-                    }}
-                  >
-                    {incidente.accionesMitigacion.map((accion, index) => (
-                      <li key={index}>{accion}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ fontSize: "14px", color: "#666" }}>
-                  <strong>Equipo Responsable:</strong>{" "}
-                  {incidente.equipoResponsable}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Sección de Eventos de Mantenimiento con Impacto Ambiental */}
-      {activeTab === "Mantenimiento" && (
-        <div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
-          >
-            <h2 style={{ color: "#1976d2", margin: 0, fontSize: "18px" }}>
-              Actividades de Mantenimiento con Impacto Ambiental
-            </h2>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                onClick={() => setFiltroImpacto("Todos")}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    filtroImpacto === "Todos" ? "#1976d2" : "#e9ecef",
-                  color: filtroImpacto === "Todos" ? "white" : "#333",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Todos
-              </button>
-              <button
-                onClick={() => setFiltroImpacto("Alto")}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    filtroImpacto === "Alto" ? "#dc3545" : "#e9ecef",
-                  color: filtroImpacto === "Alto" ? "white" : "#333",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Alto Impacto
-              </button>
-              <button
-                onClick={() => setFiltroImpacto("Medio")}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    filtroImpacto === "Medio" ? "#ffc107" : "#e9ecef",
-                  color: filtroImpacto === "Medio" ? "white" : "#333",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Impacto Medio
-              </button>
-              <button
-                onClick={() => setFiltroImpacto("Bajo")}
-                style={{
-                  padding: "6px 10px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    filtroImpacto === "Bajo" ? "#198754" : "#e9ecef",
-                  color: filtroImpacto === "Bajo" ? "white" : "#333",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                }}
-              >
-                Bajo Impacto
-              </button>
+        {/* ── INCIDENTES TAB ────────────────────────────────────────── */}
+        {activeTab === "Incidentes" && (
+          <div style={{ background: D.card, borderRadius: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+            <div style={{ background: "linear-gradient(135deg, #004d40, #00695c)", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, color: "white", fontSize: 15, fontWeight: 700 }}>⚠️ Incidentes Ambientales</h3>
+              <span style={{ background: "rgba(255,255,255,0.2)", color: "white", padding: "3px 10px", borderRadius: 12, fontSize: 12 }}>{incidentesAmbientales.length} registros</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="ev-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["ID", "Fecha", "Tipo", "Gravedad", "Ubicación", "Estado", "Descripción", "Responsable"].map(h => <th key={h}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidentesAmbientales.map((inc) => (
+                    <tr key={inc.id}>
+                      <td style={{ fontWeight: 700, color: D.teal }}>{inc.id}</td>
+                      <td>{inc.fecha}</td>
+                      <td><span className="ev-badge" style={{ background: "#e0f2f1", color: D.teal }}>{inc.tipo}</span></td>
+                      <td><span className="ev-badge" style={{ background: getSeverityColor(inc.gravedad) }}>{inc.gravedad}</span></td>
+                      <td style={{ maxWidth: 200 }}>{inc.ubicacion}</td>
+                      <td><span className="ev-badge" style={{ background: getStatusColor(inc.estado) }}>{inc.estado}</span></td>
+                      <td style={{ maxWidth: 260, color: "#555" }}>{inc.descripcion}</td>
+                      <td>{inc.equipoResponsable}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {eventosFiltrados.map((evento) => (
-              <div
-                key={evento.codigo}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getImpactColor(
-                          evento.impactoAmbiental
-                        ),
-                        color: "white",
-                      }}
-                    >
-                      Impacto {evento.impactoAmbiental}
-                    </div>
-                    <div
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getStatusColor(evento.estado),
-                        color: "white",
-                      }}
-                    >
-                      {evento.estado}
-                    </div>
-                  </div>
-                  <div style={{ color: "#666", fontSize: "14px" }}>
-                    {evento.codigo}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginBottom: "8px",
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {evento.nombre}
-                </div>
-
-                <div
-                  style={{ display: "flex", gap: "20px", marginBottom: "12px" }}
-                >
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Inicio:</strong> {evento.fechaInicio}
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Fin:</strong> {evento.fechaFin}
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Duración:</strong> {evento.duracion} horas
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Área:</strong> {evento.area}
-                </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Medidas de Control Ambiental:</strong>
-                  <ul
-                    style={{
-                      margin: "8px 0 0 20px",
-                      padding: 0,
-                      fontSize: "13px",
-                    }}
-                  >
-                    {evento.medidas.map((medida, index) => (
-                      <li key={index}>{medida}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Recursos:</strong>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      marginTop: "4px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {evento.recursos.map((recurso, index) => (
-                      <span
-                        key={index}
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: "12px",
-                          backgroundColor: "#e9ecef",
-                          fontSize: "12px",
-                          color: "#666",
-                        }}
-                      >
-                        {recurso}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ fontSize: "14px", color: "#666" }}>
-                  <strong>Responsable:</strong> {evento.responsable}
-                </div>
+        {/* ── MANTENIMIENTO TAB ─────────────────────────────────────── */}
+        {activeTab === "Mantenimiento" && (
+          <div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+              {(["Todos", "Alto", "Medio", "Bajo", "Ninguno"] as const).map((f) => (
+                <button key={f} onClick={() => setFiltroImpacto(f)} style={{ padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: filtroImpacto === f ? (f === "Alto" ? D.red : f === "Medio" ? D.amber : f === "Bajo" ? D.green : f === "Ninguno" ? "#888" : D.navy) : "#e9ecef", color: filtroImpacto === f ? "white" : "#555" }}>
+                  {f === "Todos" ? "Todos" : `Impacto ${f}`}
+                </button>
+              ))}
+              <span style={{ marginLeft: "auto", fontSize: 12, color: "#888", alignSelf: "center" }}>{eventosFiltrados.length} actividades</span>
+            </div>
+            <div style={{ background: D.card, borderRadius: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+              <div style={{ background: "linear-gradient(135deg, #004d40, #00695c)", padding: "14px 20px" }}>
+                <h3 style={{ margin: 0, color: "white", fontSize: 15, fontWeight: 700 }}>🔧 Actividades con Impacto Ambiental</h3>
               </div>
-            ))}
+              <div style={{ overflowX: "auto" }}>
+                <table className="ev-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      {["Código", "Nombre", "Área", "Impacto", "Inicio", "Fin", "Hrs", "Estado", "Medidas", "Responsable"].map(h => <th key={h}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {eventosFiltrados.map((ev) => (
+                      <tr key={ev.codigo}>
+                        <td style={{ fontWeight: 700, color: D.teal, whiteSpace: "nowrap" }}>{ev.codigo}</td>
+                        <td style={{ maxWidth: 240, fontSize: 11 }}>{ev.nombre}</td>
+                        <td><span style={{ background: "#e0f2f1", color: D.teal, padding: "2px 7px", borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{ev.area}</span></td>
+                        <td><span className="ev-badge" style={{ background: getImpactColor(ev.impactoAmbiental) }}>{ev.impactoAmbiental}</span></td>
+                        <td style={{ whiteSpace: "nowrap" }}>{ev.fechaInicio}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>{ev.fechaFin}</td>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: D.navy }}>{ev.duracion}h</td>
+                        <td><span className="ev-badge" style={{ background: getStatusColor(ev.estado) }}>{ev.estado}</span></td>
+                        <td style={{ textAlign: "center", fontWeight: 700, color: D.teal }}>{ev.medidas.length}</td>
+                        <td style={{ fontSize: 11 }}>{ev.responsable}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

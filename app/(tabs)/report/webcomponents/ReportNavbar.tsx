@@ -149,8 +149,42 @@ const navItems = [
       </svg>
     ),
   },
+  // {
+  //   label: "Medio Ambiente",
+  //   icon: (active: boolean) => (
+  //     <svg
+  //       width="18"
+  //       height="18"
+  //       viewBox="0 0 24 24"
+  //       fill="none"
+  //       xmlns="http://www.w3.org/2000/svg"
+  //     >
+  //       <path
+  //         d="M15 8H15.01M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6Z"
+  //         stroke={active ? "#1976d2" : "#555"}
+  //         strokeWidth="2"
+  //         strokeLinecap="round"
+  //         strokeLinejoin="round"
+  //       />
+  //       <path
+  //         d="M3 15.9998L8 10.9998L13 15.9998"
+  //         stroke={active ? "#1976d2" : "#555"}
+  //         strokeWidth="2"
+  //         strokeLinecap="round"
+  //         strokeLinejoin="round"
+  //       />
+  //       <path
+  //         d="M14 13.9998L16 11.9998L21 16.9998"
+  //         stroke={active ? "#1976d2" : "#555"}
+  //         strokeWidth="2"
+  //         strokeLinecap="round"
+  //         strokeLinejoin="round"
+  //       />
+  //     </svg>
+  //   ),
+  // },
   {
-    label: "Medio Ambiente",
+    label: "Gerencia",
     icon: (active: boolean) => (
       <svg
         width="18"
@@ -159,26 +193,38 @@ const navItems = [
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path
-          d="M15 8H15.01M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6Z"
+        <rect
+          x="3"
+          y="3"
+          width="7"
+          height="7"
+          rx="1"
           stroke={active ? "#1976d2" : "#555"}
           strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        />
+        <rect
+          x="14"
+          y="3"
+          width="7"
+          height="7"
+          rx="1"
+          stroke={active ? "#1976d2" : "#555"}
+          strokeWidth="2"
+        />
+        <rect
+          x="3"
+          y="14"
+          width="7"
+          height="7"
+          rx="1"
+          stroke={active ? "#1976d2" : "#555"}
+          strokeWidth="2"
         />
         <path
-          d="M3 15.9998L8 10.9998L13 15.9998"
+          d="M14 17.5H21M17.5 14V21"
           stroke={active ? "#1976d2" : "#555"}
           strokeWidth="2"
           strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M14 13.9998L16 11.9998L21 16.9998"
-          stroke={active ? "#1976d2" : "#555"}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         />
       </svg>
     ),
@@ -214,10 +260,16 @@ const ReportNavbar: React.FC<{
     style={{
       display: "flex",
       alignItems: "center",
-      borderBottom: "1px solid #e9ecef",
-      background: "linear-gradient(to right, white, white)",
-      paddingLeft: 24,
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+      borderBottom: "2px solid #e9ecef",
+      background: "white",
+      paddingLeft: 16,
+      boxShadow: "0 1px 4px rgba(42,59,118,0.07)",
+      overflowX: "auto",
+      overflowY: "hidden",
+      WebkitOverflowScrolling: "touch" as any,
+      scrollbarWidth: "none" as any,
+      msOverflowStyle: "none" as any,
+      fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
     }}
   >
     {navItems.map((item) => (
@@ -227,17 +279,19 @@ const ReportNavbar: React.FC<{
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          padding: "14px 18px",
+          gap: 7,
+          padding: "13px 16px",
           cursor: "pointer",
+          flexShrink: 0,
           borderBottom:
             active === item.label
-              ? "2px solid #1976d2"
+              ? "2px solid #2A3B76"
               : "2px solid transparent",
-          color: active === item.label ? "#1976d2" : "#444",
-          fontWeight: active === item.label ? 600 : 400,
-          fontSize: 14,
-          transition: "all 0.2s ease",
+          color: active === item.label ? "#2A3B76" : "#64748b",
+          fontWeight: active === item.label ? 600 : 500,
+          fontSize: 13,
+          letterSpacing: active === item.label ? 0 : 0.1,
+          transition: "all 0.18s ease",
           position: "relative",
         }}
         onClick={() => onSelect && onSelect(item.label)}
@@ -259,6 +313,7 @@ const ReportNavbar: React.FC<{
         )}
       </div>
     ))}
+    <style>{`.report-navbar::-webkit-scrollbar { display: none; }`}</style>
   </nav>
 );
 

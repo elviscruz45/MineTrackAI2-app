@@ -484,25 +484,6 @@ function InformationRaw(props: any) {
         newData.comentariosUsuarios = [];
         console.log("eeeeeee");
 
-        //-------- a default newData porcentajeAvance-------
-        if (
-          newData.etapa === "Envio Solicitud Servicio" ||
-          newData.etapa === "Envio Cotizacion" ||
-          newData.etapa === "Aprobacion Cotizacion" ||
-          newData.etapa === "Inicio Servicio"
-        ) {
-          newData.porcentajeAvance = "0";
-        }
-
-        if (
-          newData.etapa === "Envio EDP" ||
-          newData.etapa === "Aprobacion EDP" ||
-          newData.etapa === "Registro de Pago" ||
-          newData.etapa === "Fin servicio"
-        ) {
-          newData.porcentajeAvance = "100";
-        }
-
         console.log("111111111");
 
         const uniqueID = `${Date.now()}-${Math.random()
@@ -572,6 +553,12 @@ function InformationRaw(props: any) {
           ayudante: newData.ayudante ?? 0,
           unicoID: newData.unicoID ?? "",
           totalHH: newData.totalHH ?? 0,
+          // campos para dashboard gerencial
+          causa: newData.causa ?? "",
+          tipoEvento: newData.tipoEvento ?? "",
+          clasificacionHSE: newData.clasificacionHSE ?? "",
+          equipoAfectado: newData.equipoAfectado ?? "",
+          horasPerdidas: newData.horasPerdidas ?? "",
         };
 
         const updateDataLasEventPost: {

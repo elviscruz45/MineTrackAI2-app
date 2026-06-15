@@ -46,6 +46,12 @@ export default function initialValues() {
     unicoID: "",
     pushNotification: "",
     proyecto: "",
+    // nuevos campos para dashboard gerencial
+    causa: "",
+    tipoEvento: "",
+    clasificacionHSE: "",
+    equipoAfectado: "",
+    horasPerdidas: "",
   };
 }
 
@@ -53,7 +59,6 @@ export function validationSchema() {
   return Yup.object({
     titulo: Yup.string().required("Campo obligatorio"),
     comentarios: Yup.string().required("Campo obligatorio"),
-    etapa: Yup.string().required("Campo obligatorio"),
 
     // porcentajeAvance: Yup.string().required("Campo obligatorio"),
     // aprobacion: Yup.string().required("Campo obligatorio"),

@@ -46,6 +46,37 @@ export default function Root({ children }: PropsWithChildren) {
         <ScrollViewStyleReset />
 
         {/* Add any additional <head> elements that you want globally available on web... */}
+        {/* Executive typography — Inter font family */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{ __html: `
+          *, *::before, *::after { box-sizing: border-box; }
+          body, html {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+            font-feature-settings: 'cv02','cv03','cv04','cv11';
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: #1a1f36;
+            background: #f0f4f8;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #1a1f36;
+          }
+          p, span, div, td, th, label, input, button, a {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+          }
+          /* Scrollbar global */
+          ::-webkit-scrollbar { width: 6px; height: 6px; }
+          ::-webkit-scrollbar-track { background: #f0f4f8; }
+          ::-webkit-scrollbar-thumb { background: #c5cdd8; border-radius: 10px; }
+          ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+          /* Remove default button styling */
+          button { font-family: 'Inter', sans-serif !important; }
+        ` }} />
       </head>
       <body>{children}</body>
     </html>
@@ -53,6 +84,19 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 const sw = `
+// ── SERVICE WORKER DISABLED FOR DEVELOPMENT ──────────────────────────────────
+// To re-enable: restore the registration block below and remove the unregister block.
+if ('serviceWorker' in navigator) {
+    // Unregister all existing service workers and clear all caches so every
+    // code change is reflected immediately without stale-cache issues.
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(r => r.unregister());
+    });
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+}
+
+// ── ORIGINAL REGISTRATION (disabled) ─────────────────────────────────────────
+/*
 if ('serviceWorker' in navigator) {
     let refreshing = false;
     
@@ -152,4 +196,5 @@ if ('serviceWorker' in navigator) {
         });
     }
 }
+*/
 `;
