@@ -162,7 +162,10 @@ const ProjectUploadModal = ({
       const errorMessage =
         error instanceof Error ? error.message : "Error desconocido";
 
-      if (!errorMessage.includes("Validación fallida")) {
+      if (errorMessage.includes("TagEquipo inválido")) {
+        // Cerrar modal de carga; el toast detallado ya se mostró en handleProjectFileUpload
+        handleClose();
+      } else if (!errorMessage.includes("Validación fallida")) {
         Toast.show({
           type: "error",
           text1: "Error al cargar el archivo",
@@ -170,7 +173,7 @@ const ProjectUploadModal = ({
         });
       }
 
-      // No cerrar el modal para que el usuario pueda corregir el archivo
+      // No cerrar el modal para que el usuario pueda corregir el archivo (errores no de tags)
     } finally {
       setIsLoading(false);
     }

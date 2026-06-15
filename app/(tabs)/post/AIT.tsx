@@ -1,25 +1,25 @@
-import { View, Text } from "react-native";
-import { Icon, Avatar, Input, Button } from "@rneui/themed";
-import React, { useState, useContext, useEffect } from "react";
+import { View, Text, Platform } from "react-native";
+import { Button } from "@rneui/themed";
+import React, { useEffect, useMemo } from "react";
 import { connect } from "react-redux";
 import styles from "./AIT.styles";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { screen } from "../../../utils";
-import initialValues from "./AIT.data";
-import { validationSchema } from "./AIT.data";
+import initialValues, {
+  validationSchema,
+  AIT_FIELD_LABELS,
+  AIT_REQUIRED_FIELDS,
+} from "./AIT.data";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { useFormik } from "formik";
 import { db } from "@/firebaseConfig";
 import {
-  addDoc,
   collection,
   query,
   doc,
-  updateDoc,
-  where,
   orderBy,
   getDocs,
   setDoc,
+  Timestamp,
 } from "firebase/firestore";
 import AITForms from "./components/AITForms/AITForms";
 import { areaLists } from "../../../utils/areaList";
@@ -28,226 +28,322 @@ import Toast from "react-native-toast-message";
 import { Image as ImageExpo } from "expo-image";
 import { useRouter } from "expo-router";
 
-function AITNoReduxScreen(props: any) {
-  const [tituloserv, setTituloserv] = useState();
-  const [ait, setAit] = useState();
-  const [tiposerv, setTiposerv] = useState();
-  const [area, setArea] = useState();
-  const router = useRouter();
+const REQUIRED_KEYS = [...AIT_REQUIRED_FIELDS];
 
-  const emptyimage = require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+function capitalizeFirstLetter(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function parseHorasTotales(value: string | number): number {
+  const n = parseFloat(String(value ?? "").replace(",", "."));
+  return isNaN(n) ? 0 : n;
+}
+
+function buildFirebasePayload(formValue: any, props: any, projectId: string) {
+  const fechaInicio = formValue.FechaInicio
+    ? new Date(formValue.FechaInicio)
+    : null;
+  const fechaFin = formValue.FechaFin ? new Date(formValue.FechaFin) : null;
+  let horasTotales = parseHorasTotales(formValue.HorasTotales);
+  if (horasTotales <= 0 && fechaInicio && fechaFin) {
+    horasTotales = Math.max(
+      0,
+      Math.round((fechaFin.getTime() - fechaInicio.getTime()) / 3600000)
+    );
+  }
+
+  const date = new Date();
+  const monthNames = [
+    "ene.", "feb.", "mar.", "abr.", "may.", "jun.",
+    "jul.", "ago.", "sep.", "oct.", "nov.", "dic.",
+  ];
+  const formattedDate = `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}  ${date.getHours()}:${date.getMinutes()} Hrs`;
+
+  const regex = /@(.+?)\./i;
+  const uniqueID = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const codigo = String(formValue.Codigo || "").trim();
+  const nombre = formValue.NombreServicio;
+  const numeroAIT =
+    String(formValue.NumeroAIT || "").trim() ||
+    `ADT-${Date.now().toString().slice(-8)}`;
+  const fechaInicioTs = fechaInicio ? Timestamp.fromDate(fechaInicio) : null;
+  const fechaFinTs = fechaFin ? Timestamp.fromDate(fechaFin) : null;
+  const esRutaCritica =
+    String(formValue.esRutaCritica || "").trim().toLowerCase() === "si";
+
+  const activityEntry = {
+    Codigo: codigo,
+    NombreServicio: nombre,
+    FechaInicio: fechaInicioTs,
+    FechaFin: fechaFinTs,
+    HorasTotales: horasTotales,
+    TagEquipo: String(formValue.TagEquipo || "").trim(),
+    AreaServicio: formValue.AreaServicio,
+    EmpresaMinera: formValue.EmpresaMinera || "Antapaccay",
+    esRutaCritica,
+    TipoServicio: formValue.TipoServicio || "Parada de Planta",
+  };
+
+  return {
+    Codigo: codigo,
+    NombreServicio: nombre,
+    NumeroAIT: numeroAIT,
+    EmpresaMinera: formValue.EmpresaMinera,
+    AreaServicio: formValue.AreaServicio,
+    TagEquipo: String(formValue.TagEquipo || "").trim(),
+    TipoServicio: formValue.TipoServicio,
+    esRutaCritica,
+    ResponsableEmpresaUsuario: formValue.ResponsableEmpresaUsuario || "",
+    ResponsableEmpresaUsuario2: formValue.ResponsableEmpresaUsuario2 || "",
+    ResponsableEmpresaUsuario3: formValue.ResponsableEmpresaUsuario3 || "",
+    ResponsableEmpresaContratista: formValue.ResponsableEmpresaContratista || "",
+    ResponsableEmpresaContratista2: formValue.ResponsableEmpresaContratista2 || "",
+    ResponsableEmpresaContratista3: formValue.ResponsableEmpresaContratista3 || "",
+    SupervisorMina: formValue.ResponsableEmpresaUsuario3 || "",
+    SupervisorEECC: formValue.ResponsableEmpresaContratista3 || "",
+    FechaInicio: fechaInicioTs,
+    FechaFin: fechaFinTs,
+    NumeroCotizacion: formValue.NumeroCotizacion,
+    Moneda: formValue.Moneda,
+    Monto: String(formValue.Monto ?? "0"),
+    SupervisorSeguridad: String(formValue.SupervisorSeguridad ?? "0"),
+    Supervisor: String(formValue.Supervisor ?? "0"),
+    Tecnicos: String(formValue.Tecnicos ?? "0"),
+    Lider: String(formValue.Lider ?? "0"),
+    Soldador: String(formValue.Soldador ?? "0"),
+    HorasTotales: horasTotales,
+    HorasHombre: formValue.HorasHombre || String(horasTotales),
+    pdfFile: [],
+    fechaPostFormato: formattedDate,
+    fechaPostISO: new Date().toISOString(),
+    createdAt: Timestamp.now(),
+    LastEventPosted: Timestamp.now(),
+    NuevaFechaEstimada: 0,
+    fechaFinEjecucion: 0,
+    photoServiceURL: "",
+    emailPerfil: props.email || "Anonimo",
+    nombrePerfil: props.firebase_user_name || "Anonimo",
+    events: [],
+    companyName:
+      capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo",
+    AvanceEjecucion: 0,
+    AvanceAdministrativo: 0,
+    AvanceAdministrativoTexto: "",
+    HHModificado: 0,
+    MontoModificado: 0,
+    idServiciosAIT: uniqueID,
+    projectId,
+    isGlobalProject: false,
+    activities: [nombre],
+    activitiesData: [activityEntry],
+    proyecto: "",
+  };
+}
+
+function isFieldFilled(key: string, values: Record<string, any>): boolean {
+  const val = values[key];
+  if (key === "FechaInicio" || key === "FechaFin") return val != null;
+  if (key === "esRutaCritica") return String(val ?? "No").trim() !== "";
+  return String(val ?? "").trim() !== "";
+}
+
+function AITNoReduxScreen(props: any) {
+  const router = useRouter();
+  const emptyimage = require("../../../assets/equipmentplant/ImageIcons/poderosa.png");
   const projectId = props.servicesData?.[0]?.projectId || "";
-  console.log("projectId en AIT ", projectId);
-  //fetching data from firebase to retrieve all users
 
   useEffect(() => {
-    // Function to fetch data from Firestore
     if (props.email) {
-      const companyName = props.email?.match(/@(.+?)\./i)?.[1] || "Anonimo";
       async function fetchData() {
         try {
           const queryRef1 = query(
             collection(db, "users"),
-            // where("companyName", "!=", companyName),
             orderBy("email", "desc")
           );
-
-          // const queryRef2 = query(
-          //   collection(db, "users"),
-          //   // where("companyName", "==", companyName),
-          //   orderBy("email", "desc")
-          // );
-
           const getDocs1 = await getDocs(queryRef1);
-          // const getDocs2 = await getDocs(queryRef2);
           const lista: any = [];
-
-          // Process results from the first query
           if (getDocs1) {
-            getDocs1.forEach((doc) => {
-              lista.push(doc.data());
-            });
+            getDocs1.forEach((d) => lista.push(d.data()));
           }
-
-          // // Process results from the second query
-          // if (getDocs2) {
-          //   getDocs2.forEach((doc) => {
-          //     lista.push(doc.data());
-          //   });
-          // }
-
-          // Save the merged results to the state or do any other necessary operations
           props.saveTotalUsers(lista);
         } catch (error) {
           console.error("Error fetching data:", error);
-          // Handle the error as needed
         }
       }
-      // Call the fetchData function when the component mounts
-
-      if (!props.getTotalUsers) {
-        fetchData();
-      }
+      if (!props.getTotalUsers) fetchData();
     }
   }, [props.email]);
-
-  // find Index of areaList array where there is the image of the area to render the icon Avatar
-  const IndexObjectImageArea = areaLists.findIndex((obj) => obj.value === area);
-  const imageSource = areaLists[IndexObjectImageArea]?.image || emptyimage;
-  function capitalizeFirstLetter(str: string) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
 
   const formik = useFormik({
     initialValues: initialValues(),
     validationSchema: validationSchema(),
-    validateOnChange: false,
+    validateOnChange: true,
+    validateOnBlur: true,
     onSubmit: async (formValue) => {
       try {
-        //retrieving data from Formik
-        const newData = formValue;
+        const payload = buildFirebasePayload(formValue, props, projectId);
+        await setDoc(doc(db, "ServiciosAIT", payload.idServiciosAIT), payload);
 
-        //Data about date time format
-        const date = new Date();
-        const monthNames = [
-          "ene.",
-          "feb.",
-          "mar.",
-          "abr.",
-          "may.",
-          "jun.",
-          "jul.",
-          "ago.",
-          "sep.",
-          "oct.",
-          "nov.",
-          "dic.",
-        ];
-        const day = date.getDate();
-        const month = monthNames[date.getMonth()];
-        const year = date.getFullYear();
-        const hour = date.getHours();
-        const minute = date.getMinutes();
-        const formattedDate = `${day} ${month} ${year}  ${hour}:${minute} Hrs`;
-        newData.fechaPostFormato = formattedDate;
-        newData.fechaPostISO = new Date().toISOString();
-        newData.createdAt = new Date();
-        newData.LastEventPosted = new Date();
-        newData.NuevaFechaEstimada = 0;
-        newData.fechaFinEjecucion = 0;
-        //Photo of the service
-        newData.photoServiceURL = "";
-        //Data about information profile and company
-        newData.emailPerfil = props.email || "Anonimo";
-        newData.nombrePerfil = props.firebase_user_name || "Anonimo";
-
-        //Data gattered from events
-        newData.events = [];
-
-        //Data about the company belong this event
-        const regex = /@(.+?)\./i;
-        newData.companyName =
-          capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo";
-        //Progress of Service
-        newData.AvanceEjecucion = 1;
-        // newData.AvanceAdministrativo = 0;
-        newData.AvanceAdministrativoTexto = "";
-        //Monto and HH updated in the proccess of the service
-        newData.HHModificado = 0;
-        newData.MontoModificado = 0;
-        newData.projectId = projectId;
-
-        const uniqueID = `${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 9)}`;
-
-        newData.idServiciosAIT = uniqueID;
-        await setDoc(doc(db, "ServiciosAIT", uniqueID), newData);
-
-        // //Uploading data to Firebase and adding the ID firestore
-        // const docRef = await addDoc(collection(db, "ServiciosAIT"), newData);
-        // newData.idServiciosAIT = docRef.id;
-        // const RefFirebase = doc(db, "ServiciosAIT", newData.idServiciosAIT);
-        // await updateDoc(RefFirebase, newData);
-
-        // this hedlps to go to the begining of the process
-        // navigation.navigate(screen.post.post);
-        console.log("Oaaaaa");
-        router.back();
-
-        // navigation.navigate(screen.home.tab, {
-        //   screen: screen.home.home,
-        // });
         Toast.show({
           type: "success",
           position: "bottom",
-          text1: "Se ha subido correctamente",
+          text1: "Trabajo adicional registrado",
+          text2: `${payload.Codigo} · ${payload.NombreServicio}`,
         });
+        router.back();
       } catch (error) {
+        console.error(error);
         Toast.show({
           type: "error",
           position: "bottom",
-          text1: "Error al tratar de subir estos datos",
+          text1: "Error al registrar el servicio",
+          text2: "Revise su conexión e intente nuevamente.",
         });
       }
     },
   });
 
+  const v = formik.values;
+  const IndexObjectImageArea = areaLists.findIndex(
+    (obj) => obj.value === v.AreaServicio
+  );
+  const imageSource =
+    areaLists[IndexObjectImageArea]?.image || emptyimage;
+
+  const progress = useMemo(() => {
+    const filled = REQUIRED_KEYS.filter((k) => isFieldFilled(k, v)).length;
+    return {
+      filled,
+      total: REQUIRED_KEYS.length,
+      pct: Math.round((filled / REQUIRED_KEYS.length) * 100),
+    };
+  }, [v]);
+
+  const handleSubmitPress = async () => {
+    const errors = await formik.validateForm();
+    if (Object.keys(errors).length > 0) {
+      formik.setTouched(
+        Object.keys(errors).reduce(
+          (acc, key) => ({ ...acc, [key]: true }),
+          {} as Record<string, boolean>
+        )
+      );
+      const labels = Object.keys(errors)
+        .slice(0, 4)
+        .map((k) => AIT_FIELD_LABELS[k] || k)
+        .join(", ");
+      Toast.show({
+        type: "error",
+        position: "bottom",
+        text1: "Complete los campos obligatorios",
+        text2: labels + (Object.keys(errors).length > 4 ? "…" : ""),
+      });
+      return;
+    }
+    formik.handleSubmit();
+  };
+
   return (
     <KeyboardAwareScrollView
-      style={{ backgroundColor: "white" }} // Add backgroundColor here
+      style={styles.scroll}
+      contentContainerStyle={styles.pageWrap}
+      enableOnAndroid
+      extraScrollHeight={Platform.OS === "ios" ? 80 : 40}
     >
-      <View style={styles.sectionForms}>
-        <ImageExpo
-          source={imageSource}
-          style={styles.roundImage}
-          cachePolicy={"memory-disk"}
-        />
+      <View style={styles.heroCard}>
+        <View style={styles.heroTop}>
+          <ImageExpo
+            source={imageSource}
+            style={styles.roundImage}
+            cachePolicy="memory-disk"
+          />
+          <View style={styles.heroContent}>
+            <View style={styles.badgeRow}>
+              <View style={styles.badgePrimary}>
+                <Text style={styles.badgeText}>NIVEL 4 · NO PLANIFICADO</Text>
+              </View>
+              <View style={styles.badgeWarning}>
+                <Text style={[styles.badgeText, styles.badgeWarningText]}>
+                  TRABAJO ADICIONAL AIT
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.heroTitle} numberOfLines={2}>
+              {v.NombreServicio || "Nueva actividad adicional"}
+            </Text>
+            {v.Codigo ? (
+              <Text style={styles.heroMeta}>
+                <Text style={styles.heroMetaStrong}>WBS: </Text>
+                {v.Codigo}
+              </Text>
+            ) : null}
+            {v.NumeroAIT ? (
+              <Text style={styles.heroMeta}>
+                <Text style={styles.heroMetaStrong}>Ref / OC: </Text>
+                {v.NumeroAIT}
+              </Text>
+            ) : null}
+            {v.TipoServicio ? (
+              <Text style={styles.heroMeta}>
+                <Text style={styles.heroMetaStrong}>Tipo: </Text>
+                {v.TipoServicio}
+              </Text>
+            ) : null}
+            {v.AreaServicio ? (
+              <Text style={styles.heroMeta}>
+                <Text style={styles.heroMetaStrong}>Área: </Text>
+                {v.AreaServicio}
+              </Text>
+            ) : null}
+          </View>
+        </View>
 
-        <View>
-          <Text style={styles.name}>{tituloserv || "Titulo del servicio"}</Text>
-          <Text style={styles.info}>
-            {"Numero de Referencia: "}
-            {ait}
-          </Text>
-          <Text style={styles.info}>
-            {"Tipo Servicio: "}
-            {tiposerv}
-          </Text>
-
-          <Text style={styles.info}>
-            {"Area: "}
-            {area}
-          </Text>
+        <View style={styles.progressWrap}>
+          <View style={styles.progressLabelRow}>
+            <Text style={styles.progressLabel}>
+              Campos obligatorios para reportes
+            </Text>
+            <Text style={styles.progressPct}>
+              {progress.filled}/{progress.total} · {progress.pct}%
+            </Text>
+          </View>
+          <View style={styles.progressBarBg}>
+            <View
+              style={[styles.progressBarFill, { width: `${progress.pct}%` }]}
+            />
+          </View>
         </View>
       </View>
-      <View style={styles.sectionForms}></View>
 
-      <AITForms
-        formik={formik}
-        setTituloserv={setTituloserv}
-        setAit={setAit}
-        setTiposerv={setTiposerv}
-        setArea={setArea}
-      />
-      <Button
-        title="Agregar Servicio"
-        buttonStyle={styles.addInformation}
-        onPress={() => formik.handleSubmit()}
-        loading={formik.isSubmitting}
-      />
+      <AITForms formik={formik} />
+
+      <View style={styles.footer}>
+        <Button
+          title={
+            formik.isSubmitting
+              ? "Registrando…"
+              : "Registrar trabajo adicional"
+          }
+          titleStyle={styles.addInformationTitle}
+          buttonStyle={[
+            styles.addInformation,
+            progress.pct < 100 && styles.addInformationDisabled,
+          ]}
+          onPress={handleSubmitPress}
+          loading={formik.isSubmitting}
+          disabled={formik.isSubmitting}
+        />
+      </View>
     </KeyboardAwareScrollView>
   );
 }
 
-const mapStateToProps = (reducers: any) => {
-  return {
-    firebase_user_name: reducers.profile.firebase_user_name,
-    email: reducers.profile.email,
-    getTotalUsers: reducers.post.saveTotalUsers,
-    servicesData: reducers.home.servicesData,
-  };
-};
+const mapStateToProps = (reducers: any) => ({
+  firebase_user_name: reducers.profile.firebase_user_name,
+  email: reducers.profile.email,
+  getTotalUsers: reducers.post.saveTotalUsers,
+  servicesData: reducers.home.servicesData,
+});
 
 const AITScreen = connect(mapStateToProps, {
   saveActualPostFirebase,

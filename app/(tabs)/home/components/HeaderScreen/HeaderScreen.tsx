@@ -16,6 +16,7 @@ import { saveApprovalListnew } from "@/redux/actions/search";
 import { useRouter } from "expo-router";
 import { sortByCodigo } from "@/utils/sortByCodigo";
 import { calculateAvanceFromActivities } from "@/utils/calculateAvance";
+import { getTagEquipoLabel } from "@/utils/tagEquipoList";
 
 const isRutaCritica = (value: any): boolean =>
   value === true || String(value || "").trim().toLowerCase() === "si";
@@ -109,6 +110,7 @@ function HeaderScreenNoRedux(props: any) {
         const progressColor = getProgressColor(avance);
         const name = (item.NombreServicio || "").trimStart();
         const esRutaCriticaItem = isRutaCritica(item.esRutaCritica);
+        const tagEquipo = getTagEquipoLabel(item.TagEquipo);
 
         return (
           <TouchableOpacity
@@ -205,11 +207,35 @@ function HeaderScreenNoRedux(props: any) {
                     fontWeight: "600",
                     color: "#1e293b",
                     lineHeight: 14,
-                    marginBottom: 6,
+                    marginBottom: tagEquipo ? 3 : 6,
                   }}
                 >
                   {name}
                 </Text>
+
+                {tagEquipo ? (
+                  <View
+                    style={{
+                      alignSelf: "flex-start",
+                      backgroundColor: "#e3f2fd",
+                      borderRadius: 4,
+                      paddingHorizontal: 5,
+                      paddingVertical: 1,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 8,
+                        fontWeight: "700",
+                        color: "#1565c0",
+                      }}
+                    >
+                      {tagEquipo}
+                    </Text>
+                  </View>
+                ) : null}
 
                 {/* Progress bar */}
                 <View

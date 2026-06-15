@@ -48,6 +48,10 @@ import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStat
 //   StackedBarChart,
 // } from "react-native-chart-kit";
 import * as Progress from "react-native-progress";
+import {
+  buildGlobalSCurveWithProjection,
+  parseActivityDate,
+} from "@/utils/calculateAvance";
 
 // Funciones específicas para manejo offline
 const OFFLINE_FORMS_QUEUE_KEY = "offline_forms_queue";
@@ -394,137 +398,56 @@ function MoreDetailScreenNoRedux(props: any) {
     AvanceEventos,
   }: any = useLocalSearchParams();
 
-  // Función para generar configuración de ZingChart basada en CurvaS
-  const generateCurvaSChartConfig = (
-    horasTotales: string,
-    avanceEventos: string
-  ) => {
+  // Función para generar configuración de ZingChart basada en Curva S
+  const generateCurvaSChartConfig = () => {
     const listaActividades = JSON.parse(activitiesData || "[]");
 
-    const steps = 15;
-    const totalHoras = Number(horasTotales) || 288;
-    const fechaInicioProyecto = parseCustomDate(
-      listaActividades[0]?.FechaInicio
+    let fechaInicioProyecto: Date | null = parseActivityDate(
+      FechaInicioISO || FechaInicio
+    );
+    let fechaFinProyecto: Date | null = parseActivityDate(
+      FechaFinISO || FechaFin
     );
 
-    if (!fechaInicioProyecto) {
-      return null; // No se puede generar el gráfico sin fecha de inicio
-    }
-
-    // Encuentra la mayor diferencia (en horas) entre fechaInicioProyecto y cualquier RealFechaFin
-    let maxHorasReal = totalHoras;
     listaActividades.forEach((actividad: any) => {
-      if (actividad.RealFechaFin && fechaInicioProyecto) {
-        const finReal = new Date(actividad.RealFechaFin);
-        const horasDesdeInicio =
-          (finReal.getTime() - fechaInicioProyecto.getTime()) / 3600000;
-        if (horasDesdeInicio > maxHorasReal) {
-          maxHorasReal = horasDesdeInicio;
+      const inicioAct = parseActivityDate(actividad.FechaInicio);
+      const finAct = parseActivityDate(actividad.FechaFin);
+
+      if (inicioAct) {
+        if (!fechaInicioProyecto || inicioAct < fechaInicioProyecto) {
+          fechaInicioProyecto = inicioAct;
+        }
+      }
+
+      if (finAct) {
+        if (!fechaFinProyecto || finAct > fechaFinProyecto) {
+          fechaFinProyecto = finAct;
         }
       }
     });
 
-    // Generar fechas para el eje X basado en maxHorasReal
-    const fechasEjeX = Array.from({ length: steps + 1 }, (_, index) => {
-      const horas = Math.round((maxHorasReal * index) / steps);
-      const fecha = new Date(fechaInicioProyecto.getTime() + horas * 3600000);
-      return (
-        fecha.toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-        }) + "\n08:00"
-      );
-    });
-
-    // Valores numéricos para cálculos internos
-    const axe_x_values = Array.from({ length: steps + 1 }, (_, index) => {
-      return Math.round((maxHorasReal * index) / steps);
-    });
-
-    // Curva S planificada: siempre 16 valores, si axe_x es más largo, rellenar con 100
-    const axe_y1_base = [
-      0, 2, 4, 8, 15, 22, 30, 40, 55, 70, 80, 88, 93, 96, 98, 100,
-    ];
-    let axe_y1 = axe_y1_base.slice(0, axe_x_values.length);
-    if (axe_x_values.length > axe_y1_base.length) {
-      // Rellenar con 100 hasta igualar la longitud de axe_x
-      axe_y1 = [
-        ...axe_y1_base,
-        ...Array(axe_x_values.length - axe_y1_base.length).fill(100),
-      ];
+    if (!fechaInicioProyecto || !fechaFinProyecto) {
+      return null;
     }
 
-    // Calcular total de horas planificadas para ponderación
-    const totalHorasPlanificadas = listaActividades.reduce(
-      (acc: any, actividad: any) => {
-        const inicio = parseCustomDate(actividad.FechaInicio);
-        const fin = parseCustomDate(actividad.FechaFin);
-        if (inicio && fin) {
-          const horas = (fin.getTime() - inicio.getTime()) / 3600000;
-          return acc + horas;
-        }
-        return acc;
-      },
-      0
+    const totalHorasPlanificadas =
+      (fechaFinProyecto.getTime() - fechaInicioProyecto.getTime()) / 3600000;
+
+    const {
+      planned: axe_y1,
+      real: axe_y2,
+      projected: axe_y3,
+      fechasEjeX,
+      fechaProyeccionFin,
+    } = buildGlobalSCurveWithProjection(
+      listaActividades,
+      fechaInicioProyecto,
+      totalHorasPlanificadas
     );
-
-    // Curva real basada en actividades completadas (ponderada por horas)
-    const axe_y2 = axe_x_values.map((hour) => {
-      if (totalHorasPlanificadas === 0) return 0;
-
-      let horasCompletadas = 0;
-
-      listaActividades.forEach((actividad: any) => {
-        if (
-          !actividad.RealFechaFin ||
-          !actividad.FechaInicio ||
-          !actividad.FechaFin
-        )
-          return;
-
-        const finReal = new Date(actividad.RealFechaFin);
-        const horasDesdeInicio =
-          (finReal.getTime() - fechaInicioProyecto.getTime()) / 3600000;
-
-        // Si la actividad fue completada antes o igual a ese hour, suma sus horas planificadas
-        if (horasDesdeInicio <= hour) {
-          const inicio = parseCustomDate(actividad.FechaInicio);
-          const fin = parseCustomDate(actividad.FechaFin);
-          if (inicio && fin) {
-            const horas = (fin.getTime() - inicio.getTime()) / 3600000;
-            horasCompletadas += horas;
-          }
-        }
-      });
-
-      // Porcentaje ponderado de avance real, nunca mayor a 100%
-      return Math.min(
-        100,
-        Math.round((horasCompletadas / totalHorasPlanificadas) * 100)
-      );
-    });
-
-    // Curva proyectada (continuación de la curva real hacia el final planificado)
-    const ultimoReal = axe_y2[axe_y2.length - 1] || 0;
-    const axe_y3 = axe_x_values.map((_, index) => {
-      if (index < axe_y2.length && axe_y2[index] > 0) {
-        return null; // No mostrar proyección donde ya hay datos reales
-      }
-      // Proyección lineal desde el último punto real hasta 100%
-      const progreso = index / (axe_x_values.length - 1);
-      return ultimoReal + (100 - ultimoReal) * progreso;
-    });
 
     return {
       type: "line",
       backgroundColor: "white",
-      title: {
-        fontSize: 18,
-        fontColor: "#333",
-        fontWeight: "bold",
-        marginBottom: 20,
-      },
       legend: {
         align: "center",
         verticalAlign: "bottom",
@@ -555,7 +478,10 @@ function MoreDetailScreenNoRedux(props: any) {
           fontColor: "#333",
           fontSize: 10,
           angle: -45,
+          maxChars: 16,
         },
+        maxItems: 10,
+        itemsOverlap: true,
         guide: {
           visible: true,
           lineColor: "#f0f0f0",
@@ -582,11 +508,76 @@ function MoreDetailScreenNoRedux(props: any) {
           lineColor: "#f0f0f0",
         },
       },
+      crosshairX: {
+        lineColor: "#555",
+        plotLabel: {
+          padding: "10px",
+          backgroundColor: "white",
+          borderRadius: "5px",
+          fontWeight: "bold",
+          fontSize: 12,
+          shadow: false,
+          borderColor: "#eee",
+          borderWidth: "1px",
+          headerText: "",
+          headerFontColor: "#2A3B76",
+          headerFontWeight: "bold",
+          headerFontSize: 11,
+        },
+        scaleLabel: {
+          text: "%l",
+          backgroundColor: "#2A3B76",
+          fontColor: "white",
+          borderRadius: "5px",
+          padding: "4px 8px",
+          fontSize: 11,
+        },
+      },
+      crosshairY: {
+        lineColor: "#555",
+        plotLabel: {
+          padding: "10px",
+          backgroundColor: "white",
+          borderRadius: "5px",
+          fontWeight: "bold",
+          fontSize: 12,
+          shadow: false,
+          borderColor: "#eee",
+          borderWidth: "1px",
+        },
+        scaleLabel: {
+          backgroundColor: "#666",
+          borderRadius: "5px",
+        },
+      },
+      tooltip: {
+        visible: true,
+      },
+      plot: {
+        aspect: "spline",
+        tooltip: {
+          visible: false,
+          text: "%l<br>%t: %v%",
+          backgroundColor: "rgba(0,0,0,0.8)",
+          fontColor: "white",
+          fontSize: 12,
+          padding: 8,
+          borderRadius: 4,
+        },
+        marker: {
+          visible: true,
+          size: 4,
+          alpha: 1,
+        },
+        hoverState: {
+          visible: true,
+        },
+      },
       series: [
         {
           text: "PROGRAMADO",
           values: axe_y1,
-          lineColor: "#2196F3", // Azul como en la imagen
+          lineColor: "#2196F3",
           lineWidth: 3,
           marker: {
             backgroundColor: "#2196F3",
@@ -601,7 +592,8 @@ function MoreDetailScreenNoRedux(props: any) {
         {
           text: "REAL",
           values: axe_y2,
-          lineColor: "#F44336", // Rojo como en la imagen
+          aspect: "line",
+          lineColor: "#F44336",
           lineWidth: 3,
           marker: {
             backgroundColor: "#F44336",
@@ -613,47 +605,29 @@ function MoreDetailScreenNoRedux(props: any) {
             backgroundColor: "#F44336",
           },
         },
-        // {
-        //   text: "PROYECTADO",
-        //   values: axe_y3,
-        //   lineColor: "#FF9800", // Naranja como en la imagen
-        //   lineWidth: 3,
-        //   lineStyle: "dashed", // Línea discontinua
-        //   marker: {
-        //     backgroundColor: "#FF9800",
-        //     borderColor: "#FF9800",
-        //     borderWidth: 2,
-        //     size: 6,
-        //   },
-        //   legendMarker: {
-        //     backgroundColor: "#FF9800",
-        //   },
-        // },
-      ],
-      plot: {
-        aspect: "spline",
-        tooltip: {
-          visible: true,
-          format: "%t: %v%",
-          backgroundColor: "rgba(0,0,0,0.8)",
-          fontColor: "white",
-          fontSize: 12,
-          padding: 8,
-          borderRadius: 4,
+        {
+          text: "PROYECTADO",
+          values: axe_y3,
+          lineColor: "#FF9800",
+          lineWidth: 2,
+          lineStyle: "dashed",
+          marker: {
+            visible: false,
+          },
+          legendMarker: {
+            backgroundColor: "#FF9800",
+          },
         },
-      },
+      ],
       plotarea: {
         backgroundColor: "white",
         margin: "60px 60px 80px 80px",
       },
+      fechaProyeccionFin,
     };
   };
 
-  // Generar configuración del gráfico
-  const curvaSChartConfig = generateCurvaSChartConfig(
-    HorasTotales,
-    AvanceEventos
-  );
+  const curvaSChartConfig = generateCurvaSChartConfig();
 
   //retrieving serviceAIT list data from firebase
   useEffect(() => {
@@ -1240,7 +1214,13 @@ function MoreDetailScreenNoRedux(props: any) {
           {/* Curva S Chart */}
           <View style={modernStyles.chartContainer}>
             <Text style={modernStyles.chartTitle}>CURVA S</Text>
-            {ZingChartComponent ? (
+            <Text style={modernStyles.chartSubtitle}>
+              Avance programado vs. real — proyección de fin estimado
+              {curvaSChartConfig?.fechaProyeccionFin
+                ? ` · Fin proyectado: ${curvaSChartConfig.fechaProyeccionFin.toLocaleDateString("es-ES")}`
+                : ""}
+            </Text>
+            {ZingChartComponent && curvaSChartConfig ? (
               <ZingChartComponent data={curvaSChartConfig} />
             ) : (
               <Text style={modernStyles.loadingText}>Cargando gráfico...</Text>
@@ -1275,19 +1255,6 @@ function MoreDetailScreenNoRedux(props: any) {
             >
               {activitiesList()}
             </ScrollView>
-
-            <TouchableOpacity
-              style={[
-                modernStyles.saveButton,
-                updateing && { backgroundColor: "#999" },
-              ]}
-              onPress={() => updateDates()}
-              disabled={updateing}
-            >
-              <Text style={modernStyles.saveButtonText}>
-                {updateing ? "⏳ Guardando..." : "💾 Guardar las fechas reales"}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Recursos Humanos Chart */}
@@ -1343,6 +1310,23 @@ function MoreDetailScreenNoRedux(props: any) {
           {renderComponent}
         </Modal>
       </KeyboardAwareScrollView>
+
+      {/* Floating save button */}
+      <TouchableOpacity
+        style={[
+          modernStyles.floatingButton,
+          updateing && { backgroundColor: "#999" },
+        ]}
+        onPress={() => updateDates()}
+        disabled={updateing}
+      >
+        <Text style={modernStyles.floatingButtonText}>
+          {updateing ? "⏳" : "💾"}
+        </Text>
+        <Text style={modernStyles.floatingButtonLabel}>
+          {updateing ? "Guardando..." : "Guardar fechas"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -1476,6 +1460,13 @@ const modernStyles = StyleSheet.create({
     color: "#1a1a1a",
     textAlign: "center",
     marginBottom: 16,
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    color: "#6c757d",
+    textAlign: "center",
+    marginTop: -8,
+    marginBottom: 12,
   },
   diagramContainer: {
     backgroundColor: "white",
@@ -1621,6 +1612,31 @@ const modernStyles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
     flexGrow: 1,
+  },
+  floatingButton: {
+    position: "absolute",
+    bottom: 28,
+    right: 20,
+    backgroundColor: "#007AFF",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingButtonText: {
+    fontSize: 18,
+  },
+  floatingButtonLabel: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
 

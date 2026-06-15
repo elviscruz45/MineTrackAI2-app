@@ -19,8 +19,8 @@ function ChangeDisplayTipoServicio(props: any) {
           containerStyle={styles.btnContainer}
           buttonStyle={styles.btn}
           onPress={() => {
-            setTiposervicio(text.toString());
-            setTiposerv(text.toString());
+            setTiposervicio?.(text.toString());
+            setTiposerv?.(text.toString());
             formik.setFieldValue("TipoServicio", text.toString());
             onClose();
           }}

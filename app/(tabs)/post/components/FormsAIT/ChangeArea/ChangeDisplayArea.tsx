@@ -18,8 +18,8 @@ function ChangeDisplayArea(props: any) {
           buttonStyle={styles.btn}
           testID="ChangeDisplayArea:Button"
           onPress={() => {
-            setAreaservicio(text.toString());
-            setArea(text.toString());
+            setAreaservicio?.(text.toString());
+            setArea?.(text.toString());
             formik.setFieldValue("AreaServicio", text.toString());
 
             onClose();

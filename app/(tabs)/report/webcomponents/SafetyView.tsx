@@ -1,763 +1,502 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 
-// Define tipos para nuestros datos de seguridad
-interface IncidenteSeguridad {
+interface SafetyViewProps {
+  data?: any[];
+}
+
+interface FieldEvent {
   id: string;
+  titulo: string;
+  comentarios: string;
+  tipoEvento: string;
+  clasificacionHSE: string;
+  equipoAfectado: string;
+  horasPerdidas: number;
+  causa: string;
+  servicio: string;
+  ait: string;
   fecha: string;
-  tipo: string;
-  gravedad: "Alta" | "Media" | "Baja";
-  descripcion: string;
-  ubicacion: string;
-  estado: "Abierto" | "Cerrado" | "En Progreso";
-  acciones: string[];
-  responsable: string;
+  fechaTs: number;
+  hseTareo: number;
 }
 
-interface EventoMantenimiento {
-  codigo: string;
-  nombre: string;
-  fechaInicio: string;
-  fechaFin: string;
-  duracion: number; // en horas
-  estado: "Pendiente" | "En Progreso" | "Completado";
-  area: string;
-  riesgo: "Alto" | "Medio" | "Bajo";
-  recursos: string[];
-  responsable: string;
-}
+const isRutaCritica = (value: any): boolean =>
+  value === true || String(value || "").trim().toLowerCase() === "si";
 
-interface KPISeguridad {
-  etiqueta: string;
-  valor: number;
-  meta: number;
-  unidad: string;
-  tendencia: "subiendo" | "bajando" | "estable";
-}
+const getEventTimestamp = (event: any): number => {
+  if (event?.createdAt?.seconds) return event.createdAt.seconds * 1000;
+  if (event?.createdAt instanceof Date) return event.createdAt.getTime();
+  if (typeof event?.createdAt === "number") return event.createdAt;
+  if (event?.fechaPostFormato) {
+    const parsed = new Date(event.fechaPostFormato);
+    if (!isNaN(parsed.getTime())) return parsed.getTime();
+  }
+  return 0;
+};
 
-interface Props {
-  selectedProject?: string;
-}
+const formatFecha = (ts: number): string => {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-const SafetyView: React.FC<Props> = ({ selectedProject }) => {
-  const [activeTab, setActiveTab] = useState<
-    "KPIs" | "Eventos" | "Mantenimiento"
-  >("KPIs");
-  const [selectedFilter, setSelectedFilter] = useState<
-    "Todos" | "Alto" | "Medio" | "Bajo"
-  >("Todos");
+const clasificacionColor = (c: string): string => {
+  const u = c.toUpperCase();
+  if (u === "FAT") return "#7f0000";
+  if (u === "LTI") return "#c62828";
+  if (u.includes("PRIMEROS")) return "#e65100";
+  if (u.includes("NEAR")) return "#f9a825";
+  return "#546e7a";
+};
 
-  // Datos KPI de ejemplo
-  const kpisSeguridad: KPISeguridad[] = [
-    {
-      etiqueta: "Tasa Total de Incidentes Registrables (TTIR)",
-      valor: 0.45,
-      meta: 0.5,
-      unidad: "incidentes por 200,000 horas",
-      tendencia: "bajando",
-    },
-    {
-      etiqueta: "Tasa de Frecuencia de Lesiones con Tiempo Perdido (LTIFR)",
-      valor: 0.12,
-      meta: 0.2,
-      unidad: "incidentes por 1,000,000 horas",
-      tendencia: "bajando",
-    },
-    {
-      etiqueta: "Reportes de Casi Accidentes",
-      valor: 24,
-      meta: 20,
-      unidad: "reportes este mes",
-      tendencia: "subiendo",
-    },
-    {
-      etiqueta: "Cumplimiento de Capacitación en Seguridad",
-      valor: 95,
-      meta: 100,
-      unidad: "%",
-      tendencia: "subiendo",
-    },
-  ];
+const clasificacionLabel = (c: string): string => {
+  if (!c) return "Sin clasificar";
+  return c;
+};
 
-  // Datos de incidentes de ejemplo
-  const incidentesSeguridad: IncidenteSeguridad[] = [
-    {
-      id: "INC-001",
-      fecha: "2025-08-09",
-      tipo: "Casi Accidente",
-      gravedad: "Media",
-      descripcion: "Equipo suelto detectado durante inspección rutinaria",
-      ubicacion: "Sección 1 - Chancadora Primaria",
-      estado: "Cerrado",
-      acciones: [
-        "Equipo asegurado inmediatamente",
-        "Protocolo de inspección actualizado",
-        "Reunión informativa realizada con el personal",
-      ],
-      responsable: "Equipo de Mantenimiento",
-    },
-    {
-      id: "INC-002",
-      fecha: "2025-08-08",
-      tipo: "Observación de Seguridad",
-      gravedad: "Baja",
-      descripcion:
-        "Problema de cumplimiento de EPP observado durante cambio de turno",
-      ubicacion: "Punto de Acceso Principal",
-      estado: "Cerrado",
-      acciones: [
-        "Recordatorio enviado a todo el personal",
-        "Estaciones adicionales de EPP instaladas",
-      ],
-      responsable: "Departamento de Seguridad",
-    },
-    {
-      id: "INC-003",
-      fecha: "2025-08-12",
-      tipo: "Alerta de Seguridad",
-      gravedad: "Alta",
-      descripcion: "Sobrecarga detectada en sistema de alimentación Pebbles 3M",
-      ubicacion: "Sección Alimentador Pebbles 3M (FEB022)",
-      estado: "En Progreso",
-      acciones: [
-        "Parada de emergencia activada",
-        "Inspección completa del sistema",
-        "Revisión de procedimientos de operación",
-      ],
-      responsable: "F. García",
-    },
-  ];
+const SafetyView: React.FC<SafetyViewProps> = ({ data }) => {
+  const { events, hseEvents, kpis, criticaEnEjecucion, breakdown } = useMemo(() => {
+    const services = Array.isArray(data) ? data : [];
+    const allEvents: FieldEvent[] = [];
 
-  // Datos de eventos de mantenimiento basados en el CSV proporcionado
-  const eventosMantenimiento: EventoMantenimiento[] = [
-    {
-      codigo: "1.1.1.1",
-      nombre:
-        "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora",
-      fechaInicio: "31/05/25 08:00",
-      fechaFin: "02/06/25 08:00",
-      duracion: 48,
-      estado: "Completado",
-      area: "Chancado Pebbles",
-      riesgo: "Medio",
-      recursos: ["Mecánico 1", "Mecánico 2"],
-      responsable: "F. García",
-    },
-    {
-      codigo: "1.1.1.1.3",
-      nombre: "PM chute de descarga hacia la chancadora",
-      fechaInicio: "03/06/25 20:00",
-      fechaFin: "04/06/25 20:00",
-      duracion: 24,
-      estado: "Completado",
-      area: "Chancado Pebbles",
-      riesgo: "Alto",
-      recursos: ["Mecánico 1", "Mecánico 4", "Soldador"],
-      responsable: "F. García",
-    },
-    {
-      codigo: "1.1.1.1.6",
-      nombre: "Inspección Alimentador Pebbles 3M",
-      fechaInicio: "05/06/25 20:00",
-      fechaFin: "06/06/25 08:00",
-      duracion: 12,
-      estado: "Completado",
-      area: "Chancado Pebbles",
-      riesgo: "Bajo",
-      recursos: ["Mecánico 3", "Inspector de Seguridad"],
-      responsable: "J. Rodríguez",
-    },
-    {
-      codigo: "1.1.1.1.7",
-      nombre: "Alineamiento de plataforma de impacto y polines de carga",
-      fechaInicio: "06/06/25 08:00",
-      fechaFin: "07/06/25 08:00",
-      duracion: 24,
-      estado: "Completado",
-      area: "Chancado Pebbles",
-      riesgo: "Medio",
-      recursos: ["Mecánico 2", "Mecánico 3", "Mecánico 4"],
-      responsable: "F. García",
-    },
-    {
-      codigo: "2.1.1.1.8",
-      nombre: "PM Chute STP027",
-      fechaInicio: "05/06/25 20:00",
-      fechaFin: "06/06/25 08:00",
-      duracion: 12,
-      estado: "Completado",
-      area: "Faja Pebbles",
-      riesgo: "Medio",
-      recursos: ["Mecánico 5", "Soldador 2"],
-      responsable: "C. López",
-    },
-    {
-      codigo: "2.1.1.1.16",
-      nombre:
-        "Levantamiento de información para planos de plataforma para alineamiento",
-      fechaInicio: "09/06/25 05:00",
-      fechaFin: "09/06/25 08:00",
-      duracion: 3,
-      estado: "Pendiente",
-      area: "Faja Pebbles",
-      riesgo: "Bajo",
-      recursos: ["Ingeniero 1", "Técnico CAD"],
-      responsable: "M. Torres",
-    },
-  ];
+    services.forEach((svc: any) => {
+      const svcName = svc.NombreServicio || svc.AITNombreServicio || "—";
+      const ait = svc.NumeroAIT || svc.AITNumero || "—";
+      const eventList = Array.isArray(svc.events) ? svc.events : [];
 
-  const getColorEstado = (estado: string) => {
-    switch (estado) {
-      case "Abierto":
-      case "Pendiente":
-        return "#dc3545";
-      case "En Progreso":
-        return "#ffc107";
-      case "Cerrado":
-      case "Completado":
-        return "#198754";
-      default:
-        return "#6c757d";
-    }
-  };
+      eventList.forEach((ev: any, idx: number) => {
+        const fechaTs = getEventTimestamp(ev);
+        allEvents.push({
+          id: ev.idDocFirestoreDB || ev.unicoID || `${svc.idServiciosAIT}-${idx}`,
+          titulo: ev.titulo || "Sin título",
+          comentarios: ev.comentarios || "",
+          tipoEvento: ev.tipoEvento || "",
+          clasificacionHSE: ev.clasificacionHSE || "",
+          equipoAfectado: ev.equipoAfectado || "",
+          horasPerdidas: Number(ev.horasPerdidas) || 0,
+          causa: ev.causa || "",
+          servicio: ev.AITNombreServicio || svcName,
+          ait,
+          fecha: formatFecha(fechaTs),
+          fechaTs,
+          hseTareo: Number(ev.HSE) || 0,
+        });
+      });
+    });
 
-  const getColorGravedad = (gravedad: string) => {
-    switch (gravedad) {
-      case "Alta":
-        return "#dc3545";
-      case "Media":
-        return "#ffc107";
-      case "Baja":
-        return "#198754";
-      default:
-        return "#6c757d";
-    }
-  };
+    allEvents.sort((a, b) => b.fechaTs - a.fechaTs);
 
-  const getColorRiesgo = (riesgo: string) => {
-    switch (riesgo) {
-      case "Alto":
-        return "#dc3545";
-      case "Medio":
-        return "#ffc107";
-      case "Bajo":
-        return "#198754";
-      default:
-        return "#6c757d";
-    }
-  };
+    const hseOnly = allEvents.filter(
+      (e) =>
+        e.tipoEvento === "HSE" ||
+        (e.clasificacionHSE && e.clasificacionHSE.trim() !== "")
+    );
 
-  // Filtra los eventos de mantenimiento según el filtro seleccionado
-  const eventosFiltrados =
-    selectedFilter === "Todos"
-      ? eventosMantenimiento
-      : eventosMantenimiento.filter(
-          (evento: EventoMantenimiento) => evento.riesgo === selectedFilter
-        );
+    const hhPerdidas = hseOnly.reduce((s, e) => s + e.horasPerdidas, 0);
+    const hhSupervisionHSE = allEvents.reduce((s, e) => s + e.hseTareo * 12, 0);
 
-  // Calcula estadísticas de seguridad para mantenimientos
-  const totalEventos = eventosMantenimiento.length;
-  const eventosAltoRiesgo = eventosMantenimiento.filter(
-    (e: EventoMantenimiento) => e.riesgo === "Alto"
-  ).length;
-  const porcentajeAltoRiesgo = Math.round(
-    (eventosAltoRiesgo / totalEventos) * 100
-  );
+    const severe = hseOnly.filter((e) =>
+      ["LTI", "FAT"].includes(e.clasificacionHSE.toUpperCase())
+    );
+    const lastSevere = severe.sort((a, b) => b.fechaTs - a.fechaTs)[0];
+    const diasSinLTI = lastSevere
+      ? Math.floor((Date.now() - lastSevere.fechaTs) / 86400000)
+      : null;
 
-  const eventosCompletados = eventosMantenimiento.filter(
-    (e: EventoMantenimiento) => e.estado === "Completado"
-  ).length;
-  const porcentajeCompletados = Math.round(
-    (eventosCompletados / totalEventos) * 100
-  );
+    const nearMiss = hseOnly.filter((e) =>
+      e.clasificacionHSE.toUpperCase().includes("NEAR")
+    ).length;
+    const primerosAuxilios = hseOnly.filter((e) =>
+      e.clasificacionHSE.toUpperCase().includes("PRIMEROS")
+    ).length;
+    const ltiCount = hseOnly.filter((e) => e.clasificacionHSE.toUpperCase() === "LTI").length;
+    const fatCount = hseOnly.filter((e) => e.clasificacionHSE.toUpperCase() === "FAT").length;
+
+    const breakdownItems = [
+      { label: "Near Miss", count: nearMiss, color: "#f9a825" },
+      { label: "Primeros Auxilios", count: primerosAuxilios, color: "#e65100" },
+      { label: "LTI", count: ltiCount, color: "#c62828" },
+      { label: "FAT", count: fatCount, color: "#7f0000" },
+    ].filter((b) => b.count > 0);
+
+    const ganttCritica = services
+      .filter((s: any) => s.isGlobalProject && isRutaCritica(s.esRutaCritica))
+      .flatMap((s: any) =>
+        (Array.isArray(s.activitiesData) ? s.activitiesData : [])
+          .filter(
+            (a: any) =>
+              isRutaCritica(a.esRutaCritica) &&
+              !a.RealFechaFin &&
+              a.avance !== "100%"
+          )
+          .map((a: any) => ({
+            codigo: a.Codigo || "—",
+            nombre: a.NombreServicio || "—",
+            tag: a.TagEquipo || s.TagEquipo || "—",
+          }))
+      )
+      .slice(0, 8);
+
+    const hasSevereToday =
+      lastSevere && diasSinLTI !== null && diasSinLTI === 0;
+
+    return {
+      events: allEvents,
+      hseEvents: hseOnly,
+      breakdown: breakdownItems,
+      criticaEnEjecucion: ganttCritica,
+      kpis: {
+        totalEventos: allEvents.length,
+        eventosHSE: hseOnly.length,
+        hhPerdidas,
+        hhSupervisionHSE,
+        diasSinLTI,
+        hasSevereToday,
+        hasLTI: ltiCount > 0 || fatCount > 0,
+        nearMiss,
+      },
+    };
+  }, [data]);
+
+  const semaforo = kpis.hasSevereToday
+    ? { color: "#c62828", bg: "#ffebee", label: "ALERTA CRÍTICA", icon: "🚨", msg: "Se registró LTI/FAT hoy. Activar protocolo de respuesta inmediata." }
+    : kpis.hasLTI
+    ? { color: "#e65100", bg: "#fff3e0", label: "PRECAUCIÓN", icon: "⚠️", msg: `Último LTI/FAT hace ${kpis.diasSinLTI} días. Reforzar controles en actividades críticas.` }
+    : kpis.nearMiss > 0
+    ? { color: "#f9a825", bg: "#fffde7", label: "ATENCIÓN", icon: "👁️", msg: `${kpis.nearMiss} Near Miss reportados. Revisar condiciones antes de continuar.` }
+    : { color: "#198754", bg: "#e8f5e9", label: "OPERACIÓN SEGURA", icon: "✅", msg: kpis.diasSinLTI !== null ? `${kpis.diasSinLTI} días sin LTI/FAT registrados.` : "Sin incidentes LTI/FAT en bitácora." };
+
+  const maxBreakdown = Math.max(...breakdown.map((b) => b.count), 1);
 
   return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Navegación entre pestañas */}
-      <div
-        style={{
-          display: "flex",
-          marginBottom: "20px",
-          borderBottom: "1px solid #dee2e6",
-        }}
-      >
+    <div style={{ background: "#f0f4f8", minHeight: "100%", paddingBottom: 32 }}>
+      <style>{`
+        .sf-kpi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 16px 0; }
+        @media (min-width: 700px) { .sf-kpi { grid-template-columns: repeat(5, 1fr); } }
+        .sf-table th { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; background: #1a237e; color: white; }
+        .sf-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f0f4f8; vertical-align: top; }
+        .sf-table tr:hover td { background: #f8fbff; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ background: "linear-gradient(135deg, #1a237e 0%, #283593 100%)", padding: "20px 20px 24px" }}>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "white" }}>
+          🛡️ Seguridad & HSE — Bitácora de Campo
+        </h2>
+        <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.75)" }}>
+          Datos reales de eventos reportados · Clasificación HSE · Impacto en horas ·{" "}
+          {new Date().toLocaleDateString("es-ES")}
+        </p>
+      </div>
+
+      {/* Semáforo hero */}
+      <div style={{ padding: "16px 16px 0" }}>
         <div
-          onClick={() => setActiveTab("KPIs")}
           style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "KPIs" ? "bold" : "normal",
-            borderBottom: activeTab === "KPIs" ? "2px solid #1976d2" : "none",
+            background: semaforo.bg,
+            border: `2px solid ${semaforo.color}`,
+            borderRadius: 12,
+            padding: "20px 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 20,
+            boxShadow: `0 4px 20px ${semaforo.color}22`,
           }}
         >
-          KPIs de Seguridad
-        </div>
-        <div
-          onClick={() => setActiveTab("Eventos")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "Eventos" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Eventos" ? "2px solid #1976d2" : "none",
-          }}
-        >
-          Incidentes de Seguridad
-        </div>
-        <div
-          onClick={() => setActiveTab("Mantenimiento")}
-          style={{
-            padding: "10px 20px",
-            cursor: "pointer",
-            fontWeight: activeTab === "Mantenimiento" ? "bold" : "normal",
-            borderBottom:
-              activeTab === "Mantenimiento" ? "2px solid #1976d2" : "none",
-          }}
-        >
-          Eventos de Mantenimiento
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              background: semaforo.color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 36,
+              flexShrink: 0,
+              boxShadow: `0 0 0 6px ${semaforo.color}33`,
+            }}
+          >
+            {semaforo.icon}
+          </div>
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: 1.5,
+                color: semaforo.color,
+                marginBottom: 4,
+              }}
+            >
+              {semaforo.label}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#1a1a2e", marginBottom: 4 }}>
+              {kpis.diasSinLTI !== null
+                ? `${kpis.diasSinLTI} días sin LTI/FAT`
+                : "Sin LTI/FAT registrados"}
+            </div>
+            <div style={{ fontSize: 13, color: "#555", lineHeight: 1.4 }}>{semaforo.msg}</div>
+          </div>
         </div>
       </div>
 
-      {/* Sección de KPIs */}
-      {activeTab === "KPIs" && (
-        <div style={{ marginBottom: "40px" }}>
-          <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>
-            KPIs de Seguridad
-          </h2>
+      {/* KPIs */}
+      <div className="sf-kpi">
+        {[
+          { label: "Eventos HSE", value: kpis.eventosHSE, icon: "🦺", color: "#1565c0", sub: "Con clasificación HSE" },
+          { label: "HH Perdidas", value: `${kpis.hhPerdidas}h`, icon: "⏱️", color: kpis.hhPerdidas > 0 ? "#c62828" : "#198754", sub: "Impacto acumulado" },
+          { label: "Near Miss", value: kpis.nearMiss, icon: "👁️", color: "#f9a825", sub: "Casi accidentes" },
+          { label: "HH Supervisión HSE", value: `${kpis.hhSupervisionHSE}h`, icon: "📋", color: "#4527a0", sub: "Personal HSE en tareo" },
+          { label: "Total Eventos", value: kpis.totalEventos, icon: "📡", color: "#37474f", sub: "Bitácora completa" },
+        ].map((k, i) => (
           <div
+            key={i}
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "20px",
-              marginBottom: "30px",
+              background: "white",
+              borderRadius: 10,
+              overflow: "hidden",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.07)",
             }}
           >
-            {kpisSeguridad.map((kpi) => (
-              <div
-                key={kpi.etiqueta}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div style={{ fontSize: "14px", color: "#666" }}>
-                  {kpi.etiqueta}
-                </div>
-                <div
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: kpi.valor <= kpi.meta ? "#198754" : "#dc3545",
-                    marginTop: "8px",
-                  }}
-                >
-                  {kpi.valor} {kpi.unidad}
-                </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    marginTop: "4px",
-                  }}
-                >
-                  Meta: {kpi.meta} {kpi.unidad}
-                </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: kpi.tendencia === "subiendo" ? "#198754" : "#dc3545",
-                    marginTop: "4px",
-                  }}
-                >
-                  {kpi.tendencia === "subiendo" ? "▲" : "▼"} Tendencia
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* KPIs adicionales para mantenimiento */}
-          <h3 style={{ marginBottom: "20px", color: "#1976d2" }}>
-            Estadísticas de Eventos de Mantenimiento
-          </h3>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Eventos de Alto Riesgo
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: porcentajeAltoRiesgo > 20 ? "#dc3545" : "#198754",
-                  marginTop: "8px",
-                }}
-              >
-                {porcentajeAltoRiesgo}%
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                {eventosAltoRiesgo} de {totalEventos} eventos
-              </div>
+            <div style={{ background: k.color, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>{k.icon}</span>
+              <span style={{ color: "white", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                {k.label}
+              </span>
             </div>
-
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Eventos Completados
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: porcentajeCompletados > 80 ? "#198754" : "#dc3545",
-                  marginTop: "8px",
-                }}
-              >
-                {porcentajeCompletados}%
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                {eventosCompletados} de {totalEventos} eventos
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              <div style={{ fontSize: "14px", color: "#666" }}>
-                Duración Promedio
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: "#1976d2",
-                  marginTop: "8px",
-                }}
-              >
-                20.5 horas
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginTop: "4px",
-                }}
-              >
-                Por actividad de mantenimiento
-              </div>
+            <div style={{ padding: "10px 12px" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#1a1a2e" }}>{k.value}</div>
+              <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>{k.sub}</div>
             </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Sección de Incidentes de Seguridad */}
-      {activeTab === "Eventos" && (
-        <div>
-          <h2 style={{ marginBottom: "20px", color: "#1976d2" }}>
-            Incidentes de Seguridad
-          </h2>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {incidentesSeguridad.map((incidente) => (
-              <div
-                key={incidente.id}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div style={{ fontWeight: "bold" }}>{incidente.tipo}</div>
-                  <div
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      backgroundColor: getColorEstado(incidente.estado),
-                      color: "white",
-                    }}
-                  >
-                    {incidente.estado}
+      <div style={{ padding: 16, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 16 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {/* Breakdown por clasificación */}
+          {breakdown.length > 0 && (
+            <div
+              style={{
+                background: "white",
+                borderRadius: 10,
+                padding: 20,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e", marginBottom: 16 }}>
+                📊 Incidentes por Clasificación
+              </div>
+              {breakdown.map((item) => (
+                <div key={item.label} style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>{item.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: item.color }}>{item.count}</span>
+                  </div>
+                  <div style={{ height: 10, background: "#f0f4f8", borderRadius: 5, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${(item.count / maxBreakdown) * 100}%`,
+                        background: item.color,
+                        borderRadius: 5,
+                        transition: "width 0.5s",
+                      }}
+                    />
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Fecha:</strong> {incidente.fecha}
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Ubicación:</strong> {incidente.ubicacion}
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Gravedad:</strong>{" "}
+          {/* Actividades críticas sin cerrar */}
+          {criticaEnEjecucion.length > 0 && (
+            <div
+              style={{
+                background: "white",
+                borderRadius: 10,
+                padding: 20,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                borderLeft: "4px solid #c62828",
+              }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#c62828", marginBottom: 4 }}>
+                ⛓️ Ruta Crítica en Ejecución
+              </div>
+              <div style={{ fontSize: 12, color: "#666", marginBottom: 14 }}>
+                Actividades críticas pendientes — priorizar controles HSE
+              </div>
+              {criticaEnEjecucion.map((act: any) => (
+                <div
+                  key={act.codigo}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 0",
+                    borderBottom: "1px solid #f0f4f8",
+                  }}
+                >
                   <span
                     style={{
-                      color: getColorGravedad(incidente.gravedad),
-                      fontWeight: "bold",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#c62828",
+                      background: "#ffebee",
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {incidente.gravedad}
+                    {act.codigo}
                   </span>
+                  <span style={{ fontSize: 12, color: "#333", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {act.nombre}
+                  </span>
+                  {act.tag !== "—" && (
+                    <span style={{ fontSize: 10, color: "#1565c0", background: "#e3f2fd", padding: "2px 6px", borderRadius: 4 }}>
+                      {act.tag}
+                    </span>
+                  )}
                 </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Descripción:</strong> {incidente.descripcion}
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Acciones Tomadas:</strong>
-                  <ul
-                    style={{
-                      margin: "8px 0 0 20px",
-                      padding: 0,
-                      fontSize: "13px",
-                    }}
-                  >
-                    {incidente.acciones.map((accion, index) => (
-                      <li key={index}>{accion}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div style={{ fontSize: "14px" }}>
-                  <strong>Responsable:</strong> {incidente.responsable}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Sección de Eventos de Mantenimiento */}
-      {activeTab === "Mantenimiento" && (
-        <div>
+        {/* Tabla de eventos HSE */}
+        <div
+          style={{
+            background: "white",
+            borderRadius: 10,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            overflow: "hidden",
+          }}
+        >
           <div
             style={{
+              padding: "14px 20px",
+              borderBottom: "1px solid #e9ecef",
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "20px",
+              justifyContent: "space-between",
             }}
           >
-            <h2 style={{ color: "#1976d2", margin: 0 }}>
-              Eventos de Mantenimiento
-            </h2>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                onClick={() => setSelectedFilter("Todos")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    selectedFilter === "Todos" ? "#1976d2" : "#e9ecef",
-                  color: selectedFilter === "Todos" ? "white" : "#333",
-                  cursor: "pointer",
-                }}
-              >
-                Todos
-              </button>
-              <button
-                onClick={() => setSelectedFilter("Alto")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    selectedFilter === "Alto" ? "#dc3545" : "#e9ecef",
-                  color: selectedFilter === "Alto" ? "white" : "#333",
-                  cursor: "pointer",
-                }}
-              >
-                Alto Riesgo
-              </button>
-              <button
-                onClick={() => setSelectedFilter("Medio")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    selectedFilter === "Medio" ? "#ffc107" : "#e9ecef",
-                  color: selectedFilter === "Medio" ? "white" : "#333",
-                  cursor: "pointer",
-                }}
-              >
-                Riesgo Medio
-              </button>
-              <button
-                onClick={() => setSelectedFilter("Bajo")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "none",
-                  backgroundColor:
-                    selectedFilter === "Bajo" ? "#198754" : "#e9ecef",
-                  color: selectedFilter === "Bajo" ? "white" : "#333",
-                  cursor: "pointer",
-                }}
-              >
-                Bajo Riesgo
-              </button>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
+                🦺 Registro de Eventos HSE
+              </div>
+              <div style={{ fontSize: 11, color: "#6c757d", marginTop: 2 }}>
+                Reportados desde campo con tipo &quot;HSE&quot; o clasificación asignada
+              </div>
             </div>
+            <span
+              style={{
+                background: "#e8eaf6",
+                color: "#1a237e",
+                padding: "4px 12px",
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            >
+              {hseEvents.length} registros
+            </span>
           </div>
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            {eventosFiltrados.map((evento) => (
-              <div
-                key={evento.codigo}
-                style={{
-                  background: "white",
-                  padding: "20px",
-                  borderRadius: "8px",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div style={{ fontWeight: "bold", fontSize: "16px" }}>
-                    {evento.nombre}
-                  </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <div
+          {hseEvents.length === 0 ? (
+            <div style={{ padding: 40, textAlign: "center", color: "#6c757d" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+                Sin eventos HSE registrados
+              </div>
+              <div style={{ fontSize: 13, maxWidth: 400, margin: "0 auto", lineHeight: 1.5 }}>
+                Los supervisores pueden reportar incidentes desde la app seleccionando{" "}
+                <strong>Tipo de Evento → HSE</strong> y la clasificación correspondiente
+                (Near Miss, Primeros Auxilios, LTI, FAT).
+              </div>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="sf-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["Fecha", "Clasificación", "Servicio / AIT", "HH Perd.", "Equipo", "Descripción"].map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {hseEvents.map((ev) => (
+                    <tr
+                      key={ev.id}
                       style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getColorRiesgo(evento.riesgo),
-                        color: "white",
+                        background:
+                          ["LTI", "FAT"].includes(ev.clasificacionHSE.toUpperCase())
+                            ? "#fff5f5"
+                            : "white",
                       }}
                     >
-                      Riesgo {evento.riesgo}
-                    </div>
-                    <div
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        backgroundColor: getColorEstado(evento.estado),
-                        color: "white",
-                      }}
-                    >
-                      {evento.estado}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Código:</strong> {evento.codigo}
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Inicio:</strong> {evento.fechaInicio}
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Fin:</strong> {evento.fechaFin}
-                  </div>
-                  <div style={{ fontSize: "14px" }}>
-                    <strong>Duración:</strong> {evento.duracion} horas
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong>Área:</strong> {evento.area}
-                </div>
-
-                <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-                  <strong>Recursos Asignados:</strong>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "5px",
-                      marginTop: "5px",
-                    }}
-                  >
-                    {evento.recursos.map((recurso, index) => (
-                      <div
-                        key={index}
+                      <td style={{ whiteSpace: "nowrap", color: "#555", fontSize: 12 }}>{ev.fecha}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "3px 10px",
+                            borderRadius: 12,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "white",
+                            background: clasificacionColor(ev.clasificacionHSE),
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {clasificacionLabel(ev.clasificacionHSE)}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 12, maxWidth: 200 }}>
+                        <div style={{ fontWeight: 600, color: "#333" }}>{ev.servicio}</div>
+                        <div style={{ color: "#888", fontSize: 11 }}>AIT {ev.ait}</div>
+                      </td>
+                      <td
                         style={{
-                          backgroundColor: "#f8f9fa",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "12px",
+                          textAlign: "center",
+                          fontWeight: 700,
+                          color: ev.horasPerdidas > 0 ? "#c62828" : "#6c757d",
                         }}
                       >
-                        {recurso}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ fontSize: "14px" }}>
-                  <strong>Responsable:</strong> {evento.responsable}
-                </div>
-              </div>
-            ))}
-          </div>
+                        {ev.horasPerdidas > 0 ? `+${ev.horasPerdidas}h` : "—"}
+                      </td>
+                      <td style={{ fontSize: 12, color: "#555" }}>{ev.equipoAfectado || "—"}</td>
+                      <td style={{ fontSize: 12, color: "#444", maxWidth: 280 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 2 }}>{ev.titulo}</div>
+                        {ev.comentarios && (
+                          <div style={{ color: "#777", lineHeight: 1.4 }}>{ev.comentarios}</div>
+                        )}
+                        {ev.causa && (
+                          <div style={{ marginTop: 4, fontSize: 11, color: "#1565c0" }}>
+                            Causa: {ev.causa}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

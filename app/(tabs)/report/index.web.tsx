@@ -158,7 +158,7 @@ function ReportnoRedux(props: any) {
                 ) : activeTab === "Ruta Critica" ? (
                   <CriticalRouteView data={data} />
                 ) : activeTab === "Seguridad" ? (
-                  <SafetyView selectedProject={selectedProject} />
+                  <SafetyView data={data} />
                 ) : activeTab === "Medio Ambiente" ? (
                   <EnvironmentView selectedProject={selectedProject} />
                 ) : activeTab === "Gerencia" ? (

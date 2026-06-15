@@ -266,6 +266,18 @@ const styles = StyleSheet.create({
   cardInfo: {
     gap: 3,
   },
+  tagBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#e3f2fd",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tagBadgeText: {
+    color: "#1565c0",
+    fontSize: 10,
+    fontWeight: "700",
+  },
   infoText: {
     fontSize: 11,
     lineHeight: 16,

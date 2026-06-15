@@ -51,6 +51,7 @@ import { initialValues, validationSchema } from "./index.data";
 import { GoogleGenAI } from "@google/genai"; // Uncomment after installing: npm install @google/genai
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
+import { tagEquipoList } from "@/utils/tagEquipoList";
 
 interface CSVRow {
   Codigo: string;
@@ -72,7 +73,48 @@ interface CSVRow {
   NumeroLider?: string;
   NumeroSoldador?: string;
   HorasTotales?: any;
+  TagEquipo?: string;
+  AreaServicio?: string;
+  esRutaCritica?: string;
 }
+
+const LEVEL4_REQUIRED_FIELDS = [
+  "Codigo",
+  "NombreServicio",
+  "FechaInicio",
+  "FechaFin",
+  "HorasTotales",
+  "SupervisorMina",
+  "SupervisorEECC",
+  "OrdenCompra",
+  "EmpresaMinera",
+  "TipoServicio",
+  "AreaServicio",
+  "esRutaCritica",
+  "TagEquipo",
+  "NumeroCotizacion",
+  "Moneda",
+  "Monto",
+  "NumeroSupervisorSeguridad",
+  "NumeroSupervisor",
+  "NumeroTecnicos",
+  "NumeroLider",
+  "NumeroSoldador",
+] as const;
+
+const isLevel4Codigo = (codigo: unknown): boolean =>
+  String(codigo || "")
+    .trim()
+    .split(".")
+    .filter(Boolean).length === 4;
+
+const isUploadFieldEmpty = (value: unknown): boolean => {
+  if (value === null || value === undefined) return true;
+  if (value instanceof Date) return isNaN(value.getTime());
+  if (typeof value === "number") return isNaN(value);
+  if (typeof value === "string") return value.trim() === "";
+  return false;
+};
 
 const windowWidth = Dimensions.get("window").width;
 const numColumns = windowWidth > 1000 ? 3 : 1; // 2 columns for Mac/large screens, 1 for mobile
@@ -110,6 +152,9 @@ function HomeScreenRaw(props: any) {
 
   // upload zip whatsapp
   const [showZIPwhatsappModal, setShowZIPwhatsappModal] = useState(false);
+  const [tagValidationError, setTagValidationError] = useState<{
+    rows: { rowNum: number; codigo: string; tagFound: string }[];
+  } | null>(null);
 
   // const navigation = useNavigation();
   //Data about the company belong this event
@@ -236,7 +281,7 @@ HORAS TOTALES: ${HorasTotales || "No especificado"}
 
 ACTIVIDADES INCLUIDAS:`;
 
-    // Add detailed activities information
+    // Add detailed activities informationF
     activitiesData.forEach((activity, index) => {
       ragText += `
 ${index + 1}. ${activity.NombreServicio || "Actividad sin nombre"}
@@ -320,6 +365,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
   ) => {
     try {
       setIsLoading(true);
+      setTagValidationError(null);
 
       let data: CSVRow[] = [];
       const webFile = fileAsset.file;
@@ -401,65 +447,93 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         data = result.data;
       }
 
-      // ✅ VALIDACIÓN: Verificar que todas las filas tengan los campos requeridos
-      const requiredFields = [
-        "Codigo",
-        "NombreServicio",
-        "FechaInicio",
-        "FechaFin",
-      ];
-      const invalidRows: { row: number; missing: string[] }[] = [];
-      console.log("dataaaa validacion", data);
+      // ✅ VALIDACIÓN nivel 4 (ej. 1.1.1.1): todos los campos obligatorios del paquete WBS
+      const level4InvalidRows: {
+        row: number;
+        codigo: string;
+        missing: string[];
+      }[] = [];
+
       data.forEach((row, index) => {
         const rowData = row as any;
-        const missingFields = requiredFields.filter((field) => {
-          const value = rowData[field];
-          console.log("dataaaa value--->>", value);
-          // Verificar si es null, undefined, vacío, o solo espacios en blanco
-          if (value === null || value === undefined || value === "") {
-            return true;
-          }
-          // Si es string, verificar que no sea solo espacios
-          if (typeof value === "string" && value.trim() === "") {
-            return true;
-          }
-          return false;
-        });
+        const codigo = String(rowData.Codigo || "").trim();
+        if (!isLevel4Codigo(codigo)) return;
+
+        const missingFields = LEVEL4_REQUIRED_FIELDS.filter((field) =>
+          isUploadFieldEmpty(rowData[field])
+        );
 
         if (missingFields.length > 0) {
-          invalidRows.push({
-            row: index + 2, // +2: +1 por índice 0-based, +1 por header
-            missing: missingFields,
+          level4InvalidRows.push({
+            row: index + 2,
+            codigo,
+            missing: [...missingFields],
           });
         }
       });
 
-      if (invalidRows.length > 0) {
+      if (level4InvalidRows.length > 0) {
         setIsLoading(false);
-        const rowNumbers = invalidRows
-          .map((r) => r.row)
-          .slice(0, 10)
-          .join(", ");
-        const firstRowMissing = invalidRows[0].missing.join(", ");
+        const first = level4InvalidRows[0];
+        const firstRowMissing = first.missing.join(", ");
 
-        // Log detallado en consola para debug
-        console.error("❌ Validación fallida - Filas con campos faltantes:");
-        invalidRows.forEach((item) => {
+        console.error("❌ Validación fallida - Paquetes nivel 4 incompletos:");
+        level4InvalidRows.forEach((item) => {
           console.error(
-            `  Fila ${item.row}: Faltan campos [${item.missing.join(", ")}]`
+            `  Fila ${item.row} (Cód. ${item.codigo}): Faltan [${item.missing.join(", ")}]`
           );
         });
 
         Toast.show({
           type: "error",
-          text1: "❌ Archivo incompleto",
-          text2: `Fila ${invalidRows[0].row}: Faltan "${firstRowMissing}". Total de filas con errores: ${invalidRows.length}`,
-          visibilityTime: 6000,
+          text1: "❌ Paquete WBS nivel 4 incompleto",
+          text2: `Fila ${first.row} (Cód. ${first.codigo}): faltan "${firstRowMissing}". ${level4InvalidRows.length} paquete(s) nivel 4 con campos vacíos.`,
+          visibilityTime: 9000,
         });
 
-        // Lanzar error para que sea capturado en handleSubmit
         throw new Error(
-          `Validación fallida: Fila ${invalidRows[0].row} - Faltan campos: ${firstRowMissing}. Total de filas con errores: ${invalidRows.length}`
+          `Validación fallida: Fila ${first.row} (Cód. ${first.codigo}) - Faltan campos nivel 4: ${firstRowMissing}. Total: ${level4InvalidRows.length} paquete(s)`
+        );
+      }
+
+      // ✅ VALIDACIÓN TagEquipo: verificar que los tags sean de la lista conocida
+      const validTagSet = new Set(tagEquipoList.map((t) => t.key));
+      const csvTagErrors: { rowNum: number; codigo: string; tagFound: string }[] = [];
+      data.forEach((row, index) => {
+        const tag = ((row as any).TagEquipo || "").trim();
+        if (tag && !validTagSet.has(tag)) {
+          csvTagErrors.push({
+            rowNum: index + 2,
+            codigo: (row as any).Codigo || "",
+            tagFound: tag,
+          });
+        }
+      });
+      if (csvTagErrors.length > 0) {
+        setIsLoading(false);
+        setTagValidationError({ rows: csvTagErrors });
+        const uniqueTags = [...new Set(csvTagErrors.map((e) => e.tagFound))];
+        const first = csvTagErrors[0];
+        const tagsPreview = uniqueTags.slice(0, 4).join(", ");
+        const tagsSuffix =
+          uniqueTags.length > 4 ? ` (+${uniqueTags.length - 4} más)` : "";
+
+        console.error("❌ Validación fallida - Tags no reconocidos:");
+        csvTagErrors.forEach((item) => {
+          console.error(
+            `  Fila ${item.rowNum} (Cód. ${item.codigo}): TagEquipo "${item.tagFound}"`
+          );
+        });
+
+        Toast.show({
+          type: "error",
+          text1: "❌ TagEquipo no válido",
+          text2: `Fila ${first.rowNum} (Cód. ${first.codigo || "—"}): "${first.tagFound}" no está en la lista. ${csvTagErrors.length} fila(s) con error. Tags: ${tagsPreview}${tagsSuffix}`,
+          visibilityTime: 9000,
+        });
+
+        throw new Error(
+          `Validación fallida: ${csvTagErrors.length} fila(s) con TagEquipo inválido (${uniqueTags.join(", ")})`
         );
       }
 
@@ -473,6 +547,20 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         }));
 
       // 3️⃣ Upload only new activities, referencing the new project
+
+      // Parse Excel duration format "D/01/00 H:MM" → numeric hours
+      // e.g. "0/01/00 11:00" → 11, "2/01/00 12:30" → 60.5
+      const parseHorasTotales = (val: any): number => {
+        if (!val) return 0;
+        const str = String(val).trim();
+        const parts = str.split(" ");
+        if (parts.length < 2) return 0;
+        const days = parseInt(parts[0].split("/")[0]) || 0;
+        const timeParts = parts[1].split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const mins  = parseInt(timeParts[1]) || 0;
+        return days * 24 + hours + mins / 60;
+      };
 
       //----------------------------------------------------------------------------------------------------------------------------
       for (const item of list4) {
@@ -495,6 +583,9 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           NumeroLider,
           NumeroSoldador,
           HorasTotales,
+          TagEquipo,
+          AreaServicio,
+          esRutaCritica,
         } = item;
         // 👇 MODIFICADO: Parsear fechas y guardar como Timestamp
         const fechaInicioDate = parseAnyDate(FechaInicio);
@@ -523,6 +614,11 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 FechaFin: fechaFinDate
                   ? Timestamp.fromDate(fechaFinDate)
                   : null,
+                HorasTotales: parseHorasTotales(item.HorasTotales),
+                esRutaCritica: (item.esRutaCritica || "").trim().toLowerCase() === "si",
+                // Inherit from parent service if activity has no value
+                TagEquipo: (item.TagEquipo || "").trim() || (TagEquipo || "").trim(),
+                AreaServicio: (item.AreaServicio || "").trim() || (AreaServicio || "").trim(),
               };
             }) ?? [];
 
@@ -563,6 +659,10 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           idServiciosAIT: `${Date.now()}-${Math.random()
             .toString(36)
             .substring(2, 9)}`,
+          HorasTotales: parseHorasTotales(HorasTotales),
+          TagEquipo: (TagEquipo || "").trim(),
+          AreaServicio: AreaServicio || "",
+          esRutaCritica: (esRutaCritica || "").trim().toLowerCase() === "si",
           activities: filterNamesActivities,
           activitiesData: filteredData,
           createdAt: Timestamp.now(),
@@ -895,6 +995,233 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           isVisible={showZIPwhatsappModal}
           onClose={() => setShowZIPwhatsappModal(false)}
         />
+
+        {/* ── MODAL: Tags inválidos en CSV ─────────────────────────────── */}
+        {tagValidationError && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 16,
+            }}
+            onClick={() => setTagValidationError(null)}
+          >
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: 16,
+                width: "100%",
+                maxWidth: 640,
+                maxHeight: "85vh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  background: "#c62828",
+                  padding: "16px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>⛔</span>
+                  <div>
+                    <div style={{ color: "white", fontWeight: 700, fontSize: 15 }}>
+                      Tags de equipo inválidos
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 2 }}>
+                      {tagValidationError.rows.length} fila(s) con TagEquipo desconocido
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setTagValidationError(null)}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    border: "none",
+                    borderRadius: 8,
+                    color: "white",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div style={{ overflowY: "auto", padding: "16px 20px", flex: 1 }}>
+                {/* Filas con error */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#1e293b", marginBottom: 8 }}>
+                    Filas con error en el CSV:
+                  </div>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: 12,
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ backgroundColor: "#fef2f2" }}>
+                        {["Fila", "Código", "TagEquipo encontrado"].map((h) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: "7px 10px",
+                              textAlign: "left",
+                              borderBottom: "1px solid #fecaca",
+                              color: "#7f1d1d",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tagValidationError.rows.map((r, i) => (
+                        <tr
+                          key={i}
+                          style={{ borderBottom: "1px solid #fee2e2" }}
+                        >
+                          <td style={{ padding: "6px 10px", color: "#dc2626", fontWeight: 600 }}>
+                            {r.rowNum}
+                          </td>
+                          <td style={{ padding: "6px 10px", color: "#374151", fontFamily: "monospace" }}>
+                            {r.codigo}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 10px",
+                              color: "#dc2626",
+                              fontFamily: "monospace",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {r.tagFound || <em style={{ color: "#94a3b8" }}>(vacío)</em>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Lista de tags válidos */}
+                <div
+                  style={{
+                    backgroundColor: "#f0f9ff",
+                    border: "1px solid #bae6fd",
+                    borderRadius: 10,
+                    padding: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: "#0369a1",
+                      marginBottom: 10,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    ✅ Tags válidos disponibles ({tagEquipoList.length})
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                      gap: 6,
+                    }}
+                  >
+                    {tagEquipoList.map((t) => (
+                      <div
+                        key={t.key}
+                        style={{
+                          backgroundColor: "white",
+                          border: "1px solid #e0f2fe",
+                          borderRadius: 6,
+                          padding: "5px 8px",
+                          fontSize: 11,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "monospace",
+                            fontWeight: 700,
+                            color: "#0369a1",
+                            fontSize: 11,
+                          }}
+                        >
+                          {t.key}
+                        </span>
+                        <div style={{ color: "#64748b", fontSize: 10, marginTop: 1 }}>
+                          {t.value.split("  —  ")[0]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 10 }}>
+                    Corrige el CSV usando uno de los tags de arriba y vuelve a cargar.
+                    Si el equipo no está en la lista, agrégalo en{" "}
+                    <code style={{ fontSize: 11, color: "#0369a1" }}>utils/tagEquipoList.ts</code>.
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                style={{
+                  padding: "12px 20px",
+                  borderTop: "1px solid #f1f5f9",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  onClick={() => setTagValidationError(null)}
+                  style={{
+                    backgroundColor: "#2A3B76",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "9px 20px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <ProjectUploadModal
           isVisible={showNewProjectModal}
           onClose={() => setShowNewProjectModal(false)}
@@ -949,7 +1276,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                   cachePolicy={"memory-disk"}
                 /> */}
                 <ImageExpo
-                  source={require("../../../assets/login/logoMetso4.png")}
+                  source={require("../../../assets/login/poderosa.png")}
                   style={{
                     width: windowWidth > 768 ? 180 : 140,
                     height: windowWidth > 768 ? 180 : 140,
@@ -1406,137 +1733,195 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               </View> */}
             </View>
 
-            {/* Summary Stats Section */}
-            <View
-              style={{
-                flexDirection: windowWidth > 800 ? "row" : "column",
-                justifyContent: "space-between",
-                marginBottom: 24,
-              }}
-            >
-              {[
+            {/* ── KPI STRIP: 4 indicadores reales del proyecto ───────────── */}
+            {(() => {
+              // ── Cálculo en vivo a partir de posts (events collection) ──
+              const hhPerdidas = (posts as any[]).reduce(
+                (sum, p) => sum + Number(p.horasPerdidas || 0),
+                0
+              );
+              const eventosHSE = (posts as any[]).filter(
+                (p) => p.clasificacionHSE && String(p.clasificacionHSE).trim() !== ""
+              ).length;
+
+              // Días desde el último LTI o FAT
+              const lastSevere = (posts as any[])
+                .filter((p) =>
+                  ["LTI", "FAT"].includes((p.clasificacionHSE || "").toUpperCase())
+                )
+                .sort(
+                  (a, b) =>
+                    (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+                )[0];
+              const diasSinLTI = lastSevere
+                ? Math.floor(
+                    (Date.now() - (lastSevere.createdAt?.seconds || 0) * 1000) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : null;
+
+              const kpis = [
                 {
-                  title: "Eventos Totales",
-                  value: posts.length,
+                  title: "Total Eventos",
+                  value: (posts as any[]).length,
                   icon: "calendar",
-                  color: "#4CAF50",
-                  change: "+12%",
+                  color: "#2A3B76",
+                  sub:
+                    (posts as any[]).length === 0
+                      ? "Sin eventos registrados"
+                      : `${(posts as any[]).length} en este proyecto`,
+                  positive: true,
                 },
                 {
-                  title: "Mantenimientos",
-                  value: 36,
-                  icon: "tool",
-                  color: "#2196F3",
-                  change: "+5%",
-                },
-                {
-                  title: "Tiempo Promedio",
-                  value: "4.5h",
+                  title: "HH Perdidas (HSE)",
+                  value: `${hhPerdidas.toFixed(0)}h`,
                   icon: "clock",
-                  color: "#FF9800",
-                  change: "-8%",
+                  color: hhPerdidas > 0 ? "#dc3545" : "#198754",
+                  sub:
+                    hhPerdidas === 0
+                      ? "Sin horas perdidas"
+                      : `${hhPerdidas.toFixed(0)}h de impacto acumulado`,
+                  positive: hhPerdidas === 0,
                 },
                 {
-                  title: "Eficiencia",
-                  value: "92%",
-                  icon: "trending-up",
-                  color: "#9C27B0",
-                  change: "+3%",
+                  title: "Eventos HSE",
+                  value: eventosHSE,
+                  icon: "shield",
+                  color: eventosHSE === 0 ? "#198754" : "#FF9800",
+                  sub:
+                    eventosHSE === 0
+                      ? "Sin incidentes clasificados"
+                      : `${eventosHSE} con clasificación HSE`,
+                  positive: eventosHSE === 0,
                 },
-              ].map((stat, index) => (
+                {
+                  title: "Días sin LTI",
+                  value: diasSinLTI !== null ? diasSinLTI : "—",
+                  icon: diasSinLTI === 0 ? "alert-triangle" : "trending-up",
+                  color:
+                    diasSinLTI === null
+                      ? "#198754"
+                      : diasSinLTI === 0
+                      ? "#dc3545"
+                      : "#198754",
+                  sub:
+                    diasSinLTI === null
+                      ? "Sin LTI/FAT registrados"
+                      : diasSinLTI === 0
+                      ? "¡LTI registrado hoy!"
+                      : "Días consecutivos sin LTI",
+                  positive: diasSinLTI !== 0,
+                },
+              ];
+
+              return (
                 <View
-                  key={index}
                   style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 12,
-                    padding: 16,
-                    width: windowWidth > 800 ? "24%" : "100%",
-                    marginBottom: windowWidth > 800 ? 0 : 12,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 3,
-                    elevation: 2,
-                    borderWidth: 1,
-                    borderColor: "#f0f0f0",
+                    flexDirection: windowWidth > 800 ? "row" : "column",
+                    justifyContent: "space-between",
+                    marginBottom: 24,
                   }}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: "#666",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {stat.title}
-                    </Text>
+                  {kpis.map((stat, index) => (
                     <View
+                      key={index}
                       style={{
-                        backgroundColor: `${stat.color}20`,
-                        width: 40,
-                        height: 40,
-                        borderRadius: 8,
-                        justifyContent: "center",
-                        alignItems: "center",
+                        backgroundColor: "#fff",
+                        borderRadius: 12,
+                        padding: 16,
+                        width: windowWidth > 800 ? "24%" : "100%",
+                        marginBottom: windowWidth > 800 ? 0 : 12,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                        borderWidth: 1,
+                        borderColor: "#f0f0f0",
+                        borderTopWidth: 3,
+                        borderTopColor: stat.color,
                       }}
                     >
-                      <FeatherIcon
-                        name={stat.icon}
-                        size={20}
-                        color={stat.color}
-                      />
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          marginBottom: 12,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#64748b",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.4,
+                            flex: 1,
+                            paddingRight: 8,
+                          }}
+                        >
+                          {stat.title}
+                        </Text>
+                        <View
+                          style={{
+                            backgroundColor: `${stat.color}18`,
+                            width: 38,
+                            height: 38,
+                            borderRadius: 8,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <FeatherIcon
+                            name={stat.icon}
+                            size={18}
+                            color={stat.color}
+                          />
+                        </View>
+                      </View>
+
+                      <Text
+                        style={{
+                          fontSize: 28,
+                          fontWeight: "800",
+                          color: stat.color,
+                          marginBottom: 8,
+                          lineHeight: 32,
+                        }}
+                      >
+                        {stat.value}
+                      </Text>
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FeatherIcon
+                          name={stat.positive ? "trending-up" : "trending-down"}
+                          size={14}
+                          color={stat.positive ? "#198754" : "#dc3545"}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: stat.positive ? "#198754" : "#dc3545",
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {stat.sub}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-
-                  <Text
-                    style={{
-                      fontSize: 24,
-                      fontWeight: "700",
-                      color: "#333",
-                      marginBottom: 8,
-                    }}
-                  >
-                    {stat.value}
-                  </Text>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <FeatherIcon
-                      name={
-                        stat.change.includes("+")
-                          ? "trending-up"
-                          : "trending-down"
-                      }
-                      size={16}
-                      color={stat.change.includes("+") ? "#4CAF50" : "#F44336"}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: stat.change.includes("+")
-                          ? "#4CAF50"
-                          : "#F44336",
-                      }}
-                    >
-                      {stat.change} este mes
-                    </Text>
-                  </View>
+                  ))}
                 </View>
-              ))}
-            </View>
+              );
+            })()}
 
             <FlatList
               data={posts}

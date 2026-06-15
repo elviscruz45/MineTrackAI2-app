@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { calculateAvanceFromMappedTasks } from "@/utils/calculateAvance";
+import { getTagEquipoLabel } from "@/utils/tagEquipoList";
 
 // Define types for our mock data
 interface Task {
@@ -42,6 +43,7 @@ interface Section {
   isOpen: boolean;
   progressPercent: number;
   esRutaCritica: boolean;
+  tagEquipo: string;
   tasks: Task[]; // Changed from activities to tasks directly
 }
 
@@ -87,6 +89,7 @@ const mockActivitiesData: ActivityData = {
       isOpen: true,
       progressPercent: 100,
       esRutaCritica: false,
+      tagEquipo: "",
       tasks: [
         {
           id: "1.1.1.1.1",
@@ -209,6 +212,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
         isOpen: idx === 0,
         progressPercent: calculateAvanceFromMappedTasks(tasks),
         esRutaCritica: isRutaCritica(section.esRutaCritica),
+        tagEquipo: getTagEquipoLabel(section.TagEquipo),
         tasks,
       };
     });
@@ -532,6 +536,21 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                 >
                   {section.esRutaCritica ? "⛓️ Ruta Crítica" : "Ruta Estándar"}
                 </span>
+                {section.tagEquipo ? (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#1565c0",
+                      marginLeft: 8,
+                      backgroundColor: "#e3f2fd",
+                      padding: "2px 8px",
+                      borderRadius: 8,
+                    }}
+                  >
+                    {section.tagEquipo}
+                  </span>
+                ) : null}
                 <span
                   style={{
                     fontSize: 12,

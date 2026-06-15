@@ -48,6 +48,7 @@ import {
 import { db } from "@/firebaseConfig";
 import * as XLSX from "xlsx";
 import { sortByCodigo } from "../../../utils/sortByCodigo";
+import { getTagEquipoLabel } from "../../../utils/tagEquipoList";
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -678,6 +679,14 @@ function PublishRaw(props: any) {
                     </Text>
 
                     <View style={styles.cardInfo}>
+                      {getTagEquipoLabel(item.TagEquipo) ? (
+                        <View style={styles.tagBadge}>
+                          <Text style={styles.tagBadgeText} numberOfLines={1}>
+                            {getTagEquipoLabel(item.TagEquipo)}
+                          </Text>
+                        </View>
+                      ) : null}
+
                       {item.EmpresaMinera ? (
                         <Text style={styles.infoText} numberOfLines={1}>
                           <Text style={styles.infoLabel}>Minera: </Text>

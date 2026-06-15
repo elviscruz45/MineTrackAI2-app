@@ -15,6 +15,7 @@ import { connect } from "react-redux";
 import { EquipmentListUpper } from "../../../redux/actions/home";
 import { areaLists } from "../../../utils/areaList";
 import { sortByCodigo } from "../../../utils/sortByCodigo";
+import { getTagEquipoLabel } from "../../../utils/tagEquipoList";
 import { useRouter } from "expo-router";
 
 const windowWidth = Dimensions.get("window").width;
@@ -212,6 +213,14 @@ function SearchAssetRaw(props: any) {
                   </Text>
 
                   <View style={styles.cardInfo}>
+                    {getTagEquipoLabel(item.TagEquipo) ? (
+                      <View style={styles.tagBadge}>
+                        <Text style={styles.tagBadgeText} numberOfLines={1}>
+                          {getTagEquipoLabel(item.TagEquipo)}
+                        </Text>
+                      </View>
+                    ) : null}
+
                     {item.EmpresaMinera ? (
                       <Text style={styles.infoText} numberOfLines={1}>
                         <Text style={styles.infoLabel}>Minera: </Text>

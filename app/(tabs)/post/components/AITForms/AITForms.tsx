@@ -1,8 +1,15 @@
-import { View, Text, Linking, Button, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Platform,
+  Pressable,
+  TouchableOpacity,
+} from "react-native";
 import React, { useState } from "react";
 import styles from "./AITForms.styles";
 import { Input } from "@rneui/themed";
 import { Modal } from "@/components/Modal/Modal";
+import { Ionicons } from "@expo/vector-icons";
 import ChangeDisplayEmpresaMinera from "../FormsAIT/ChangeEmpresaMinera/ChangeDisplayEmpresaMinera";
 import ChangeDisplayArea from "../FormsAIT/ChangeArea/ChangeDisplayArea";
 import ChangeDisplayTipoServicio from "../FormsAIT/ChangeTipoServicio/ChangeDisplayTipoServicio";
@@ -17,605 +24,529 @@ import ChangeDisplayMonto from "../FormsAIT/ChangeNumeroMonto/ChangeDisplayMonto
 import ChangeSupervisorSeguridad from "../FormsAIT/ChangeSupervisorSeguridad/ChangeSupervisorSeguridad";
 import ChangeSupervisor from "../FormsAIT/ChangeSupervisor/ChangeSupervisor";
 import ChangeTecnicos from "../FormsAIT/ChangeTecnicos/ChangeTecnicos";
-import ChangeDisplayHH from "../FormsAIT/ChangeNumeroHH/ChangeDisplayHH";
 import ChangeDisplayMoneda from "../FormsAIT/ChangeMoneda/ChangeDisplayTipoServicio";
 import ChangeDisplayFechaFin from "../FormsAIT/ChangeFechaFin/ChangeDisplayFechaFin";
 import ChangeDisplayFechaInicio from "../FormsAIT/ChangeFechaInicio/ChangeDisplayFechaInicio";
+import ChangeTagEquipo from "../FormsAIT/ChangeTagEquipo/ChangeTagEquipo";
+
+function SectionCard({
+  icon,
+  title,
+  hint,
+  children,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionIcon}>
+          <Ionicons name={icon} size={18} color="#2A3B76" />
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {hint ? <Text style={styles.sectionHint}>{hint}</Text> : null}
+      {children}
+    </View>
+  );
+}
+
+function toDatetimeLocalValue(date: Date | null | undefined): string {
+  if (!date) return "";
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatDatePreview(item: Date | null | undefined) {
+  if (!item) return "";
+  const date = new Date(item);
+  const monthNames = [
+    "ene", "feb", "mar", "abr", "may", "jun",
+    "jul", "ago", "sep", "oct", "nov", "dic",
+  ];
+  return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()} · ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function parseDatetimeLocal(value: string): Date | null {
+  if (!value) return null;
+  const [dateStr, timeStr] = value.split("T");
+  const [year, month, day] = dateStr.split("-");
+  const [hours, minutes] = timeStr ? timeStr.split(":") : ["00", "00"];
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hours),
+    Number(minutes)
+  );
+}
+
+function computeHorasFromDates(inicio: Date | null, fin: Date | null): string {
+  if (!inicio || !fin) return "";
+  const diff = new Date(fin).getTime() - new Date(inicio).getTime();
+  if (diff <= 0) return "";
+  return String(Math.round(diff / 3600000));
+}
 
 function AITForms(props: any) {
   const { formik, setTituloserv, setAit, setTiposerv, setArea } = props;
+  const noop = () => {};
   const [renderComponent, setRenderComponent] = useState<any>("");
+  const [showModal, setShowModal] = useState(false);
+  const onCloseOpenModal = () => setShowModal((prev) => !prev);
 
-  //state to render the header
+  const inputContainerStyle = { paddingHorizontal: 0 };
+  const inputStyle = { fontSize: 15 };
 
-  //state of displays
-  // const [numeroAIT, setnumeroAIT] = useState(null);
-  const [minera, setMinera] = useState<any>("");
-
-  const [areaservicio, setAreaservicio] = useState<any>("");
-  const [tiposervicio, setTiposervicio] = useState<any>("");
-  const [responsableempresausuario, setResponsableempresausuario] =
-    useState<any>("");
-  const [responsableempresausuario2, setResponsableempresausuario2] =
-    useState<any>("");
-  const [responsableempresausuario3, setResponsableempresausuario3] =
-    useState<any>("");
-
-  const [responsableempresacontratista, setResponsableempresacontratista] =
-    useState<any>("");
-
-  const [responsableempresacontratista2, setResponsableempresacontratista2] =
-    useState<any>("");
-
-  const [responsableempresacontratista3, setResponsableempresacontratista3] =
-    useState<any>("");
-  const [fechafin, setFechafin] = useState<any>("");
-  const [fechaInicio, setFechaInicio] = useState<any>("");
-  const [numerocotizacion, setNumerocotizacion] = useState<any>("");
-  const [moneda, setMoneda] = useState<any>("");
-  const [monto, setMonto] = useState<any>("");
-  const [supervisorSeguridad, setSupervisorSeguridad] = useState<any>("");
-  const [supervisor, setSupervisor] = useState<any>("");
-  const [tecnicos, setTecnicos] = useState<any>("");
-  const [horashombre, setHorashombre] = useState<any>("");
-  // const [showTimePicker, setShowTimePicker] = useState(false);
-  //open or close modal
-  const [showModal, setShowModal] = useState<any>(false);
-  const onCloseOpenModal = () => setShowModal((prevState: any) => !prevState);
-
-  ///function to date format
-  const formatdate = (item: any) => {
-    const date = new Date(item);
-    const monthNames = [
-      "de enero del",
-      "de febrero del",
-      "de marzo del",
-      "de abril del",
-      "de mayo del",
-      "de junio del",
-      "de julio del",
-      "de agosto del",
-      "de septiembre del",
-      "de octubre del",
-      "de noviembre del",
-      "de diciembre del",
-    ];
-    const day = date.getDate();
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const formattedDate = `${day} ${month} ${year} `;
-    const fechaPostFormato = formattedDate;
-    if (!item) {
-      return;
-    } else {
-      return fechaPostFormato;
-    }
-  };
-
-  //function to format money
-  const formatNumber = (item: any) => {
-    const amount = item;
-
-    const formattedAmount = new Intl.NumberFormat("en-US").format(amount);
-    if (!item) {
-      return;
-    } else {
-      return formattedAmount;
-    }
-  };
-
-  const selectComponent = (key: any) => {
-    if (key === "EmpresaMinera") {
-      setRenderComponent(
-        <ChangeDisplayEmpresaMinera
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setMinera={setMinera}
-        />
-      );
-    }
-    if (key === "AreaServicio") {
-      setRenderComponent(
+  const selectComponent = (key: string) => {
+    const map: Record<string, React.ReactNode> = {
+      EmpresaMinera: (
+        <ChangeDisplayEmpresaMinera onClose={onCloseOpenModal} formik={formik} setMinera={() => {}} />
+      ),
+      AreaServicio: (
         <ChangeDisplayArea
           onClose={onCloseOpenModal}
           formik={formik}
-          setAreaservicio={setAreaservicio}
-          setArea={setArea}
+          setAreaservicio={noop}
+          setArea={setArea ?? noop}
         />
-      );
-    }
-    if (key === "TipoServicio") {
-      setRenderComponent(
+      ),
+      TipoServicio: (
         <ChangeDisplayTipoServicio
           onClose={onCloseOpenModal}
           formik={formik}
-          setTiposervicio={setTiposervicio}
-          setTiposerv={setTiposerv}
+          setTiposervicio={noop}
+          setTiposerv={setTiposerv ?? noop}
         />
-      );
-    }
-    if (key === "ResponsableEmpresaUsuario") {
-      setRenderComponent(
-        <ChangeDisplayAdminContracts
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresausuario={setResponsableempresausuario}
-        />
-      );
-    }
-    if (key === "ResponsableEmpresaUsuario2") {
-      setRenderComponent(
-        <ChangeDisplayAdminContracts2
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresausuario2={setResponsableempresausuario2}
-        />
-      );
-    }
-    if (key === "ResponsableEmpresaUsuario3") {
-      setRenderComponent(
-        <ChangeDisplayAdminContracts3
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresausuario3={setResponsableempresausuario3}
-        />
-      );
-    }
-
-    if (key === "ResponsableEmpresaContratista") {
-      setRenderComponent(
-        <ChangeDisplayAdminContratista
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresacontratista={setResponsableempresacontratista}
-        />
-      );
-    }
-
-    if (key === "ResponsableEmpresaContratista2") {
-      setRenderComponent(
-        <ChangeDisplayAdminContratista2
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresacontratista2={setResponsableempresacontratista2}
-        />
-      );
-    }
-
-    if (key === "ResponsableEmpresaContratista3") {
-      setRenderComponent(
-        <ChangeDisplayAdminContratista3
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setResponsableempresacontratista3={setResponsableempresacontratista3}
-        />
-      );
-    }
-
-    if (key === "FechaInicio") {
-      setRenderComponent(
-        <ChangeDisplayFechaInicio
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setFechaInicio={setFechaInicio}
-        />
-      );
-    }
-    if (key === "FechaFin") {
-      setRenderComponent(
-        <ChangeDisplayFechaFin
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setFechafin={setFechafin}
-        />
-      );
-    }
-    if (key === "NumeroCotizacion") {
-      setRenderComponent(
-        <ChangeDisplaynumeroCot
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setNumerocotizacion={setNumerocotizacion}
-        />
-      );
-    }
-    if (key === "Moneda") {
-      setRenderComponent(
-        <ChangeDisplayMoneda
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setMoneda={setMoneda}
-        />
-      );
-    }
-    if (key === "Monto") {
-      setRenderComponent(
-        <ChangeDisplayMonto
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setMonto={setMonto}
-        />
-      );
-    }
-    if (key === "SupervisorSeguridad") {
-      setRenderComponent(
-        <ChangeSupervisorSeguridad
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setSupervisorSeguridad={setSupervisorSeguridad}
-        />
-      );
-    }
-    if (key === "Supervisor") {
-      setRenderComponent(
-        <ChangeSupervisor
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setSupervisor={setSupervisor}
-        />
-      );
-    }
-    if (key === "Tecnicos") {
-      setRenderComponent(
-        <ChangeTecnicos
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setTecnicos={setTecnicos}
-        />
-      );
-    }
-    if (key === "HorasHombre") {
-      setRenderComponent(
-        <ChangeDisplayHH
-          onClose={onCloseOpenModal}
-          formik={formik}
-          setHorashombre={setHorashombre}
-        />
-      );
-    }
+      ),
+      ResponsableEmpresaUsuario: (
+        <ChangeDisplayAdminContracts onClose={onCloseOpenModal} formik={formik} setResponsableempresausuario={() => {}} />
+      ),
+      ResponsableEmpresaUsuario2: (
+        <ChangeDisplayAdminContracts2 onClose={onCloseOpenModal} formik={formik} setResponsableempresausuario2={() => {}} />
+      ),
+      ResponsableEmpresaUsuario3: (
+        <ChangeDisplayAdminContracts3 onClose={onCloseOpenModal} formik={formik} setResponsableempresausuario3={() => {}} />
+      ),
+      ResponsableEmpresaContratista: (
+        <ChangeDisplayAdminContratista onClose={onCloseOpenModal} formik={formik} setResponsableempresacontratista={() => {}} />
+      ),
+      ResponsableEmpresaContratista2: (
+        <ChangeDisplayAdminContratista2 onClose={onCloseOpenModal} formik={formik} setResponsableempresacontratista2={() => {}} />
+      ),
+      ResponsableEmpresaContratista3: (
+        <ChangeDisplayAdminContratista3 onClose={onCloseOpenModal} formik={formik} setResponsableempresacontratista3={() => {}} />
+      ),
+      FechaInicio: (
+        <ChangeDisplayFechaInicio onClose={onCloseOpenModal} formik={formik} setFechaInicio={() => {}} />
+      ),
+      FechaFin: (
+        <ChangeDisplayFechaFin onClose={onCloseOpenModal} formik={formik} setFechafin={() => {}} />
+      ),
+      NumeroCotizacion: (
+        <ChangeDisplaynumeroCot onClose={onCloseOpenModal} formik={formik} setNumerocotizacion={() => {}} />
+      ),
+      Moneda: (
+        <ChangeDisplayMoneda onClose={onCloseOpenModal} formik={formik} setMoneda={() => {}} />
+      ),
+      Monto: (
+        <ChangeDisplayMonto onClose={onCloseOpenModal} formik={formik} setMonto={() => {}} />
+      ),
+      SupervisorSeguridad: (
+        <ChangeSupervisorSeguridad onClose={onCloseOpenModal} formik={formik} setSupervisorSeguridad={() => {}} />
+      ),
+      Supervisor: (
+        <ChangeSupervisor onClose={onCloseOpenModal} formik={formik} setSupervisor={() => {}} />
+      ),
+      Tecnicos: (
+        <ChangeTecnicos onClose={onCloseOpenModal} formik={formik} setTecnicos={() => {}} />
+      ),
+      TagEquipo: (
+        <ChangeTagEquipo onClose={onCloseOpenModal} formik={formik} setTagequipo={() => {}} />
+      ),
+    };
+    setRenderComponent(map[key] || null);
     onCloseOpenModal();
   };
 
-  return (
-    <View>
-      <View style={styles.content}>
-        <Input
-          value={formik.values.EmpresaMinera}
-          label="Empresa Minera"
-          // multiline={true}
-          editable={true}
-          errorMessage={formik.errors.EmpresaMinera}
-          onChangeText={(text) => {
-            formik.setFieldValue("EmpresaMinera", text);
-            setMinera(text);
-          }}
-          rightIcon={{
-            type: "material-community",
-            testID: "right-icon",
-            name: "arrow-right-circle-outline",
-            onPress: () => {
-              selectComponent("EmpresaMinera");
-            },
-          }}
-        />
+  const pickerIcon = (key: string) => ({
+    type: "material-community" as const,
+    name: "arrow-right-circle-outline",
+    onPress: () => selectComponent(key),
+  });
 
+  const handleDateChange = (
+    field: "FechaInicio" | "FechaFin",
+    value: string
+  ) => {
+    const selected = parseDatetimeLocal(value);
+    formik.setFieldValue(field, selected);
+    const inicio = field === "FechaInicio" ? selected : formik.values.FechaInicio;
+    const fin = field === "FechaFin" ? selected : formik.values.FechaFin;
+    if (!formik.values.HorasTotales) {
+      const suggested = computeHorasFromDates(inicio, fin);
+      if (suggested) formik.setFieldValue("HorasTotales", suggested);
+    }
+  };
+
+  const renderWebDate = (
+    label: string,
+    field: "FechaInicio" | "FechaFin",
+    error?: string
+  ) => (
+    <View style={styles.dateWebWrap}>
+      <Text style={styles.fieldLabel}>{label} *</Text>
+      <input
+        type="datetime-local"
+        style={styles.dateWebInput}
+        value={toDatetimeLocalValue(formik.values[field])}
+        onChange={(e: any) => handleDateChange(field, e.target.value)}
+      />
+      {formik.values[field] ? (
+        <Text style={styles.datePreview}>{formatDatePreview(formik.values[field])}</Text>
+      ) : null}
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+
+  const renderNativeDate = (
+    label: string,
+    field: "FechaInicio" | "FechaFin",
+    error?: string
+  ) => (
+    <Input
+      value={formik.values[field]?.toLocaleString?.() || ""}
+      label={`${label} *`}
+      editable={false}
+      errorMessage={error}
+      rightIcon={pickerIcon(field)}
+      inputContainerStyle={inputContainerStyle}
+      inputStyle={inputStyle}
+    />
+  );
+
+  return (
+    <View style={styles.container}>
+      <SectionCard
+        icon="barcode-outline"
+        title="Identificación · Nivel 4"
+        hint="Obligatorio: código WBS, nombre, área y tag. El resto es opcional."
+      >
+        <Input
+          value={formik.values.Codigo}
+          label="Código WBS *"
+          placeholder="1.1.1.1"
+          autoCapitalize="none"
+          onChangeText={(text) => formik.setFieldValue("Codigo", text.trim())}
+          onBlur={() => formik.setFieldTouched("Codigo", true)}
+          errorMessage={formik.touched.Codigo ? formik.errors.Codigo : undefined}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
+        />
         <Input
           value={formik.values.NombreServicio}
-          label="Nombre de la Actividad"
+          label="Nombre de la actividad *"
           onChangeText={(text) => {
             formik.setFieldValue("NombreServicio", text);
-            setTituloserv(text);
+            setTituloserv?.(text);
           }}
-          errorMessage={formik.errors.NombreServicio}
+          onBlur={() => formik.setFieldTouched("NombreServicio", true)}
+          errorMessage={formik.touched.NombreServicio ? formik.errors.NombreServicio : undefined}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
         <Input
           value={formik.values.NumeroAIT}
-          label="Numero de Referencia"
+          label="Nº referencia / Orden de compra"
+          placeholder="Opcional — se genera automáticamente"
           onChangeText={(text) => {
             formik.setFieldValue("NumeroAIT", text);
-            setAit(text);
+            setAit?.(text);
           }}
-
-          // errorMessage={formik.errors.NumeroAIT}
+          onBlur={() => formik.setFieldTouched("NumeroAIT", true)}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
+        />
+        <Input
+          value={formik.values.EmpresaMinera}
+          label="Empresa minera"
+          onChangeText={(text) => formik.setFieldValue("EmpresaMinera", text)}
+          rightIcon={pickerIcon("EmpresaMinera")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
         <Input
           value={formik.values.AreaServicio}
-          label="Area del Servicio a Realizar"
+          label="Área del servicio *"
           editable={false}
-          // errorMessage={formik.errors.AreaServicio}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("AreaServicio"),
-          }}
+          errorMessage={formik.touched.AreaServicio ? formik.errors.AreaServicio : undefined}
+          rightIcon={pickerIcon("AreaServicio")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
-        <Text style={styles.subtitleForm}>Detalles del Servicio</Text>
-        <Text> </Text>
+        <Input
+          value={formik.values.TagEquipo}
+          label="Tag del equipo *"
+          placeholder="Seleccionar de la lista..."
+          onChangeText={(text) => formik.setFieldValue("TagEquipo", text)}
+          onBlur={() => formik.setFieldTouched("TagEquipo", true)}
+          errorMessage={formik.touched.TagEquipo ? formik.errors.TagEquipo : undefined}
+          rightIcon={pickerIcon("TagEquipo")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
+        />
+      </SectionCard>
 
+      <SectionCard
+        icon="calendar-outline"
+        title="Planificación"
+        hint="Obligatorio: fechas y ruta crítica. Horas se calculan desde las fechas si no las ingresa."
+      >
         <Input
           value={formik.values.TipoServicio}
-          label="Tipo de Servicio"
+          label="Tipo de servicio"
           editable={false}
-          errorMessage={formik.errors.TipoServicio}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("TipoServicio"),
-          }}
+          rightIcon={pickerIcon("TipoServicio")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
+
+        <Text style={styles.fieldLabel}>¿Es ruta crítica? *</Text>
+        <View style={styles.rutaCriticaRow}>
+          {(["Si", "No"] as const).map((opt) => {
+            const active = formik.values.esRutaCritica === opt;
+            return (
+              <Pressable
+                key={opt}
+                style={[styles.rutaBtn, active && styles.rutaBtnActive]}
+                onPress={() => formik.setFieldValue("esRutaCritica", opt)}
+              >
+                <Text style={[styles.rutaBtnText, active && styles.rutaBtnTextActive]}>
+                  {opt}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {formik.touched.esRutaCritica && formik.errors.esRutaCritica ? (
+          <Text style={styles.fieldError}>{formik.errors.esRutaCritica}</Text>
+        ) : null}
+
+        {Platform.OS === "web"
+          ? renderWebDate("Fecha de inicio", "FechaInicio", formik.touched.FechaInicio ? formik.errors.FechaInicio : undefined)
+          : renderNativeDate("Fecha de inicio", "FechaInicio", formik.touched.FechaInicio ? formik.errors.FechaInicio : undefined)}
+
+        {Platform.OS === "web"
+          ? renderWebDate("Fecha de fin", "FechaFin", formik.touched.FechaFin ? formik.errors.FechaFin : undefined)
+          : renderNativeDate("Fecha de fin", "FechaFin", formik.touched.FechaFin ? formik.errors.FechaFin : undefined)}
+
+        <View style={styles.row2}>
+          <View style={styles.row2Item}>
+            <Input
+              value={String(formik.values.HorasTotales ?? "")}
+              label="Horas totales programadas"
+              keyboardType="numeric"
+              placeholder="Opcional — se calcula desde fechas"
+              onChangeText={(text) =>
+                formik.setFieldValue("HorasTotales", text.replace(/[^0-9.]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+          <View style={styles.row2Item}>
+            <Input
+              value={String(formik.values.HorasHombre ?? "")}
+              label="Horas hombre reales (opcional)"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("HorasHombre", text.replace(/[^0-9.]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+        </View>
+        {formik.values.FechaInicio && formik.values.FechaFin ? (
+          <TouchableOpacity
+            onPress={() => {
+              const h = computeHorasFromDates(
+                formik.values.FechaInicio,
+                formik.values.FechaFin
+              );
+              if (h) formik.setFieldValue("HorasTotales", h);
+            }}
+            style={{ marginHorizontal: 10, marginBottom: 8 }}
+          >
+            <Text style={{ color: "#2A3B76", fontSize: 13, fontWeight: "600" }}>
+              Calcular horas desde fechas →{" "}
+              {computeHorasFromDates(formik.values.FechaInicio, formik.values.FechaFin) || "—"} h
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard
+        icon="people-outline"
+        title="Responsables"
+        hint="Opcional. Útil para la tabla de trabajos adicionales en reportes."
+      >
         <Input
           value={formik.values.ResponsableEmpresaUsuario}
-          label="Administrador de Contrato"
-          multiline={true}
+          label="Administrador de contrato"
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaUsuario}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaUsuario"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaUsuario")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
         <Input
           value={formik.values.ResponsableEmpresaUsuario2}
           label="Planner"
-          multiline={true}
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaUsuario}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaUsuario2"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaUsuario2")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
         <Input
           value={formik.values.ResponsableEmpresaUsuario3}
-          label="Supervisor"
-          multiline={true}
+          label="Supervisor mina"
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaUsuario}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaUsuario3"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaUsuario3")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
-
         <Input
           value={formik.values.ResponsableEmpresaContratista}
           label="Admin EECC"
-          multiline={true}
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaContratista}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaContratista"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaContratista")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
-
         <Input
           value={formik.values.ResponsableEmpresaContratista2}
           label="Planificador EECC"
-          multiline={true}
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaContratista}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaContratista2"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaContratista2")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
-
         <Input
           value={formik.values.ResponsableEmpresaContratista3}
           label="Supervisor EECC"
-          multiline={true}
           editable={false}
-          // errorMessage={formik.errors.ResponsableEmpresaContratista}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("ResponsableEmpresaContratista3"),
-          }}
+          rightIcon={pickerIcon("ResponsableEmpresaContratista3")}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
+      </SectionCard>
 
-        {Platform.OS === "web" ? (
-          <View style={{ marginHorizontal: 10 }}>
-            <Text> </Text>
-
-            <Text style={{ fontSize: 18, fontWeight: "bold", color: "gray" }}>
-              Fecha de Inicio
-            </Text>
-            <Text> </Text>
-
-            <input
-              type="datetime-local"
-              id="date"
-              name="date"
-              onChange={(event: any) => {
-                const selectedDateTimeString = event.target.value; // "YYYY-MM-DDThh:mm" format
-                const [dateStr, timeStr] = selectedDateTimeString.split("T");
-                const [year, month, day] = dateStr.split("-");
-                const [hours, minutes] = timeStr
-                  ? timeStr.split(":")
-                  : ["00", "00"];
-
-                const selectedDate = new Date(
-                  Number(year),
-                  Number(month) - 1,
-                  Number(day),
-                  Number(hours),
-                  Number(minutes)
-                ); // adding hours and minutes parameters
-
-                formik.setFieldValue("FechaInicio", selectedDate);
-              }}
-            />
-
-            {formik.errors.FechaInicio && (
-              <Text style={{ color: "red" }}>{formik.errors.FechaInicio}</Text>
-            )}
-          </View>
-        ) : (
-          <Input
-            value={formik.values.FechaInicio?.toLocaleString()}
-            label="Fecha de Inicio"
-            multiline={true}
-            editable={false}
-            errorMessage={formik.errors.FechaInicio}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => {
-                selectComponent("FechaInicio");
-              },
-            }}
-          />
-        )}
-        <Text> </Text>
-        {Platform.OS === "web" ? (
-          <View style={{ marginHorizontal: 10 }}>
-            <Text> </Text>
-
-            <Text style={{ fontSize: 18, fontWeight: "bold", color: "gray" }}>
-              Fecha de Fin
-            </Text>
-            <Text> </Text>
-            <input
-              type="datetime-local"
-              id="date"
-              name="date"
-              onChange={(event: any) => {
-                const selectedDateTimeString = event.target.value; // "YYYY-MM-DDThh:mm" format
-                const [dateStr, timeStr] = selectedDateTimeString.split("T");
-                const [year, month, day] = dateStr.split("-");
-                const [hours, minutes] = timeStr
-                  ? timeStr.split(":")
-                  : ["00", "00"];
-
-                const selectedDate = new Date(
-                  Number(year),
-                  Number(month) - 1,
-                  Number(day),
-                  Number(hours),
-                  Number(minutes)
-                ); // adding hours and minutes parameters
-
-                formik.setFieldValue("FechaFin", selectedDate);
-              }}
-            />
-            {formik.errors.FechaFin && (
-              <Text style={{ color: "red" }}>{formik.errors.FechaFin}</Text>
-            )}
-          </View>
-        ) : (
-          <Input
-            value={formik.values.FechaFin?.toLocaleString()}
-            label="Fecha de Fin"
-            multiline={true}
-            editable={false}
-            errorMessage={formik.errors.FechaFin}
-            rightIcon={{
-              testID: "right-icon-AreaServicio",
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => selectComponent("FechaFin"),
-            }}
-          />
-        )}
-        <Text> </Text>
-
-        <Text style={styles.subtitleForm}>Información del Servicio</Text>
-        <Text> </Text>
+      <SectionCard
+        icon="cash-outline"
+        title="Costos y dotación"
+        hint="Opcional. No afecta Curva S ni ruta crítica."
+      >
         <Input
           value={formik.values.NumeroCotizacion}
-          label="Numero de Cotizacion"
-          // errorMessage={formik.errors.NumeroCotizacion}
-          onChangeText={(text) => {
-            formik.setFieldValue("NumeroCotizacion", text);
-          }}
+          label="Nº cotización"
+          onChangeText={(text) => formik.setFieldValue("NumeroCotizacion", text)}
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
+        <View style={styles.row2}>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.Moneda}
+              label="Moneda"
+              editable={false}
+              rightIcon={pickerIcon("Moneda")}
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.Monto}
+              label="Monto total"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("Monto", text.replace(/[^0-9.]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row2}>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.SupervisorSeguridad}
+              label="# Sup. seguridad"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("SupervisorSeguridad", text.replace(/[^0-9]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.Supervisor}
+              label="# Supervisores"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("Supervisor", text.replace(/[^0-9]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row2}>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.Tecnicos}
+              label="# Técnicos"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("Tecnicos", text.replace(/[^0-9]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+          <View style={styles.row2Item}>
+            <Input
+              value={formik.values.Lider}
+              label="# Líder técnico"
+              keyboardType="numeric"
+              onChangeText={(text) =>
+                formik.setFieldValue("Lider", text.replace(/[^0-9]/g, ""))
+              }
+              inputContainerStyle={inputContainerStyle}
+              inputStyle={inputStyle}
+            />
+          </View>
+        </View>
+
         <Input
-          value={formik.values.Moneda}
-          label="Moneda"
-          editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("Moneda"),
-          }}
-        />
-        <Input
-          value={formik.values.Monto}
-          label="Monto Total"
+          value={formik.values.Soldador}
+          label="# Soldadores"
           keyboardType="numeric"
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9.]/g, "");
-            formik.setFieldValue("Monto", numericText);
-          }}
+          onChangeText={(text) =>
+            formik.setFieldValue("Soldador", text.replace(/[^0-9]/g, ""))
+          }
+          inputContainerStyle={inputContainerStyle}
+          inputStyle={inputStyle}
         />
-        <Input
-          value={formik.values.SupervisorSeguridad}
-          label="# Supervisor de Seguridad"
-          keyboardType="numeric"
-          // errorMessage={formik.errors.HorasHombre}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("SupervisorSeguridad", numericText);
-          }}
-        />
-        <Input
-          value={formik.values.Supervisor}
-          label="# Supervisor"
-          keyboardType="numeric"
-          // errorMessage={formik.errors.HorasHombre}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("Supervisor", numericText);
-          }}
-        />
-        <Input
-          value={formik.values.Tecnicos}
-          label="# Tecnicos"
-          keyboardType="numeric"
-          // errorMessage={formik.errors.HorasHombre}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("Tecnicos", numericText);
-          }}
-        />
-        <Input
-          value={formik.values.Tecnicos}
-          label="# Lider Tecnico"
-          keyboardType="numeric"
-          // errorMessage={formik.errors.HorasHombre}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("Lider", numericText);
-          }}
-        />
-        <Input
-          value={formik.values.Tecnicos}
-          label="# Soldador"
-          keyboardType="numeric"
-          // errorMessage={formik.errors.HorasHombre}
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("Soldador", numericText);
-          }}
-        />
-        <Input
-          value={formik.values.HorasHombre}
-          label="# Horas Hombre reales"
-          keyboardType="numeric"
-          onChangeText={(text) => {
-            const numericText = text.replace(/[^0-9]/g, "");
-            formik.setFieldValue("HorasHombre", numericText);
-          }}
-        />
-      </View>
+      </SectionCard>
 
       <Modal show={showModal} close={onCloseOpenModal}>
         {renderComponent}

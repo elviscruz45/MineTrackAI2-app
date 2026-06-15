@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from "react";
 import {
+  buildGlobalSCurveWithProjection,
+  formatAvancePercent,
+  getCompletedPlannedHours,
+  getPlannedHoursAtTime,
+  getTotalPlannedHours,
+  isActivityCompleted,
+  parseActivityDate,
+} from "@/utils/calculateAvance";
+import {
   View,
   Text,
   FlatList,
@@ -21,22 +30,7 @@ interface ProgressChartProps {
 
 // Función auxiliar para parsear fechas (Firebase Timestamps y otros formatos)
 function parseCustomDate(dateStr: any) {
-  if (!dateStr) return null;
-
-  // Si es un Timestamp de Firebase
-  if (typeof dateStr === "object" && dateStr.seconds) {
-    return new Date(dateStr.seconds * 1000);
-  }
-
-  // Si es un número (timestamp en ms)
-  if (typeof dateStr === "number") {
-    if (dateStr > 1000000000000) return new Date(dateStr);
-    return null;
-  }
-
-  // Forzar a string y usar Date.parse como fallback
-  const fallback = new Date(String(dateStr));
-  return isNaN(fallback.getTime()) ? null : fallback;
+  return parseActivityDate(dateStr);
 }
 
 const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
@@ -73,7 +67,6 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
     let todasLasActividades: any[] = [];
     let fechaInicioGlobal: Date | null = null;
     let fechaFinGlobal: Date | null = null;
-    let maxHorasReal = 0;
 
     dataArray.forEach((objeto: any) => {
       // Procesar fechas del objeto principal
@@ -112,17 +105,21 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
         }
 
         actividades.forEach((actividad: any) => {
-          // Agregar referencia al objeto padre
           actividad.objetoPadre = objeto.idServiciosAIT || objeto.id;
           todasLasActividades.push(actividad);
 
-          // Revisar fechas reales para extender el eje X
-          if (actividad.RealFechaFin && fechaInicioGlobal) {
-            const finReal = new Date(actividad.RealFechaFin);
-            const horasDesdeInicio =
-              (finReal.getTime() - fechaInicioGlobal.getTime()) / 3600000;
-            if (horasDesdeInicio > maxHorasReal) {
-              maxHorasReal = horasDesdeInicio;
+          const inicioAct = parseCustomDate(actividad.FechaInicio);
+          const finAct = parseCustomDate(actividad.FechaFin);
+
+          if (inicioAct) {
+            if (!fechaInicioGlobal || inicioAct < fechaInicioGlobal) {
+              fechaInicioGlobal = inicioAct;
+            }
+          }
+
+          if (finAct) {
+            if (!fechaFinGlobal || finAct > fechaFinGlobal) {
+              fechaFinGlobal = finAct;
             }
           }
         });
@@ -139,162 +136,34 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
         (fechaInicioGlobal as Date).getTime()) /
       3600000;
 
-    // Extender eje X si hay fechas reales mayores
-    const maxHorasEjeX = Math.max(totalHorasPlanificadas, maxHorasReal);
-
-    const steps = 15;
-
-    // 3. GENERAR EJE X DINÁMICO
-    const fechasEjeX = Array.from({ length: steps + 1 }, (_, index) => {
-      const horas = Math.round((maxHorasEjeX * index) / steps);
-      const fecha = new Date(
-        (fechaInicioGlobal as Date).getTime() + horas * 3600000
-      );
-      return (
-        fecha.toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-        }) + "\n08:00"
-      );
-    });
-
-    const axe_x_values = Array.from({ length: steps + 1 }, (_, index) => {
-      return Math.round((maxHorasEjeX * index) / steps);
-    });
-
-    // 4. CURVA S PLANIFICADA GLOBAL (alcanza 100% en totalHorasPlanificadas)
-    const axe_y1_base = [
-      0, 2, 4, 8, 15, 22, 30, 40, 55, 70, 80, 88, 93, 96, 98, 100,
-    ];
-
-    const axe_y1 = axe_x_values.map((hora) => {
-      if (hora <= totalHorasPlanificadas) {
-        const porcentajeTiempo = hora / totalHorasPlanificadas;
-        const indiceBase = porcentajeTiempo * (axe_y1_base.length - 1);
-        const indiceInferior = Math.floor(indiceBase);
-        const indiceSuperior = Math.ceil(indiceBase);
-
-        if (indiceInferior === indiceSuperior) {
-          return axe_y1_base[indiceInferior];
-        }
-
-        const factor = indiceBase - indiceInferior;
-        return Math.round(
-          axe_y1_base[indiceInferior] +
-            (axe_y1_base[indiceSuperior] - axe_y1_base[indiceInferior]) * factor
-        );
-      } else {
-        return 100; // Mantener 100% después del plan
-      }
-    });
-
-    // 5. CALCULAR PESO TOTAL DE TODAS LAS ACTIVIDADES
-    const pesoTotalActividades = todasLasActividades.reduce(
-      (acc: number, actividad: any) => {
-        const inicio = parseCustomDate(actividad.FechaInicio);
-        const fin = parseCustomDate(actividad.FechaFin);
-        if (inicio && fin) {
-          const horas = (fin.getTime() - inicio.getTime()) / 3600000;
-          return acc + horas;
-        }
-        return acc;
-      },
-      0
+    const {
+      planned: axe_y1,
+      real: axe_y2,
+      projected: axe_y3,
+      fechasEjeX,
+      horasProyeccionFin,
+      realAtNow,
+      fechaProyeccionFin,
+    } = buildGlobalSCurveWithProjection(
+      todasLasActividades,
+      fechaInicioGlobal as Date,
+      totalHorasPlanificadas
     );
-
-    // 6. CURVA REAL GLOBAL (ponderada por duración)
-    const axe_y2 = axe_x_values.map((hour) => {
-      if (pesoTotalActividades === 0) return null;
-
-      let horasCompletadas = 0;
-      let hayDatosReales = false;
-
-      todasLasActividades.forEach((actividad: any) => {
-        if (
-          !actividad.RealFechaFin ||
-          !actividad.FechaInicio ||
-          !actividad.FechaFin
-        ) {
-          return;
-        }
-
-        const finReal = new Date(actividad.RealFechaFin);
-        const horasDesdeInicio =
-          (finReal.getTime() - (fechaInicioGlobal as Date).getTime()) / 3600000;
-
-        if (horasDesdeInicio <= hour) {
-          const inicio = parseCustomDate(actividad.FechaInicio);
-          const fin = parseCustomDate(actividad.FechaFin);
-          if (inicio && fin) {
-            const horas = (fin.getTime() - inicio.getTime()) / 3600000;
-            horasCompletadas += horas;
-            hayDatosReales = true;
-          }
-        }
-      });
-
-      if (!hayDatosReales || horasCompletadas === 0) {
-        return null;
-      }
-
-      return Math.min(
-        100,
-        Math.round((horasCompletadas / pesoTotalActividades) * 100)
-      );
-    });
-
-    // 7. CURVA PROYECTADA GLOBAL
-    let ultimoIndiceReal = -1;
-    let ultimoValorReal = 0;
-    for (let i = axe_y2.length - 1; i >= 0; i--) {
-      if (axe_y2[i] !== null && axe_y2[i]! > 0) {
-        ultimoIndiceReal = i;
-        ultimoValorReal = axe_y2[i]!;
-        break;
-      }
-    }
-
-    const axe_y3 = axe_x_values.map((hora, index) => {
-      if (index <= ultimoIndiceReal) {
-        return null;
-      }
-
-      const horasRestantes =
-        axe_x_values[axe_x_values.length - 1] -
-        (ultimoIndiceReal >= 0 ? axe_x_values[ultimoIndiceReal] : 0);
-      const porcentajeRestante = 100 - ultimoValorReal;
-
-      if (horasRestantes <= 0) return 100;
-
-      const horasDesdeUltimo =
-        hora - (ultimoIndiceReal >= 0 ? axe_x_values[ultimoIndiceReal] : 0);
-      const incremento =
-        (porcentajeRestante * horasDesdeUltimo) / horasRestantes;
-
-      return Math.min(100, Math.round(ultimoValorReal + incremento));
-    });
 
     console.log("=== CURVA S GLOBAL ===");
     console.log("Total objetos procesados:", dataArray.length);
     console.log("Total actividades:", todasLasActividades.length);
-    console.log("Total actividades:", todasLasActividades);
-
     console.log("Fecha inicio global:", fechaInicioGlobal);
     console.log("Fecha fin global:", fechaFinGlobal);
     console.log("Horas planificadas:", totalHorasPlanificadas);
-    console.log("Peso total actividades:", pesoTotalActividades);
+    console.log("Horas proyección fin:", horasProyeccionFin);
+    console.log("Fecha proyección fin:", fechaProyeccionFin);
+    console.log("Avance real actual:", realAtNow);
+    console.log("Peso total actividades:", getTotalPlannedHours(todasLasActividades));
 
     return {
       type: "line",
       backgroundColor: "white",
-      title: {
-        text: "CURVA S GLOBAL - TODOS LOS PROYECTOS",
-        fontSize: 18,
-        fontColor: "#333",
-        fontWeight: "bold",
-        marginBottom: 20,
-      },
       legend: {
         align: "center",
         verticalAlign: "bottom",
@@ -325,7 +194,10 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
           fontColor: "#333",
           fontSize: 10,
           angle: -45,
+          maxChars: 16,
         },
+        maxItems: 10,
+        itemsOverlap: true,
         guide: {
           visible: true,
           lineColor: "#f0f0f0",
@@ -363,10 +235,18 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
           shadow: false,
           borderColor: "#eee",
           borderWidth: "1px",
+          headerText: "",
+          headerFontColor: "#2A3B76",
+          headerFontWeight: "bold",
+          headerFontSize: 11,
         },
         scaleLabel: {
-          backgroundColor: "#666",
+          text: "%l",
+          backgroundColor: "#2A3B76",
+          fontColor: "white",
           borderRadius: "5px",
+          padding: "4px 8px",
+          fontSize: 11,
         },
       },
       crosshairY: {
@@ -392,8 +272,8 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
       plot: {
         aspect: "spline",
         tooltip: {
-          visible: true,
-          format: "%t: %v%",
+          visible: false,
+          text: "%l<br>%t: %v%",
           backgroundColor: "rgba(0,0,0,0.8)",
           fontColor: "white",
           fontSize: 12,
@@ -428,6 +308,7 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
         {
           text: "REAL",
           values: axe_y2,
+          aspect: "line",
           lineColor: "#F44336",
           lineWidth: 3,
           marker: {
@@ -440,66 +321,140 @@ const ProgressChartWeb: React.FC<ProgressChartProps> = ({ data }) => {
             backgroundColor: "#F44336",
           },
         },
-        // {
-        //   text: "PROYECTADO",
-        //   values: axe_y3,
-        //   lineColor: "#FF9800",
-        //   lineWidth: 3,
-        //   lineStyle: "dashed",
-        //   marker: {
-        //     backgroundColor: "#FF9800",
-        //     borderColor: "#FF9800",
-        //     borderWidth: 2,
-        //     size: 6,
-        //   },
-        //   legendMarker: {
-        //     backgroundColor: "#FF9800",
-        //   },
-        // },
+        {
+          text: "PROYECTADO",
+          values: axe_y3,
+          lineColor: "#FF9800",
+          lineWidth: 2,
+          lineStyle: "dashed",
+          marker: {
+            visible: false,
+          },
+          legendMarker: {
+            backgroundColor: "#FF9800",
+          },
+        },
       ],
       plotarea: {
         backgroundColor: "white",
         margin: "60px 60px 80px 80px",
       },
+      fechaProyeccionFin,
     };
   };
+
+  // Derive quick KPIs from data
+  const allActs = (data || []).flatMap((s: any) =>
+    Array.isArray(s.activitiesData) ? s.activitiesData : []
+  );
+  const total = allActs.length;
+  const completed = allActs.filter((a: any) => isActivityCompleted(a)).length;
+  const totalHoras = getTotalPlannedHours(allActs);
+  const horasCompletadas = getCompletedPlannedHours(allActs);
+  const realPct = formatAvancePercent(horasCompletadas, totalHoras);
+
+  const projectStart = allActs.reduce<Date | null>((min, act) => {
+    const inicio = parseCustomDate(act.FechaInicio);
+    if (!inicio) return min;
+    return !min || inicio < min ? inicio : min;
+  }, null);
+
+  const horasActuales = projectStart
+    ? Math.max(0, (Date.now() - projectStart.getTime()) / 3600000)
+    : 0;
+
+  const progPct = projectStart
+    ? formatAvancePercent(
+        getPlannedHoursAtTime(allActs, projectStart, horasActuales),
+        totalHoras
+      )
+    : 0;
+  const totalServices = (data || []).length;
 
   // Generar configuración del gráfico global
   const globalChartConfig = generateGlobalCurvaSChartConfig(data || []);
   if (!isClient) {
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "400px",
-          marginTop: "15px",
-          marginBottom: "15px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <p>Loading chart...</p>
+      <div style={{ width: "100%", height: "400px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <p style={{ color: "#999", fontSize: 14 }}>Cargando gráfico...</p>
       </div>
     );
   }
 
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: "400px",
-        marginTop: "15px",
-        marginBottom: "15px",
-      }}
-    >
-      <Text style={modernStyles.chartTitle}>CURVA S GLOBAL</Text>
+  const pKpis = [
+    { label: "Servicios Activos", value: `${totalServices}`, icon: "📋", color: "#2A3B76", sub: "En seguimiento" },
+    { label: "Actividades Gantt", value: `${total}`, icon: "📅", color: "#1976d2", sub: "Total registradas" },
+    { label: "Avance Programado", value: `${progPct}%`, icon: "📈", color: "#00acc1", sub: "Según Gantt" },
+    { label: "Avance Real", value: `${realPct}%`, icon: "✅", color: realPct >= progPct ? "#198754" : "#e53935", sub: realPct >= progPct ? "Adelantado ▲" : `Δ ${progPct - realPct}% rezago` },
+    { label: "Con Fecha Real", value: `${completed}`, icon: "🔍", color: "#f9a825", sub: `De ${total} actividades` },
+  ];
 
-      {ZingChartComponent && globalChartConfig ? (
-        <ZingChartComponent data={globalChartConfig} />
-      ) : (
-        <div>Loading chart data...</div>
-      )}
+  return (
+    <div style={{ background: "#f0f4f8", minHeight: "100%", paddingBottom: 24 }}>
+      <style>{`
+        .pc-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px 16px 0; margin-bottom: 16px; }
+        @media (min-width: 700px) { .pc-kpi-grid { grid-template-columns: repeat(5, 1fr); } }
+      `}</style>
+
+      {/* ── PAGE HEADER ──────────────────────────────────────────────── */}
+      <div style={{ background: "linear-gradient(135deg, #2A3B76 0%, #1565c0 100%)", padding: "20px 20px 24px" }}>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "white" }}>📈 &nbsp;Proyección — Curva S Global</h2>
+        <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+          Avance programado vs. real · Todos los proyectos activos · {new Date().toLocaleDateString("es-ES")}
+        </p>
+      </div>
+
+      {/* ── KPI STRIP ───────────────────────────────────────────────── */}
+      <div className="pc-kpi-grid">
+        {pKpis.map((k, i) => (
+          <div key={i} style={{ background: "white", borderRadius: 10, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
+            <div style={{ background: k.color, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{k.icon}</div>
+              <span style={{ color: "white", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, lineHeight: 1.2 }}>{k.label}</span>
+            </div>
+            <div style={{ padding: "8px 12px" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#1a1a2e" }}>{k.value}</div>
+              <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>{k.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── CHART CARD ──────────────────────────────────────────────── */}
+      <div style={{ padding: "0 16px" }}>
+        <div style={{ background: "white", borderRadius: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+          <div style={{ borderBottom: "1px solid #e9ecef", padding: "14px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 4, height: 26, borderRadius: 2, background: "linear-gradient(180deg, #1976d2, #2A3B76)", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>Curva S Global</div>
+              <div style={{ fontSize: 11, color: "#6c757d", marginTop: 1 }}>
+                Avance programado vs. real — proyección de fin estimado
+                {globalChartConfig?.fechaProyeccionFin
+                  ? ` · Fin proyectado: ${globalChartConfig.fechaProyeccionFin.toLocaleDateString("es-ES")}`
+                  : ""}
+              </div>
+            </div>
+          </div>
+          <div style={{ width: "100%", height: "380px" }}>
+          {ZingChartComponent && globalChartConfig ? (
+          <ZingChartComponent data={globalChartConfig} />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+              color: "#999",
+              fontSize: 14,
+            }}
+          >
+            Cargando gráfico...
+          </div>
+        )}
+          </div>{/* /chart inner */}
+        </div>{/* /chart card */}
+      </div>{/* /padding */}
     </div>
   );
 };
