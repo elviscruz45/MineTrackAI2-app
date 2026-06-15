@@ -14,6 +14,7 @@ import { Image as ImageExpo } from "expo-image";
 import { connect } from "react-redux";
 import { EquipmentListUpper } from "../../../redux/actions/home";
 import { areaLists } from "../../../utils/areaList";
+import { sortByCodigo } from "../../../utils/sortByCodigo";
 import { useRouter } from "expo-router";
 
 const windowWidth = Dimensions.get("window").width;
@@ -53,9 +54,7 @@ function SearchAssetRaw(props: any) {
   useEffect(() => {
     AITServiceList = props.servicesData;
     if (Array.isArray(AITServiceList)) {
-      let AITServiceListSorted = AITServiceList.sort((a, b) => {
-        return b.createdAt - a.createdAt;
-      });
+      const AITServiceListSorted = sortByCodigo(AITServiceList);
       setData(AITServiceListSorted);
       setSearchResults(AITServiceListSorted);
     }
@@ -69,6 +68,7 @@ function SearchAssetRaw(props: any) {
         const re = new RegExp(searchText, "ig");
         return (
           re.test(item.NombreServicio) ||
+          re.test(item.Codigo) ||
           re.test(item.NumeroAIT) ||
           re.test(item.NumeroCotizacion) ||
           re.test(item.TipoServicio) ||
@@ -156,7 +156,7 @@ function SearchAssetRaw(props: any) {
           );
           const imageSource =
             areaLists[indexareaList]?.image ||
-            require("../../../assets/equipmentplant/logoMetso4.png");
+            require("../../../assets/equipmentplant/poderosa.png");
 
           // require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
           // the algorithm to retrieve the amount with format
@@ -194,25 +194,37 @@ function SearchAssetRaw(props: any) {
                 </View>
 
                 <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>
+                  <View style={styles.cardHeader}>
+                    {item.Codigo ? (
+                      <View style={styles.codeBadge}>
+                        <Text style={styles.codeBadgeText}>{item.Codigo}</Text>
+                      </View>
+                    ) : null}
+                    {item.TipoServicio ? (
+                      <Text style={styles.tipoChip} numberOfLines={1}>
+                        {item.TipoServicio}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.cardTitle} numberOfLines={2}>
                     {item.NombreServicio}
                   </Text>
 
                   <View style={styles.cardInfo}>
-                    <Text style={styles.infoText} numberOfLines={1}>
-                      <Text style={styles.infoLabel}>Código: </Text>
-                      <Text style={styles.infoValue}>{item.NumeroAIT}</Text>
-                    </Text>
+                    {item.EmpresaMinera ? (
+                      <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={styles.infoLabel}>Minera: </Text>
+                        <Text style={styles.infoValue}>{item.EmpresaMinera}</Text>
+                      </Text>
+                    ) : null}
 
-                    <Text style={styles.infoText} numberOfLines={1}>
-                      <Text style={styles.infoLabel}>Tipo: </Text>
-                      <Text style={styles.infoValue}>{item.TipoServicio}</Text>
-                    </Text>
-
-                    <Text style={styles.infoText} numberOfLines={1}>
-                      <Text style={styles.infoLabel}>Minera: </Text>
-                      <Text style={styles.infoValue}>{item.EmpresaMinera}</Text>
-                    </Text>
+                    {item.NumeroAIT ? (
+                      <Text style={styles.infoText} numberOfLines={1}>
+                        <Text style={styles.infoLabel}>OC: </Text>
+                        <Text style={styles.infoValue}>{item.NumeroAIT}</Text>
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
               </View>

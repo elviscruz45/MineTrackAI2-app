@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Platform,
   Dimensions,
+  Modal,
 } from "react-native";
 import { Icon, SearchBar } from "@rneui/themed";
 import React, { useEffect, useState } from "react";
@@ -46,6 +47,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import * as XLSX from "xlsx";
+import { sortByCodigo } from "../../../utils/sortByCodigo";
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -91,6 +93,7 @@ function PublishRaw(props: any) {
   const [flatlistData, setFlatlistData] = useState(false);
   const [idServiciosAIT, setIdServiciosAIT] = useState("");
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
 
   const router = useRouter();
 
@@ -127,10 +130,8 @@ function PublishRaw(props: any) {
   useEffect(() => {
     let servicesList = props.servicesData;
     if (Array.isArray(servicesList)) {
-      servicesList.sort((a, b) => {
-        return b.createdAt - a.createdAt;
-      });
-      setPosts(servicesList);
+      const servicesListSorted = sortByCodigo(servicesList);
+      setPosts(servicesListSorted);
     }
   }, [props.servicesData]);
 
@@ -143,6 +144,7 @@ function PublishRaw(props: any) {
       const result = posts?.filter((item: any) => {
         const re = new RegExp(searchText, "ig");
         return (
+          re.test(item.Codigo) ||
           re.test(item.NumeroAIT) ||
           re.test(item.NombreServicio) ||
           re.test(item.companyName) ||
@@ -246,7 +248,7 @@ function PublishRaw(props: any) {
     const imageSource =
       areaLists[indexareaList]?.image ||
       // require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
-      require("../../../assets/equipmentplant/logoMetso4.png");
+      require("../../../assets/equipmentplant/poderosa.png");
     const imageUpdated = AIT.photoServiceURL;
     if (imageUpdated) {
       setEquipment({ uri: imageUpdated });
@@ -255,6 +257,7 @@ function PublishRaw(props: any) {
     }
     setAIT(AIT);
     props.saveActualServiceAIT(AIT);
+    setShowActionModal(true);
   };
 
   if (isLoading) {
@@ -406,6 +409,214 @@ function PublishRaw(props: any) {
           </View>
         )}
 
+        {/* ===== MODAL ACCIÓN: Cámara o Carrete ===== */}
+        <Modal
+          visible={showActionModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowActionModal(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowActionModal(false)}
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              justifyContent: "flex-end",
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {}}
+              style={{
+                backgroundColor: "#ffffff",
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                paddingHorizontal: 24,
+                paddingTop: 16,
+                paddingBottom: 36,
+              }}
+            >
+              {/* Handle bar */}
+              <View
+                style={{
+                  width: 40,
+                  height: 4,
+                  backgroundColor: "#dde1e8",
+                  borderRadius: 2,
+                  alignSelf: "center",
+                  marginBottom: 18,
+                }}
+              />
+
+              {/* Servicio info */}
+              <View style={{ alignItems: "center", marginBottom: 20 }}>
+                <ImageExpo
+                  source={equipment ?? emptyimage}
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    borderWidth: 2,
+                    borderColor: "#e9ecef",
+                  }}
+                  cachePolicy={"memory-disk"}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontWeight: "700",
+                    fontSize: 16,
+                    color: "#2A3B76",
+                    marginTop: 10,
+                    maxWidth: 280,
+                    textAlign: "center",
+                  }}
+                >
+                  {AIT?.NombreServicio}
+                </Text>
+                {AIT?.Codigo ? (
+                  <View
+                    style={{
+                      backgroundColor: "#2A3B76",
+                      borderRadius: 4,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      marginTop: 8,
+                    }}
+                  >
+                    <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "700" }}>
+                      {AIT.Codigo}
+                    </Text>
+                  </View>
+                ) : AIT?.NumeroAIT ? (
+                  <Text
+                    style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}
+                  >
+                    OC: {AIT.NumeroAIT}
+                  </Text>
+                ) : null}
+              </View>
+
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#64748b",
+                  fontSize: 13,
+                  marginBottom: 18,
+                }}
+              >
+                ¿Cómo quieres adjuntar la foto?
+              </Text>
+
+              {/* Opción: Carrete */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowActionModal(false);
+                  pickImage(AIT?.TipoServicio);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#f0f4f8",
+                  borderRadius: 14,
+                  padding: 16,
+                  marginBottom: 12,
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: "#e3eeff",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Image
+                    source={require("../../../assets/pictures/AddImage.png")}
+                    style={{ width: 30, height: 30 }}
+                  />
+                </View>
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      fontSize: 15,
+                      color: "#1e293b",
+                    }}
+                  >
+                    Carrete / Galería
+                  </Text>
+                  <Text style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>
+                    Buscar foto en tu dispositivo
+                  </Text>
+                </View>
+                <Text style={{ color: "#c0cad8", fontSize: 20 }}>›</Text>
+              </TouchableOpacity>
+
+              {/* Opción: Cámara */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowActionModal(false);
+                  camera(AIT?.TipoServicio);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#f0f4f8",
+                  borderRadius: 14,
+                  padding: 16,
+                  marginBottom: 20,
+                }}
+                activeOpacity={0.75}
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: "#e0f7e9",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Image
+                    source={require("../../../assets/pictures/TakePhoto2.png")}
+                    style={{ width: 30, height: 30 }}
+                  />
+                </View>
+                <View style={{ marginLeft: 14, flex: 1 }}>
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      fontSize: 15,
+                      color: "#1e293b",
+                    }}
+                  >
+                    Cámara
+                  </Text>
+                  <Text style={{ color: "#94a3b8", fontSize: 12, marginTop: 2 }}>
+                    Tomar una nueva foto
+                  </Text>
+                </View>
+                <Text style={{ color: "#c0cad8", fontSize: 20 }}>›</Text>
+              </TouchableOpacity>
+
+              {/* Cancelar */}
+              <TouchableOpacity
+                onPress={() => setShowActionModal(false)}
+                style={{ alignItems: "center", paddingVertical: 8 }}
+                activeOpacity={0.6}
+              >
+                <Text style={{ color: "#94a3b8", fontSize: 14 }}>Cancelar</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+
         <FlatList
           data={searchResults}
           key={numColumns}
@@ -420,7 +631,7 @@ function PublishRaw(props: any) {
             );
             const imageSource =
               areaLists[indexareaList]?.image ||
-              require("../../../assets/equipmentplant/logoMetso4.png");
+              require("../../../assets/equipmentplant/poderosa.png");
 
             return (
               <TouchableOpacity
@@ -440,7 +651,7 @@ function PublishRaw(props: any) {
                       <ImageExpo
                         source={
                           imageSource ||
-                          require("../../../assets/equipmentplant/logoMetso4.png")
+                          require("../../../assets/equipmentplant/poderosa.png")
                         }
                         style={styles.cardImage}
                         cachePolicy={"memory-disk"}
@@ -449,29 +660,37 @@ function PublishRaw(props: any) {
                   </View>
 
                   <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
+                    <View style={styles.cardHeader}>
+                      {item.Codigo ? (
+                        <View style={styles.codeBadge}>
+                          <Text style={styles.codeBadgeText}>{item.Codigo}</Text>
+                        </View>
+                      ) : null}
+                      {item.TipoServicio ? (
+                        <Text style={styles.tipoChip} numberOfLines={1}>
+                          {item.TipoServicio}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    <Text style={styles.cardTitle} numberOfLines={2}>
                       {item.NombreServicio}
                     </Text>
 
                     <View style={styles.cardInfo}>
-                      <Text style={styles.infoText} numberOfLines={1}>
-                        <Text style={styles.infoLabel}>Código: </Text>
-                        <Text style={styles.infoValue}>{item.NumeroAIT}</Text>
-                      </Text>
-
-                      <Text style={styles.infoText} numberOfLines={1}>
-                        <Text style={styles.infoLabel}>Tipo: </Text>
-                        <Text style={styles.infoValue}>
-                          {item.TipoServicio}
+                      {item.EmpresaMinera ? (
+                        <Text style={styles.infoText} numberOfLines={1}>
+                          <Text style={styles.infoLabel}>Minera: </Text>
+                          <Text style={styles.infoValue}>{item.EmpresaMinera}</Text>
                         </Text>
-                      </Text>
+                      ) : null}
 
-                      <Text style={styles.infoText} numberOfLines={1}>
-                        <Text style={styles.infoLabel}>Minera: </Text>
-                        <Text style={styles.infoValue}>
-                          {item.EmpresaMinera}
+                      {item.NumeroAIT ? (
+                        <Text style={styles.infoText} numberOfLines={1}>
+                          <Text style={styles.infoLabel}>OC: </Text>
+                          <Text style={styles.infoValue}>{item.NumeroAIT}</Text>
                         </Text>
-                      </Text>
+                      ) : null}
                     </View>
                   </View>
                 </View>

@@ -294,6 +294,31 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  codeBadge: {
+    backgroundColor: "#2A3B76",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexShrink: 0,
+  },
+  codeBadgeText: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  tipoChip: {
+    flex: 1,
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#64748b",
   },
   cardTitle: {
     fontSize: 14,
@@ -303,7 +328,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   cardInfo: {
-    gap: 4,
+    gap: 3,
   },
   infoText: {
     fontSize: 11,

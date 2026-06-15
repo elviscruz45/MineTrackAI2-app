@@ -41,6 +41,8 @@ import OnePageView from "./webcomponents/OnePageView";
 import CriticalRouteView from "./webcomponents/CriticalRouteView";
 import SafetyView from "./webcomponents/SafetyView";
 import EnvironmentView from "./webcomponents/EnvironmentView";
+import GerenciaDashboard from "./webcomponents/GerenciaDashboard";
+import { sortByCodigo } from "../../../utils/sortByCodigo";
 
 // Mock data for projects
 const AVAILABLE_PROJECTS = [
@@ -69,7 +71,7 @@ function ReportnoRedux(props: any) {
   const userType = props.profile?.userType;
 
   //real time updates
-  const [data, setData] = useState();
+  const [data, setData] = useState<any[] | undefined>();
 
   //states to view the tables
   const [serviciosActivos, setServiciosActivos] = useState(false);
@@ -98,7 +100,11 @@ function ReportnoRedux(props: any) {
   }, []);
 
   useEffect(() => {
-    setData(props.servicesData);
+    if (Array.isArray(props.servicesData)) {
+      setData(sortByCodigo(props.servicesData));
+    } else {
+      setData(props.servicesData);
+    }
   }, [props.servicesData, company]);
 
   console.log("Data in Report Screenn:", data);
@@ -127,78 +133,39 @@ function ReportnoRedux(props: any) {
     );
   } else {
     return (
-      <div style={{ ...styles.AndroidSafeArea }}>
+      <div style={{ ...styles.AndroidSafeArea, fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
         <ReportHeader />
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
 
         <div
           style={{
-            backgroundColor: "white",
+            backgroundColor: "#f0f4f8",
             overflowY: "auto",
-            height:
-              "calc(100vh - 170px)" /* Adjusted for the new project selector bar */,
-            padding: "0 24px",
+            height: "calc(100vh - 120px)",
+            padding: "0",
           }}
         >
           {/* Special layout for OnePage Mantención */}
           {activeTab === "OnePage Mantención" ? (
             <OnePageView selectedProject={selectedProject} />
           ) : (
-            <div style={{ width: "100%" }}>
-              <div
-                style={{
-                  marginTop: 32,
-                  backgroundColor: "#f8f9fa",
-                  padding: 20,
-                  borderRadius: 8,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                  width: "100%",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 16,
-                  }}
-                >
-                  {/* <h4
-                    style={{
-                      margin: 0,
-                      fontSize: 18,
-                      color: "#2A3B76",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Curva S de Avance General
-                  </h4> */}
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 12,
-                    }}
-                  ></div>
-                </div>
-
-                {/* Show content based on active tab */}
-                {activeTab === "Proyeccion" ? (
+            <div style={{ width: "100%", padding: "0 16px 32px" }}>
+              {/* Show content based on active tab */}
+              {activeTab === "Proyeccion" ? (
                   <AvanceProgressChart data={data} />
                 ) : activeTab === "Actividades" ? (
                   <ActivityView data={data} />
-                ) : // ) : activeTab === "OnePage Mantención" ? (
-                //   <OnePageView selectedProject={selectedProject} />
-                activeTab === "Ruta Critica" ? (
+                ) : activeTab === "Ruta Critica" ? (
                   <CriticalRouteView data={data} />
                 ) : activeTab === "Seguridad" ? (
                   <SafetyView selectedProject={selectedProject} />
                 ) : activeTab === "Medio Ambiente" ? (
                   <EnvironmentView selectedProject={selectedProject} />
+                ) : activeTab === "Gerencia" ? (
+                  <GerenciaDashboard data={data} />
                 ) : (
                   <AvanceProgressChart data={data} />
                 )}
-              </div>
             </div>
           )}
         </div>

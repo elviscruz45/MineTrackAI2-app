@@ -5,23 +5,21 @@ import {
   query,
   onSnapshot,
   where,
-  limit,
 } from "firebase/firestore";
-import styles from "./HeaderScreen.styles";
 import { connect } from "react-redux";
 import { db } from "@/firebaseConfig";
 import { areaLists } from "@/utils/areaList";
-import CircularProgress from "./CircularProgress";
+import { Image as ImageExpo } from "expo-image";
 import { saveActualAITServicesFirebaseGlobalState } from "@/redux/actions/post";
 import { updateAITServicesDATA } from "@/redux/actions/home";
 import { saveApprovalListnew } from "@/redux/actions/search";
-import { mineraCorreosList } from "@/utils/MineraList";
 import { useRouter } from "expo-router";
+import { sortByCodigo } from "@/utils/sortByCodigo";
 
 function HeaderScreenNoRedux(props: any) {
   const router = useRouter();
 
-  const [data, setData] = useState();
+  const [data, setData] = useState<any[] | undefined>();
 
   console.log("header screen data ", data);
   //Data about the company belong this event
@@ -47,12 +45,10 @@ function HeaderScreenNoRedux(props: any) {
             lista.push(doc.data());
           });
 
-          lista.sort((a: any, b: any) => {
-            return b.LastEventPosted - a.LastEventPosted;
-          });
+          const listaOrdenada = sortByCodigo(lista);
 
-          setData(lista);
-          props.updateAITServicesDATA(lista);
+          setData(listaOrdenada);
+          props.updateAITServicesDATA(listaOrdenada);
         });
       }
       props.idproyecto && fetchData();
@@ -67,73 +63,147 @@ function HeaderScreenNoRedux(props: any) {
   const selectAsset = async (item: any) => {
     await router.push({
       pathname: "/search",
-      params: {
-        Item: item,
-      },
+      params: { Item: item },
     });
-
     setTimeout(() => {
       router.push({
         pathname: "/search/Item",
-        params: {
-          Item: item,
-        },
+        params: { Item: item },
       });
     }, 50);
   };
 
-  // create an algorithm to reduce the total text of the service description
-  const ShortTextComponent = (item: any) => {
-    const longText = item;
-    const maxLength = 20; // Maximum length of the short text
-    let shortText = longText;
-    if (longText.length > maxLength) {
-      shortText = `${longText.substring(0, maxLength)}...`;
-    }
-
-    return <Text style={styles.Texticons}>{shortText}</Text>;
+  const getProgressColor = (avance: number) => {
+    if (avance >= 80) return "#22c55e";
+    if (avance >= 40) return "#f59e0b";
+    return "#ef4444";
   };
 
   return (
     <FlatList
-      style={[
-        {
-          backgroundColor: "white",
-          paddingTop: 10,
-          paddingVertical: 10,
-        },
-        // styles.AndroidSafeArea,
-      ]}
-      horizontal={true}
+      style={{
+        backgroundColor: "white",
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#f0f0f0",
+      }}
+      contentContainerStyle={{ paddingHorizontal: 12, gap: 8 }}
+      horizontal
       showsHorizontalScrollIndicator={false}
       data={data}
-      renderItem={({ item }) => {
-        //the algoritm to retrieve the image source to render the icon
+      renderItem={({ item, index }) => {
         const area = item.AreaServicio;
-        const indexareaList = areaLists.findIndex(
-          (item) => item.value === area
-        );
+        const indexareaList = areaLists.findIndex((a) => a.value === area);
         const imageSource =
           areaLists[indexareaList]?.image ||
-          require("../../../../../assets/equipmentplant/logoMetso4.png");
+          require("../../../../../assets/equipmentplant/poderosa.png");
+        const avance = Math.min(100, Math.max(0, parseInt(item.AvanceEjecucion) || 0));
+        const progressColor = getProgressColor(avance);
+        const name = (item.NombreServicio || "").trimStart();
 
-        // require("../../../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
         return (
-          <TouchableOpacity onPress={() => selectAsset(item.idServiciosAIT)}>
-            <View style={styles.textImage}>
-              <CircularProgress
-                imageSource={imageSource}
-                imageStyle={styles.roundImage5}
-                avance={item.AvanceEjecucion}
-                image={item.photoServiceURL}
+          <TouchableOpacity
+            onPress={() => selectAsset(item.idServiciosAIT)}
+            activeOpacity={0.75}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#ffffff",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "#e8eaf0",
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                width: 170,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.07,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              {/* Avatar */}
+              <ImageExpo
+                source={item.photoServiceURL ? { uri: item.photoServiceURL } : imageSource}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  borderWidth: 2,
+                  borderColor: progressColor,
+                  flexShrink: 0,
+                }}
+                cachePolicy="memory-disk"
               />
 
-              {ShortTextComponent(item.NombreServicio)}
+              {/* Text + progress */}
+              <View style={{ flex: 1, marginLeft: 8, overflow: "hidden" }}>
+                {/* Sequential index badge */}
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
+                  <View
+                    style={{
+                      backgroundColor: "#2A3B76",
+                      borderRadius: 4,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
+                      marginRight: 4,
+                    }}
+                  >
+                    <Text style={{ color: "white", fontSize: 9, fontWeight: "700" }}>
+                      {item.Codigo}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 9,
+                      color: progressColor,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {avance}%
+                  </Text>
+                </View>
+
+                {/* Service name — 2 lines */}
+                <Text
+                  numberOfLines={2}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "600",
+                    color: "#1e293b",
+                    lineHeight: 14,
+                    marginBottom: 6,
+                  }}
+                >
+                  {name}
+                </Text>
+
+                {/* Progress bar */}
+                <View
+                  style={{
+                    height: 4,
+                    backgroundColor: "#f1f5f9",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: 4,
+                      width: `${avance}%`,
+                      backgroundColor: progressColor,
+                      borderRadius: 2,
+                    }}
+                  />
+                </View>
+              </View>
             </View>
           </TouchableOpacity>
         );
       }}
-      keyExtractor={(item, index) => `${index}-${item.fechaPostISO}`}
+      keyExtractor={(item) => item.idServiciosAIT || item.Codigo}
     />
   );
 }
