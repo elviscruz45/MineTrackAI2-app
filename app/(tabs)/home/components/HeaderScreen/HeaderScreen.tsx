@@ -15,6 +15,10 @@ import { updateAITServicesDATA } from "@/redux/actions/home";
 import { saveApprovalListnew } from "@/redux/actions/search";
 import { useRouter } from "expo-router";
 import { sortByCodigo } from "@/utils/sortByCodigo";
+import { calculateAvanceFromActivities } from "@/utils/calculateAvance";
+
+const isRutaCritica = (value: any): boolean =>
+  value === true || String(value || "").trim().toLowerCase() === "si";
 
 function HeaderScreenNoRedux(props: any) {
   const router = useRouter();
@@ -97,9 +101,14 @@ function HeaderScreenNoRedux(props: any) {
         const imageSource =
           areaLists[indexareaList]?.image ||
           require("../../../../../assets/equipmentplant/poderosa.png");
-        const avance = Math.min(100, Math.max(0, parseInt(item.AvanceEjecucion) || 0));
+        const avance = calculateAvanceFromActivities(
+          item.activitiesData,
+          item.AvanceEjecucion
+        );
+        
         const progressColor = getProgressColor(avance);
         const name = (item.NombreServicio || "").trimStart();
+        const esRutaCriticaItem = isRutaCritica(item.esRutaCritica);
 
         return (
           <TouchableOpacity
@@ -110,10 +119,12 @@ function HeaderScreenNoRedux(props: any) {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "#ffffff",
+                backgroundColor: esRutaCriticaItem ? "#fff5f5" : "#ffffff",
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: "#e8eaf0",
+                borderColor: esRutaCriticaItem ? "#ffcdd2" : "#e8eaf0",
+                borderLeftWidth: esRutaCriticaItem ? 3 : 1,
+                borderLeftColor: esRutaCriticaItem ? "#c62828" : "#e8eaf0",
                 paddingHorizontal: 10,
                 paddingVertical: 8,
                 width: 170,
@@ -164,6 +175,26 @@ function HeaderScreenNoRedux(props: any) {
                   >
                     {avance}%
                   </Text>
+                  <View
+                    style={{
+                      backgroundColor: esRutaCriticaItem ? "#c62828" : "#e2e8f0",
+                      borderRadius: 3,
+                      paddingHorizontal: 4,
+                      paddingVertical: 1,
+                      marginLeft: 4,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: esRutaCriticaItem ? "#ffffff" : "#64748b",
+                        fontSize: 7,
+                        fontWeight: "700",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {esRutaCriticaItem ? "Crítica" : "Estándar"}
+                    </Text>
+                  </View>
                 </View>
 
                 {/* Service name — 2 lines */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { calculateAvanceFromMappedTasks } from "@/utils/calculateAvance";
 
 // Define types for our mock data
 interface Task {
@@ -39,6 +40,8 @@ interface Section {
   title: string;
   type: string;
   isOpen: boolean;
+  progressPercent: number;
+  esRutaCritica: boolean;
   tasks: Task[]; // Changed from activities to tasks directly
 }
 
@@ -47,6 +50,15 @@ interface ActivityData {
   equipoLabel: string;
   sections: Section[];
 }
+
+const getProgressColor = (percent: number) => {
+  if (percent >= 80) return "#28a745";
+  if (percent > 0) return "#ffc107";
+  return "#dc3545";
+};
+
+const isRutaCritica = (value: any): boolean =>
+  value === true || String(value || "").trim().toLowerCase() === "si";
 
 const sortByCodigo = (arr: any[], key: string = "Codigo") => {
   return arr.sort((a, b) => {
@@ -73,6 +85,8 @@ const mockActivitiesData: ActivityData = {
         "PM Alimentador Pebbles 3M - PM chute de descarga hacia la chancadora (FEB022 - FEB021 - STP038 - STP039)",
       type: "Actividad",
       isOpen: true,
+      progressPercent: 100,
+      esRutaCritica: false,
       tasks: [
         {
           id: "1.1.1.1.1",
@@ -137,53 +151,89 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
   const [sections, setSections] = useState(
     mockActivitiesData.sections.map((section: any) => ({
       ...section,
-      isOpen: section.id === "1.1.1.1", // Only section 1.1 is open by default
+      isOpen: section.id === "1.1.1.1",
     }))
   );
+  // Trabajos adicionales (created via AIT form — not part of original Gantt plan)
+  const [aitServices, setAitServices] = useState<any[]>([]);
+  const [aitOpen, setAitOpen] = useState(true);
 
-  console.log("sections sections:", sections);
-  // console.log("sections sections:", JSON.stringify(sections[0]));
+  // KPI counters derived from sections + aitServices
+  const [kpis, setKpis] = useState({ noEjecutadas: 0, adicionales: 0, hhAdicionales: 0 });
 
   // Update sections when data prop changes
   useEffect(() => {
-    setSections(
-      sortByCodigo(data).map((section: any, idx: number) => ({
+    if (!data || !Array.isArray(data)) return;
+
+    // Split: Gantt plan vs. manually added services (AIT)
+    const ganttData = data.filter((s: any) => s.isGlobalProject === true);
+    const aitData   = data.filter((s: any) => s.isGlobalProject !== true);
+
+    const mappedSections = sortByCodigo(ganttData).map((section: any, idx: number) => {
+      const tasks = (Array.isArray(section.activitiesData)
+        ? section.activitiesData
+        : []
+      ).map((act: any, i: number) => ({
+        id: act.Codigo || act.id || `task-${i + 1}`,
+        wbs: act.Codigo || "",
+        tag: act.TagEquipo || "—",
+        status:
+          act.avance === "100%" || act.RealFechaFin
+            ? "Completada"
+            : act.RealFechaInicio
+            ? "En Progreso"
+            : "Pendiente",
+        company: act.EmpresaMinera || "",
+        task: act.NombreServicio || "",
+        hours: act.HorasTotales ?? 0,
+        workHours: act.HorasTotales ?? 0,
+        startDateProg: toDateTimeObj(act.FechaInicio),
+        endDateProg: toDateTimeObj(act.FechaFin),
+        startDateReal: toDateTimeObj(act.RealFechaInicio),
+        endDateReal: toDateTimeObj(act.RealFechaFin),
+        deltaWork: { hours: 0, percent: "0%" },
+        deltaStart: { hours: 0, percent: "0%" },
+        duration: {},
+        avance:
+          act.avance ||
+          (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
+        expected: "100%",
+        actions: ["edit", "notes", "photos", "delete"],
+        esRutaCritica: isRutaCritica(act.esRutaCritica),
+      }));
+
+      return {
         id: section.Codigo || section.id || `section-${idx + 1}`,
         title: section.NombreServicio || "",
         type: section.TipoServicio || "Actividad",
         isOpen: idx === 0,
-        tasks: (Array.isArray(section.activitiesData)
-          ? section.activitiesData
-          : []
-        ).map((act: any, i: number) => ({
-          id: act.Codigo || act.id || `task-${i + 1}`,
-          wbs: act.Codigo || "",
-          tag: "SECCION",
-          status:
-            act.avance === "100%" || act.RealFechaFin
-              ? "Completada"
-              : act.RealFechaInicio
-              ? "En Progreso"
-              : "Pendiente",
-          company: act.EmpresaMinera || "",
-          task: act.NombreServicio || "",
-          hours: act.HorasTotales || 1,
-          workHours: act.HorasTotales || 1,
-          startDateProg: toDateTimeObj(act.FechaInicio),
-          endDateProg: toDateTimeObj(act.FechaFin),
-          startDateReal: toDateTimeObj(act.RealFechaInicio),
-          endDateReal: toDateTimeObj(act.RealFechaFin),
-          deltaWork: { hours: 0, percent: "0%" },
-          deltaStart: { hours: 0, percent: "0%" },
-          duration: {},
-          avance:
-            act.avance ||
-            (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
-          expected: "100%",
-          actions: ["edit", "notes", "photos", "delete"],
-        })),
-      }))
-    );
+        progressPercent: calculateAvanceFromMappedTasks(tasks),
+        esRutaCritica: isRutaCritica(section.esRutaCritica),
+        tasks,
+      };
+    });
+
+    setSections(mappedSections);
+    setAitServices(aitData);
+
+    // Compute KPIs
+    const now = new Date();
+    let noEjecutadas = 0;
+    for (const sec of mappedSections) {
+      for (const t of sec.tasks) {
+        const endDate = t.endDateProg?.date;
+        if (endDate && endDate !== "" && t.avance === "0%") {
+          const [d, m, y] = endDate.split("/").map(Number);
+          const end = new Date(2000 + y, m - 1, d);
+          if (end < now) noEjecutadas++;
+        }
+      }
+    }
+    const hhAdicionales = aitData.reduce((acc: number, s: any) => {
+      const hh = parseFloat(s.HorasTotales) || 0;
+      return acc + hh;
+    }, 0);
+    setKpis({ noEjecutadas, adicionales: aitData.length, hhAdicionales });
   }, [data]);
 
   // Function to check if a date is in the past
@@ -245,14 +295,83 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
 
   return (
     <div style={{ padding: "8px 0" }}>
-      {/* Title */}
 
-      {/* Filter buttons */}
+      {/* ── KPI SUMMARY BAR ──────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        {[
+          {
+            label: "Trabajos Adicionales",
+            value: kpis.adicionales,
+            sub: "Fuera del plan Gantt",
+            color: "#e6a817",
+            icon: "➕",
+          },
+          {
+            label: "Actividades No Ejecutadas",
+            value: kpis.noEjecutadas,
+            sub: "Del plan original vencidas",
+            color: "#dc3545",
+            icon: "⛔",
+          },
+          {
+            label: "HH Adicionales",
+            value: `${Math.round(kpis.hhAdicionales)}h`,
+            sub: "Horas fuera de alcance",
+            color: "#1976d2",
+            icon: "⏱️",
+          },
+        ].map((k, i) => (
+          <div
+            key={i}
+            style={{
+              background: "white",
+              borderRadius: 10,
+              overflow: "hidden",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              flex: "1 1 180px",
+              minWidth: 160,
+            }}
+          >
+            <div
+              style={{
+                background: k.color,
+                padding: "8px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{k.icon}</span>
+              <span
+                style={{
+                  color: "white",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {k.label}
+              </span>
+            </div>
+            <div style={{ padding: "10px 14px" }}>
+              <div
+                style={{ fontSize: 28, fontWeight: 800, color: "#1a1a2e", lineHeight: 1 }}
+              >
+                {k.value}
+              </div>
+              <div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{k.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter buttons */}
       <div
         style={{
           display: "flex",
           gap: 4,
-          marginBottom: 16,
+          marginBottom: 8,
           backgroundColor: "#f8f9fa",
           padding: 8,
           borderRadius: 4,
@@ -341,6 +460,14 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
         </button>
       </div>
 
+      {/* Gantt plan label */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div style={{ width: 4, height: 20, background: "#2A3B76", borderRadius: 2 }} />
+        <span style={{ fontWeight: 700, fontSize: 14, color: "#2A3B76" }}>
+          📋 Plan Original — Gantt
+        </span>
+      </div>
+
       {/* Sections with tasks */}
       {filteredSections.map((section: any) => (
         <div key={section.id} style={{ marginBottom: 24 }}>
@@ -352,9 +479,15 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                   alignItems: "center",
                   gap: 8,
                   padding: "12px 16px",
-                  backgroundColor: "#e9ecef",
+                  backgroundColor: section.esRutaCritica ? "#fff1f0" : "#e9ecef",
+                  borderLeft: section.esRutaCritica
+                    ? "4px solid #c62828"
+                    : "4px solid transparent",
                   borderRadius: "4px 4px 0 0",
                   cursor: "pointer",
+                  boxShadow: section.esRutaCritica
+                    ? "inset 0 0 0 1px #ffcdd2"
+                    : "none",
                 }}
                 onClick={() => toggleSection(section.id)}
               >
@@ -387,11 +520,38 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                 </span>
                 <span
                   style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: section.esRutaCritica ? "#ffffff" : "#64748b",
+                    marginLeft: 8,
+                    backgroundColor: section.esRutaCritica ? "#c62828" : "#e2e8f0",
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {section.esRutaCritica ? "⛓️ Ruta Crítica" : "Ruta Estándar"}
+                </span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "white",
+                    marginLeft: 8,
+                    backgroundColor: getProgressColor(section.progressPercent ?? 0),
+                    padding: "2px 8px",
+                    borderRadius: 4,
+                  }}
+                >
+                  {section.progressPercent ?? 0}%
+                </span>
+                <span
+                  style={{
                     fontSize: 12,
                     color: "#666",
                     marginLeft: "auto",
                     backgroundColor: "#e2e6ea",
-                    padding: "2px 6px",
+                    padding: "2px 8px",
                     borderRadius: 4,
                   }}
                 >
@@ -896,6 +1056,273 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
           )}
         </div>
       ))}
+
+      {/* ── TRABAJOS ADICIONALES (AIT — not in original plan) ─────── */}
+      <div style={{ marginTop: 32 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "12px 16px",
+            background: "linear-gradient(135deg, #e6a817, #f59f00)",
+            borderRadius: aitOpen ? "10px 10px 0 0" : 10,
+            cursor: "pointer",
+            userSelect: "none",
+          }}
+          onClick={() => setAitOpen((o) => !o)}
+        >
+          <span style={{ fontSize: 18 }}>➕</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "white" }}>
+            Trabajos Adicionales — Fuera del Plan Gantt
+          </span>
+          <span
+            style={{
+              marginLeft: "auto",
+              background: "rgba(255,255,255,0.25)",
+              color: "white",
+              padding: "2px 10px",
+              borderRadius: 12,
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {aitServices.length} servicio{aitServices.length !== 1 ? "s" : ""}
+          </span>
+          <span style={{ color: "white", fontSize: 18, marginLeft: 4 }}>
+            {aitOpen ? "▲" : "▼"}
+          </span>
+        </div>
+
+        {aitOpen && (
+          <div
+            style={{
+              background: "white",
+              borderRadius: "0 0 10px 10px",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+              overflow: "hidden",
+            }}
+          >
+            {aitServices.length === 0 ? (
+              <div
+                style={{
+                  padding: "24px 20px",
+                  textAlign: "center",
+                  color: "#aaa",
+                  fontSize: 14,
+                }}
+              >
+                No hay trabajos adicionales registrados para esta parada.
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table
+                  style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
+                >
+                  <thead>
+                    <tr style={{ background: "#fff8e1", textAlign: "left" }}>
+                      {[
+                        "N° AIT",
+                        "Nombre del Servicio",
+                        "Tag Equipo",
+                        "Área",
+                        "Tipo",
+                        "Empresa",
+                        "Supervisor EECC",
+                        "HH",
+                        "Inicio",
+                        "Fin",
+                        "Estado",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "10px 12px",
+                            border: "1px solid #ffe082",
+                            fontWeight: 700,
+                            color: "#6d4c00",
+                            fontSize: 12,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {aitServices.map((svc: any, i: number) => {
+                      const startDt = toDateTimeObj(svc.FechaInicio);
+                      const endDt = toDateTimeObj(svc.FechaFin);
+                      const hasEvents = Array.isArray(svc.events) && svc.events.length > 0;
+                      const lastEvent = hasEvents
+                        ? svc.events[svc.events.length - 1]
+                        : null;
+                      const avance = svc.AvanceEjecucion
+                        ? `${svc.AvanceEjecucion}%`
+                        : lastEvent?.porcentajeAvance
+                        ? `${lastEvent.porcentajeAvance}%`
+                        : "—";
+                      const estadoColor =
+                        avance === "100%"
+                          ? "#198754"
+                          : hasEvents
+                          ? "#1976d2"
+                          : "#e6a817";
+                      const estadoLabel =
+                        avance === "100%"
+                          ? "Completado"
+                          : hasEvents
+                          ? "En Progreso"
+                          : "Pendiente";
+                      return (
+                        <tr
+                          key={svc.idServiciosAIT || i}
+                          style={{ background: i % 2 === 0 ? "white" : "#fffdf0" }}
+                        >
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontWeight: 700,
+                              color: "#2A3B76",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {svc.NumeroAIT || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              maxWidth: 260,
+                              fontSize: 12,
+                            }}
+                          >
+                            {svc.NombreServicio || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {svc.TagEquipo ? (
+                              <span
+                                style={{
+                                  background: "#e3f2fd",
+                                  color: "#1565c0",
+                                  padding: "2px 8px",
+                                  borderRadius: 8,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {svc.TagEquipo}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                            }}
+                          >
+                            {svc.AreaServicio || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                            }}
+                          >
+                            {svc.TipoServicio || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                            }}
+                          >
+                            {svc.EmpresaMinera || svc.companyName || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                            }}
+                          >
+                            {svc.ResponsableEmpresaContratista3 || "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              textAlign: "center",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {svc.HorasTotales
+                              ? `${Math.round(parseFloat(svc.HorasTotales))}h`
+                              : "—"}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {startDt.date} {startDt.time}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              fontSize: 12,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {endDt.date} {endDt.time}
+                          </td>
+                          <td
+                            style={{
+                              padding: "10px 12px",
+                              border: "1px solid #f0e0a0",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                background: estadoColor,
+                                color: "white",
+                                padding: "3px 9px",
+                                borderRadius: 10,
+                                fontSize: 11,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {estadoLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
