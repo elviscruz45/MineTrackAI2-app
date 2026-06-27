@@ -25,8 +25,10 @@ export default function Root({ children }: PropsWithChildren) {
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="ConfiPetrolAI" />
-        <link rel="apple-touch-icon" href="/confipetrol.png" />
+        <meta name="apple-mobile-web-app-title" content="FHServicios" />
+        <link rel="apple-touch-icon" href="/logo192.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
 
         {/* Theme color for address bar */}
         <meta name="theme-color" content="#2A3B76" />
@@ -84,117 +86,11 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 const sw = `
-// ── SERVICE WORKER DISABLED FOR DEVELOPMENT ──────────────────────────────────
-// To re-enable: restore the registration block below and remove the unregister block.
+// Service worker desactivado: desregistra SW y limpia caché en cada visita
 if ('serviceWorker' in navigator) {
-    // Unregister all existing service workers and clear all caches so every
-    // code change is reflected immediately without stale-cache issues.
     navigator.serviceWorker.getRegistrations().then(registrations => {
         registrations.forEach(r => r.unregister());
     });
     caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
 }
-
-// ── ORIGINAL REGISTRATION (disabled) ─────────────────────────────────────────
-/*
-if ('serviceWorker' in navigator) {
-    let refreshing = false;
-    
-    // Listen for controlling service worker change
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-            refreshing = true;
-            window.location.reload();
-        }
-    });
-    
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('Service Worker registered with scope:', registration.scope);
-            
-            // Check for updates periodically
-            setInterval(() => {
-                registration.update();
-            }, 60000); // Check every minute
-            
-            // Listen for waiting service worker
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed') {
-                        if (navigator.serviceWorker.controller) {
-                            // New version available
-                            console.log('New version available');
-                            
-                            // Show update notification
-                            showUpdateNotification(newWorker);
-                        } else {
-                            // First install
-                            console.log('Content cached for offline use');
-                        }
-                    }
-                });
-            });
-        }).catch(error => {
-            console.error('Service Worker registration failed:', error);
-        });
-    });
-    
-    function showUpdateNotification(worker) {
-        // Create update notification
-        const updateBanner = document.createElement('div');
-        updateBanner.id = 'update-banner';
-        updateBanner.style.cssText = \`
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #2A3B76;
-            color: white;
-            padding: 12px 20px;
-            text-align: center;
-            z-index: 10000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        \`;
-        
-        updateBanner.innerHTML = \`
-            <span>🚀 Nueva versión disponible!</span>
-            <button id="update-btn" style="
-                background: white;
-                color: #2A3B76;
-                border: none;
-                padding: 6px 12px;
-                margin-left: 10px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-weight: 600;
-            ">Actualizar</button>
-            <button id="dismiss-btn" style="
-                background: transparent;
-                color: white;
-                border: 1px solid white;
-                padding: 6px 12px;
-                margin-left: 8px;
-                border-radius: 4px;
-                cursor: pointer;
-            ">Después</button>
-        \`;
-        
-        document.body.appendChild(updateBanner);
-        
-        // Handle update button click
-        document.getElementById('update-btn').addEventListener('click', () => {
-            worker.postMessage({ type: 'SKIP_WAITING' });
-            updateBanner.remove();
-        });
-        
-        // Handle dismiss button click
-        document.getElementById('dismiss-btn').addEventListener('click', () => {
-            updateBanner.remove();
-        });
-    }
-}
-*/
 `;

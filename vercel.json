@@ -11,7 +11,7 @@
   },
   "rewrites": [
     {
-      "source": "/:path((?!_expo|assets|fonts|sw\\.js|manifest\\.json|favicon\\.ico|logo.*\\.png|.*\\.ttf|.*\\.woff|.*\\.woff2).*)",
+      "source": "/:path((?!_expo|assets|fonts|sw\\.js|manifest\\.json|favicon|logo.*\\.png|apple-touch-icon\\.png|.*\\.ttf|.*\\.woff|.*\\.woff2).*)",
       "destination": "/index.html"
     }
   ],

@@ -1,6 +1,6 @@
 {
-  "short_name": "MineTrackAI",
-  "name": "MineTrackAI - Gestión Minera",
+  "short_name": "Poderosa",
+  "name": "Poderosa - Gestión Minera",
   "description": "Aplicación para gestión de actividades y mantenimiento en operaciones mineras",
   "icons": [
     {
@@ -9,13 +9,13 @@
       "type": "image/x-icon"
     },
     {
-      "src": "confipetrol.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "confipetrol.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
