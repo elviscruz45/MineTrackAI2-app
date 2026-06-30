@@ -7,16 +7,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import EditAITData from "./EditAIT.data";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { useFormik } from "formik";
-import { db } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  doc,
-  updateDoc,
-  where,
-  orderBy,
-  getDocs,
-} from "firebase/firestore";
+import { updateServicioAit } from "@/lib/db/serviciosAit";
+import { getAllProfiles } from "@/lib/db/profiles";
 import AITForms from "../post/components/AITForms/AITForms";
 import { saveTotalUsers } from "../../../redux/actions/post";
 import Toast from "react-native-toast-message";
@@ -45,41 +37,10 @@ function EditAITNoReduxScreen(props: any) {
       const companyName = props.email?.match(/@(.+?)\./i)?.[1] || "Anonimo";
       async function fetchData() {
         try {
-          const queryRef1 = query(
-            collection(db, "users"),
-            // where("companyName", "!=", companyName),
-            orderBy("email", "desc")
-          );
-
-          // const queryRef2 = query(
-          //   collection(db, "users"),
-          //   // where("companyName", "==", companyName),
-          //   orderBy("email", "desc")
-          // );
-
-          const getDocs1 = await getDocs(queryRef1);
-          // const getDocs2 =
-          //   await getDocs(queryRef2)
-          const lista: any = [];
-
-          // Process results from the first query
-          if (getDocs1) {
-            getDocs1.forEach((doc) => {
-              lista.push(doc.data());
-            });
-          }
-
-          // // Process results from the second query
-          // if (getDocs2) {
-          //   getDocs2.forEach((doc) => {
-          //     lista.push(doc.data());
-          //   });
-          // }
-          // Save the merged results to the state or do any other necessary operations
+          const lista = await getAllProfiles();
           props.saveTotalUsers(lista);
         } catch (error) {
           console.error("Error fetching data:", error);
-          // Handle the error as needed
         }
       }
       if (!props.getTotalUsers) {
@@ -98,12 +59,6 @@ function EditAITNoReduxScreen(props: any) {
         //retrieving data from Formik
         const newData = formValue;
 
-        //Modifying the Service State ServiciosAIT considering the LasEventPost events
-        const RefFirebaseLasEventPostd = doc(
-          db,
-          "ServiciosAIT",
-          idServiciosAIT
-        );
         const updateDataLasEventPost: any = {};
 
         if (newData?.NombreServicio) {
@@ -174,7 +129,7 @@ function EditAITNoReduxScreen(props: any) {
           updateDataLasEventPost.HorasHombre = newData.HorasHombre;
         }
 
-        await updateDoc(RefFirebaseLasEventPostd, updateDataLasEventPost);
+        await updateServicioAit(idServiciosAIT, updateDataLasEventPost);
 
         // this hedlps to go to the begining of the process
         // navigation.navigate(screen.search.search);

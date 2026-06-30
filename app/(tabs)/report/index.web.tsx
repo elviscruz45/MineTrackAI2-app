@@ -42,6 +42,9 @@ import CriticalRouteView from "./webcomponents/CriticalRouteView";
 import SafetyView from "./webcomponents/SafetyView";
 import EnvironmentView from "./webcomponents/EnvironmentView";
 import GerenciaDashboard from "./webcomponents/GerenciaDashboard";
+import MaintenanceDashboard from "./webcomponents/MaintenanceDashboard";
+import EquipmentHealthView from "./webcomponents/EquipmentHealthView";
+import PlantAvailabilityReport from "./webcomponents/PlantAvailabilityReport";
 import { sortByCodigo } from "../../../utils/sortByCodigo";
 
 // Mock data for projects
@@ -117,23 +120,64 @@ function ReportnoRedux(props: any) {
     console.log(`Selected project: ${project}`);
   };
 
-  if (!data) {
+  const hasProjectData =
+    Array.isArray(data) && data.length > 0;
+
+  if (!hasProjectData) {
     return (
       <div
         style={{
-          flex: 1,
-          backgroundColor: "white",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          ...styles.AndroidSafeArea,
+          fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
         }}
       >
-        <h1 style={{ fontSize: 50, color: "#2A3B76" }}>Bienvenido</h1>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #2A3B76 0%, #1565c0 100%)",
+            padding: "14px 20px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            boxShadow: "0 2px 8px rgba(42,59,118,0.25)",
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              border: "1px solid rgba(255,255,255,0.3)",
+              color: "white",
+              borderRadius: 6,
+              padding: "6px 14px",
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
+            MODO PLANTA
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>
+            Sin proyecto seleccionado — reporte de disponibilidad acumulada
+          </span>
+        </div>
+        <div
+          style={{
+            backgroundColor: "#f0f4f8",
+            overflowY: "auto",
+            height: "calc(100vh - 56px)",
+            padding: "0 16px 32px",
+          }}
+        >
+          <PlantAvailabilityReport />
+        </div>
       </div>
     );
   } else {
     return (
-      <div style={{ ...styles.AndroidSafeArea, fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
+      <div
+        style={{
+          ...styles.AndroidSafeArea,
+          fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+        }}
+      >
         <ReportHeader />
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
 
@@ -152,20 +196,24 @@ function ReportnoRedux(props: any) {
             <div style={{ width: "100%", padding: "0 16px 32px" }}>
               {/* Show content based on active tab */}
               {activeTab === "Proyeccion" ? (
-                  <AvanceProgressChart data={data} />
-                ) : activeTab === "Actividades" ? (
-                  <ActivityView data={data} />
-                ) : activeTab === "Ruta Critica" ? (
-                  <CriticalRouteView data={data} />
-                ) : activeTab === "Seguridad" ? (
-                  <SafetyView data={data} />
-                ) : activeTab === "Medio Ambiente" ? (
-                  <EnvironmentView selectedProject={selectedProject} />
-                ) : activeTab === "Gerencia" ? (
-                  <GerenciaDashboard data={data} />
-                ) : (
-                  <AvanceProgressChart data={data} />
-                )}
+                <AvanceProgressChart data={data} />
+              ) : activeTab === "Actividades" ? (
+                <ActivityView data={data} />
+              ) : activeTab === "Ruta Critica" ? (
+                <CriticalRouteView data={data} />
+              ) : activeTab === "Seguridad" ? (
+                <SafetyView data={data} />
+              ) : activeTab === "Medio Ambiente" ? (
+                <EnvironmentView selectedProject={selectedProject} />
+              ) : activeTab === "Gerencia" ? (
+                <GerenciaDashboard data={data} />
+              ) : activeTab === "Mantenimiento" ? (
+                <MaintenanceDashboard />
+              ) : activeTab === "Salud Equipos" ? (
+                <EquipmentHealthView />
+              ) : (
+                <AvanceProgressChart data={data} />
+              )}
             </div>
           )}
         </div>

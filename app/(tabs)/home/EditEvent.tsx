@@ -7,19 +7,9 @@ import GeneralForms from "../post/components/GeneralForms/GeneralForms";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { validationSchema, initialValues } from "../../../utils/EditEventData";
 import { useFormik } from "formik";
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  arrayUnion,
-  getDoc,
-} from "firebase/firestore";
-import TitleForms from "../post/components/TitleForms/TitleForms";
-
-import { Image as ImageExpo } from "expo-image";
+import { updateEvent } from "@/lib/db/events";
+import { getServicioAitById, updateServicioAit } from "@/lib/db/serviciosAit";
 import Toast from "react-native-toast-message";
-import { db } from "@/firebaseConfig";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Platform } from "react-native";
 
@@ -37,33 +27,22 @@ function EditEventScreenBare(props: any) {
       try {
         const newData = formValue;
 
-        //update the doc from events collections
-        const eventDocRef = doc(db, "events", idDocFirestoreDB);
-        const updatedData = {
+        await updateEvent(idDocFirestoreDB, {
           visibilidad: newData.visibilidad,
-        };
+        });
 
-        await updateDoc(eventDocRef, updatedData);
-
-        //updating events in ServiciosAIT to filter the deleted event
-        const Ref = doc(db, "ServiciosAIT", AITidServicios);
-        const docSnapshot = await getDoc(Ref);
-        const data = docSnapshot.data();
-        if (data && data.events) {
-          const eventList = data.events;
+        const servicio = await getServicioAitById(AITidServicios);
+        if (servicio?.events) {
+          const eventList = servicio.events as any[];
 
           const updatedList = eventList?.map((obj: any) => {
             if (obj.idDocFirestoreDB === idDocFirestoreDB) {
-              // Update the desired property of the object
               return { ...obj, visibilidad: newData.visibilidad };
             }
             return obj;
           });
 
-          const updatedData2 = {
-            events: updatedList,
-          };
-          await updateDoc(Ref, updatedData2);
+          await updateServicioAit(AITidServicios, { events: updatedList });
           router.back();
 
           setTimeout(() => {

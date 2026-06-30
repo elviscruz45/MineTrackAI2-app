@@ -11,8 +11,6 @@ import {
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { MaterialIcon } from "@/components/MaterialIcon";
 import styles from "./Item.styles";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import { screen } from "../../../utils";
 import { connect } from "react-redux";
 import { saveActualServiceAIT } from "../../../redux/actions/post";
@@ -658,6 +656,37 @@ function ItemScreenNotRedux(props: any) {
                 <Text style={modernStyles.serviceName}>
                   {serviceInfo.NombreServicio}
                 </Text>
+
+                {serviceInfo?.TagEquipo ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/operations/equipment/[tagCode]",
+                        params: { tagCode: serviceInfo.TagEquipo },
+                      })
+                    }
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#e3f2fd",
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      marginBottom: 12,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <MaterialIcon
+                      name="history"
+                      size={16}
+                      color="#1565c0"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={{ color: "#1565c0", fontWeight: "600", fontSize: 13 }}>
+                      Ver historial del equipo ({serviceInfo.TagEquipo})
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 {/* Service Number */}
                 <View style={modernStyles.infoRow}>

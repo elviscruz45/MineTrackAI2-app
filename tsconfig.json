@@ -17,5 +17,8 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "**/functions/.eslintrc.js"
+  ],
+  "exclude": [
+    "supabase/functions"
   ]
 }

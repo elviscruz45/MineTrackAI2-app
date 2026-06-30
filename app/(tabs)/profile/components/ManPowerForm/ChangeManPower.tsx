@@ -6,9 +6,7 @@ import Toast from "react-native-toast-message";
 import ChangeManPowerData from "./ChangeManPower.data";
 import styles from "./ChangeManPower.styles";
 import { connect } from "react-redux";
-import { db } from "@/firebaseConfig";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { createManpower } from "@/lib/db/manpower";
 import { update_firebaseProfile } from "@/redux/actions/profile";
 import { v4 as uuidv4 } from "uuid";
 
@@ -119,11 +117,7 @@ function ChangeManPowerBare(props: any) {
         // const uuid = uuidv4();
         // newData.uid = uuid;
 
-        const docRef = doc(
-          collection(db, "manpower"),
-          JSON.stringify(new Date())
-        );
-        await setDoc(docRef, newData);
+        await createManpower(newData);
         Toast.show({
           type: "success",
           position: "bottom",

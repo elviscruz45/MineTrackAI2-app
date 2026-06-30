@@ -18,7 +18,6 @@ import { titulo_proyecto } from "@/redux/actions/auth";
 import { saveActualAITServicesFirebaseGlobalState } from "@/redux/actions/post";
 import TituloProyecto from "@/components/tituloProyecto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { db } from "@/firebaseConfig";
 
 function TabLayoutRaw(props: any) {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -137,6 +136,12 @@ function TabLayoutRaw(props: any) {
               color={color}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="operations"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen

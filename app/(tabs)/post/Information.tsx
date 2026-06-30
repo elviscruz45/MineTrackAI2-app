@@ -1,43 +1,38 @@
 import {
   View,
   Text,
-  KeyboardAvoidingView,
-  ScrollView,
   Platform,
+  useWindowDimensions,
 } from "react-native";
-import { Avatar, Button } from "@rneui/themed";
-import React, { useState, useEffect } from "react";
+import { Button } from "@rneui/themed";
+import React, { useState, useEffect, useMemo } from "react";
 import { connect } from "react-redux";
-import styles from "./Information.styles";
 import GeneralForms from "./components/GeneralForms/GeneralForms";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import initialValues from "./Information.data";
 import { validationSchema } from "./Information.data";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { useFormik } from "formik";
-import { db } from "@/firebaseConfig";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  arrayUnion,
-  FieldValue,
-  setDoc,
-} from "firebase/firestore";
-import { areaLists } from "../../../utils/areaList";
+  createEvent,
+  updateEvent as updateSupabaseEvent,
+} from "@/lib/db/events";
+import {
+  updateServicioAit,
+  addPdfToServicio,
+} from "@/lib/db/serviciosAit";
+import { findActivityByTitulo } from "@/lib/db/activities";
 import TitleForms from "./components/TitleForms/TitleForms";
 import { resetPostPerPageHome } from "../../../redux/actions/home";
 import { saveTotalUsers } from "../../../redux/actions/post";
 import { dateFormat, uploadPdf, uploadImage } from "./Information.calc";
 import useUserData from "./Information.calc";
-import { Image as ImageExpo } from "expo-image";
 import Toast from "react-native-toast-message";
-import { usePushNotifications } from "@/usePushNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
+import { createInformationStyles } from "./Information.ui.styles";
+import { getTagEquipoLabel } from "../../../utils/tagEquipoList";
 
 // Funciones específicas para manejo offline del formulario
 const OFFLINE_FORMS_QUEUE_KEY = "offline_forms_queue";
@@ -161,13 +156,9 @@ const processOfflineFormsQueue = async (): Promise<void> => {
             operation.pendingImages.mainImage &&
             operation.pendingImages.mainImage.startsWith("file://")
           ) {
-            const snapshot = await uploadImage(
+            const imageUrl = await uploadImage(
               operation.pendingImages.mainImage
             );
-            const imagePath = snapshot.metadata.fullPath;
-            const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
-
-            // Actualizar los datos con la URL real
             if (
               operation.data.fotoPrincipal === operation.pendingImages.mainImage
             ) {
@@ -175,7 +166,6 @@ const processOfflineFormsQueue = async (): Promise<void> => {
             }
           }
 
-          // Subir imágenes adicionales si son URIs locales
           if (
             operation.pendingImages.additionalImages &&
             operation.pendingImages.additionalImages.length > 0
@@ -183,28 +173,42 @@ const processOfflineFormsQueue = async (): Promise<void> => {
             const uploadedImages = [];
             for (const localUri of operation.pendingImages.additionalImages) {
               if (localUri.startsWith("file://")) {
-                const snapshot = await uploadImage(localUri);
-                const imagePath = snapshot.metadata.fullPath;
-                const imageUrl = await getDownloadURL(
-                  ref(getStorage(), imagePath)
-                );
+                const imageUrl = await uploadImage(localUri);
                 uploadedImages.push(imageUrl);
               } else {
-                uploadedImages.push(localUri); // Ya es una URL
+                uploadedImages.push(localUri);
               }
             }
             operation.data.newImages = uploadedImages;
           }
         }
 
-        if (operation.type === "setDoc") {
-          await setDoc(
-            doc(db, operation.collection, operation.docId),
-            operation.data
-          );
-        } else if (operation.type === "updateDoc") {
-          const docRef = doc(db, operation.collection, operation.docId);
-          await updateDoc(docRef, operation.data);
+        if (operation.type === "setDoc" && operation.collection === "events") {
+          await createEvent(operation.data);
+        } else if (
+          operation.type === "updateDoc" &&
+          operation.collection === "ServiciosAIT"
+        ) {
+          const servicioId = operation.docId;
+          const data = operation.data;
+          const servicioUpdates: Record<string, unknown> = {
+            LastEventPosted: data.LastEventPosted,
+            AvanceEjecucion: data.AvanceEjecucion,
+            AvanceAdministrativoTexto: data.AvanceAdministrativoTexto,
+            MontoModificado: data.MontoModificado,
+            NuevaFechaEstimada: data.NuevaFechaEstimada,
+            HHModificado: data.HHModificado,
+            fechaFinEjecucion: data.fechaFinEjecucion,
+          };
+          if (data.aprobacion) {
+            servicioUpdates.aprobacion = Array.isArray(data.aprobacion)
+              ? data.aprobacion
+              : [data.aprobacion];
+          }
+          await updateServicioAit(servicioId, servicioUpdates);
+          if (data.pdfFile && Array.isArray(data.pdfFile) && data.pdfFile[0]) {
+            await addPdfToServicio(servicioId, data.pdfFile[0]);
+          }
         }
 
         processed.push(operation.id);
@@ -259,9 +263,7 @@ const handleImageUploadWithOffline = async (
 
   if (isOnline) {
     try {
-      const snapshot = await uploadImage(imageUri);
-      const imagePath = snapshot.metadata.fullPath;
-      const imageUrl = await getDownloadURL(ref(getStorage(), imagePath));
+      const imageUrl = await uploadImage(imageUri);
       console.log("✅ Imagen subida online:", imageUrl);
       return imageUrl;
     } catch (error) {
@@ -287,9 +289,7 @@ const handlePdfUploadWithOffline = async (
 
   if (isOnline) {
     try {
-      const snapshotPDF = await uploadPdf(pdfFile, filename, date);
-      const imagePathPDF = snapshotPDF?.metadata.fullPath;
-      const pdfUrl = await getDownloadURL(ref(getStorage(), imagePathPDF));
+      const pdfUrl = await uploadPdf(pdfFile, filename, date);
       console.log("✅ PDF subido online:", pdfUrl);
       return pdfUrl;
     } catch (error) {
@@ -348,6 +348,11 @@ const handleFirebaseOperationWithOffline = async (
 };
 
 function InformationRaw(props: any) {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(
+    () => createInformationStyles(windowWidth),
+    [windowWidth],
+  );
   const [moreImages, setMoreImages] = useState([]);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   // const { expoPushToken, notification } = usePushNotifications();
@@ -414,25 +419,70 @@ function InformationRaw(props: any) {
 
       try {
         const newData = formValue;
+        const isStandalone = Boolean(
+          props.actualServiceAIT?.isStandaloneEquipmentEvent,
+        );
         newData.fechaPostFormato = dateFormat();
-        //data of the service AIT information
-        newData.AITidServicios = props.actualServiceAIT?.idServiciosAIT;
-        newData.AITNombreServicio = props.actualServiceAIT?.NombreServicio;
-        newData.AITEmpresaMinera = props.actualServiceAIT?.EmpresaMinera;
-        newData.AITAreaServicio = props.actualServiceAIT?.AreaServicio;
-        newData.AITphotoServiceURL = props.actualServiceAIT?.photoServiceURL;
-        newData.AITNumero = props.actualServiceAIT?.NumeroAIT;
-        newData.AITcompanyName = props.actualServiceAIT?.companyName;
-        newData.projectId = props.actualServiceAIT?.projectId;
+
+        if (isStandalone) {
+          const tagEquipo = String(props.actualServiceAIT?.TagEquipo || "").trim();
+          newData.AITidServicios = "";
+          newData.AITNombreServicio = props.actualServiceAIT?.NombreServicio ?? "";
+          newData.AITEmpresaMinera = "";
+          newData.AITAreaServicio = props.actualServiceAIT?.AreaServicio ?? "";
+          newData.AITphotoServiceURL = "";
+          newData.AITNumero = "";
+          newData.AITcompanyName = "";
+          newData.projectId = "";
+          (newData as Record<string, unknown>).tag_equipo = tagEquipo;
+          (newData as Record<string, unknown>).TagEquipo = tagEquipo;
+          (newData as Record<string, unknown>).event_origin = "equipo_suelto";
+          newData.unicoID = `equipo-${tagEquipo}-${Date.now()}`;
+        } else {
+          //data of the service AIT information
+          newData.AITidServicios = props.actualServiceAIT?.idServiciosAIT;
+          newData.AITNombreServicio = props.actualServiceAIT?.NombreServicio;
+          newData.AITEmpresaMinera = props.actualServiceAIT?.EmpresaMinera;
+          newData.AITAreaServicio = props.actualServiceAIT?.AreaServicio;
+          newData.AITphotoServiceURL = props.actualServiceAIT?.photoServiceURL;
+          newData.AITNumero = props.actualServiceAIT?.NumeroAIT;
+          newData.AITcompanyName = props.actualServiceAIT?.companyName;
+          newData.projectId = props.actualServiceAIT?.projectId;
+          (newData as Record<string, unknown>).tag_equipo =
+            props.actualServiceAIT?.TagEquipo ?? "";
+          (newData as Record<string, unknown>).TagEquipo =
+            props.actualServiceAIT?.TagEquipo ?? "";
+          (newData as Record<string, unknown>).event_origin = "parada";
+          newData.unicoID =
+            newData.AITidServicios + "-" + newData.AITNombreServicio;
+        }
+
+        const servicioId = props.actualServiceAIT?.idServiciosAIT;
+        if (!isStandalone && servicioId && newData.titulo) {
+          const matched = await findActivityByTitulo(
+            servicioId,
+            newData.titulo
+          );
+          if (matched) {
+            (newData as Record<string, unknown>).activity_id = matched.id;
+            (newData as Record<string, unknown>).activity_codigo =
+              matched.codigo ?? "";
+            (newData as Record<string, unknown>).activityCodigo =
+              matched.codigo ?? "";
+            if (matched.tag_equipo) {
+              (newData as Record<string, unknown>).tag_equipo =
+                matched.tag_equipo;
+              (newData as Record<string, unknown>).TagEquipo =
+                matched.tag_equipo;
+            }
+          }
+        }
         console.log("bbbbbb");
 
         //push notification
         // newData.pushNotification = expoPushToken?.data || "no token";
 
         //sum of total HH
-        newData.unicoID =
-          newData.AITidServicios + "-" + newData.AITNombreServicio;
-
         newData.totalHH =
           parseInt(newData.supervisores) +
           parseInt(newData.HSE) +
@@ -495,7 +545,7 @@ function InformationRaw(props: any) {
         //nuevo approach - con manejo offline
         // Use setDoc to create or update a document
         const setDocOperation = async () => {
-          await setDoc(doc(db, "events", uniqueID), newData);
+          await createEvent(newData);
         };
         console.log("3333333");
 
@@ -519,69 +569,13 @@ function InformationRaw(props: any) {
         );
         console.log("44444444");
 
-        //Modifying the Service State ServiciosAIT considering the LasEventPost events
-        const RefFirebaseLasEventPostd = doc(
-          db,
-          "ServiciosAIT",
-          props.actualServiceAIT?.idServiciosAIT
-        );
-        const eventSchema = {
-          idDocFirestoreDB: newData.idDocFirestoreDB ?? "",
-          idDocAITFirestoreDB: props.actualServiceAIT?.idServiciosAIT ?? "",
-          fotoPrincipal: newData.fotoPrincipal ?? "",
-          fotoUsuarioPerfil: newData.fotoUsuarioPerfil ?? "",
-          AITNombreServicio: newData.AITNombreServicio ?? "",
-          titulo: newData.titulo ?? "",
-          comentarios: newData.comentarios ?? "",
-          porcentajeAvance: newData.porcentajeAvance ?? "",
-          AITNumero: newData.AITNumero ?? "",
-          etapa: newData.etapa ?? "",
-          pdfPrincipal: newData?.pdfPrincipal ?? "",
-          fechaPostFormato: newData.fechaPostFormato ?? "",
-          createdAt: newData.createdAt ?? "",
-          emailPerfil: newData.emailPerfil ?? "",
-          imageUrl: newData.imageUrl ?? "",
-          nombrePerfil: newData.nombrePerfil ?? "",
-          visibilidad: newData.visibilidad ?? "",
-          newImages: newData.newImages ?? [],
-          //tareo
-          supervisores: newData.supervisores ?? 0,
-          HSE: newData.HSE ?? 0,
-          liderTecnico: newData.liderTecnico ?? 0,
-          soldador: newData.soldador ?? 0,
-          tecnico: newData.tecnico ?? 0,
-          ayudante: newData.ayudante ?? 0,
-          unicoID: newData.unicoID ?? "",
-          totalHH: newData.totalHH ?? 0,
-          // campos para dashboard gerencial
-          causa: newData.causa ?? "",
-          tipoEvento: newData.tipoEvento ?? "",
-          clasificacionHSE: newData.clasificacionHSE ?? "",
-          equipoAfectado: newData.equipoAfectado ?? "",
-          horasPerdidas: newData.horasPerdidas ?? "",
-        };
-
-        const updateDataLasEventPost: {
-          LastEventPosted: Date;
-          AvanceEjecucion: string;
-          AvanceAdministrativoTexto: string;
-          MontoModificado: string;
-          NuevaFechaEstimada: string;
-          HHModificado: string;
-          aprobacion: FieldValue | string[];
-          pdfFile: FieldValue | any[];
-          events: FieldValue;
-          fechaFinEjecucion: Date | null;
-        } = {
+        const updateDataLasEventPost: Record<string, unknown> = {
           LastEventPosted: newData.createdAt,
           AvanceEjecucion: newData.porcentajeAvance,
           AvanceAdministrativoTexto: newData.etapa,
           MontoModificado: "",
           NuevaFechaEstimada: "",
           HHModificado: "",
-          aprobacion: [],
-          pdfFile: [],
-          events: arrayUnion(eventSchema),
           fechaFinEjecucion:
             newData.porcentajeAvance === "100" &&
             newData.etapa === "Avance Ejecucion"
@@ -600,10 +594,11 @@ function InformationRaw(props: any) {
         }
 
         if (newData?.aprobacion) {
-          updateDataLasEventPost.aprobacion = arrayUnion(newData.aprobacion);
+          updateDataLasEventPost.aprobacion = [newData.aprobacion];
         }
+        let pdfFileToAdd: Record<string, unknown> | null = null;
         if (imageUrlPDF) {
-          const file = {
+          pdfFileToAdd = {
             FilenameTitle: newData.FilenameTitle,
             pdfPrincipal: imageUrlPDF,
             tipoFile: newData.tipoFile,
@@ -612,27 +607,37 @@ function InformationRaw(props: any) {
             fechaPostFormato: dateFormat(),
             pdfFile: newData.pdfFile,
           };
-          updateDataLasEventPost.pdfFile = arrayUnion(file);
         }
 
-        // Operación updateDoc con manejo offline
         const updateDocOperation = async () => {
-          await updateDoc(RefFirebaseLasEventPostd, updateDataLasEventPost);
+          if (!props.actualServiceAIT?.idServiciosAIT) return;
+          await updateServicioAit(
+            props.actualServiceAIT.idServiciosAIT,
+            updateDataLasEventPost
+          );
+          if (pdfFileToAdd) {
+            await addPdfToServicio(
+              props.actualServiceAIT.idServiciosAIT,
+              pdfFileToAdd
+            );
+          }
         };
 
-        const isOnlineUpdateDoc = await handleFirebaseOperationWithOffline(
-          updateDocOperation,
-          {
-            id: `updateDoc-ServiciosAIT-${
-              props.actualServiceAIT?.idServiciosAIT
-            }-${Date.now()}`,
-            type: "updateDoc",
-            collection: "ServiciosAIT",
-            docId: props.actualServiceAIT?.idServiciosAIT,
-            data: updateDataLasEventPost,
-            formType: "GeneralForms",
-          }
-        );
+        const isOnlineUpdateDoc = props.actualServiceAIT?.idServiciosAIT
+          ? await handleFirebaseOperationWithOffline(
+              updateDocOperation,
+              {
+                id: `updateDoc-ServiciosAIT-${
+                  props.actualServiceAIT.idServiciosAIT
+                }-${Date.now()}`,
+                type: "updateDoc",
+                collection: "ServiciosAIT",
+                docId: props.actualServiceAIT.idServiciosAIT,
+                data: updateDataLasEventPost,
+                formType: "GeneralForms",
+              }
+            )
+          : true;
 
         // router.back();
 
@@ -670,56 +675,103 @@ function InformationRaw(props: any) {
   });
 
   //algorith to retrieve image source that
-  const area = props.actualServiceAIT?.AreaServicio;
-  const indexareaList = areaLists.findIndex((item) => item.value === area);
-  const imageSource =
-    areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+  const isStandalone = Boolean(
+    props.actualServiceAIT?.isStandaloneEquipmentEvent,
+  );
+  const serviceName =
+    props.actualServiceAIT?.NombreServicio || "Detalle del evento";
+  const tagLabel = getTagEquipoLabel(props.actualServiceAIT?.TagEquipo);
 
   return (
-    // <SafeAreaView style={{ flex: 1, backgroundColor: "red" }}>
-    <KeyboardAwareScrollView
-      style={{
-        backgroundColor: "white",
-        // marginHorizontal: "0%",
-        // extraScrollHeight:{100}
-        // flexGrow: 1,
-        // justifyContent: "space-between",
-      }} // Add backgroundColor here
-    >
-      {/* Indicador de estado offline para formularios */}
-      <OfflineFormsStatus onForceSync={handleForceSync} />
+    <SafeAreaView style={styles.scroll} edges={["left", "right", "bottom"]}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={Platform.OS === "ios" ? 80 : 40}
+      >
+        <View style={styles.offlineWrap}>
+          <OfflineFormsStatus onForceSync={handleForceSync} />
+        </View>
 
-      <View style={styles.equipments}>
-        <Text> </Text>
-        <Text style={styles.name}>
-          {props.actualServiceAIT?.NombreServicio || "Titulo del Evento"}
-        </Text>
-        {/* <Text style={styles.info}>
-            {"Area: "}
-            {props.actualServiceAIT?.AreaServicio}
-          </Text> */}
-        <Text style={styles.info}>
-          {"Tipo Servicio:  "} {props.actualServiceAIT?.TipoServicio}
-        </Text>
-        <Text> </Text>
-      </View>
+        <View style={styles.page}>
+          <View style={styles.heroCard}>
+            <Text style={styles.heroEyebrow}>
+              {isStandalone ? "Evento por equipo" : "Servicio vinculado"}
+            </Text>
+            <Text style={styles.heroTitle}>{serviceName}</Text>
 
-      <TitleForms
-        formik={formik}
-        id={props.actualServiceAIT?.NumeroAIT}
-        idServiciosAIT={props.actualServiceAIT?.idServiciosAIT}
-      />
-      <GeneralForms formik={formik} setMoreImages={setMoreImages} />
-      <Button
-        title="Agregar Evento"
-        buttonStyle={styles.addInformation}
-        onPress={() => formik.handleSubmit()}
-        loading={isFormSubmitting}
-      />
-      {Platform.OS === "ios" && <View style={{ marginTop: 80 }}></View>}
-    </KeyboardAwareScrollView>
-    // </SafeAreaView>
+            <View style={styles.heroMetaRow}>
+              {isStandalone && props.actualServiceAIT?.TagEquipo ? (
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>
+                    {props.actualServiceAIT.TagEquipo}
+                  </Text>
+                </View>
+              ) : null}
+              {!isStandalone && props.actualServiceAIT?.Codigo ? (
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>
+                    {props.actualServiceAIT.Codigo}
+                  </Text>
+                </View>
+              ) : null}
+              {!isStandalone && props.actualServiceAIT?.TipoServicio ? (
+                <Text style={styles.heroMetaText}>
+                  Tipo: {props.actualServiceAIT.TipoServicio}
+                </Text>
+              ) : null}
+              {tagLabel && !isStandalone ? (
+                <Text style={styles.heroMetaText}>Equipo: {tagLabel}</Text>
+              ) : null}
+              {props.actualServiceAIT?.EmpresaMinera ? (
+                <Text style={styles.heroMetaText}>
+                  Minera: {props.actualServiceAIT.EmpresaMinera}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Detalle del evento</Text>
+              <Text style={styles.sectionHint}>Campos obligatorios *</Text>
+            </View>
+            <TitleForms
+              formik={formik}
+              id={props.actualServiceAIT?.NumeroAIT}
+              idServiciosAIT={props.actualServiceAIT?.idServiciosAIT}
+            />
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Información adicional</Text>
+              <Text style={styles.sectionHint}>Opcional según tipo</Text>
+            </View>
+            <GeneralForms formik={formik} setMoreImages={setMoreImages} />
+          </View>
+
+          <View style={styles.submitWrap}>
+            <Button
+              title="Agregar evento"
+              buttonStyle={styles.submitBtn}
+              titleStyle={styles.submitBtnTitle}
+              onPress={() => formik.handleSubmit()}
+              loading={isFormSubmitting}
+              disabled={isFormSubmitting}
+            />
+            <Text style={styles.submitHint}>
+              El evento se guardará localmente si no hay conexión y se
+              sincronizará automáticamente.
+            </Text>
+          </View>
+
+          {Platform.OS === "ios" ? <View style={styles.iosSpacer} /> : null}
+        </View>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }
 

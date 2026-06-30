@@ -16,15 +16,7 @@ import { update_firebaseUserUid } from "../../../redux/actions/auth";
 import ConnectedChangeDisplayNameForm from "./components/ChangeDisplayNameForm/ChangeDisplayNameForm";
 import { Modal } from "@/components/Modal/Modal";
 import { update_firebaseProfile } from "../../../redux/actions/profile";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  limit,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { getEventsByProject } from "@/lib/db/events";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Redirect } from "expo-router";
 import { FeatherIcon } from "@/components/FeatherIcon";
@@ -148,14 +140,7 @@ function ProfileRaw(props: any) {
 
         let fetched: any[] = [];
         if (projectId) {
-          const q = query(
-            collection(db, "events"),
-            where("projectId", "==", projectId),
-            orderBy("createdAt", "desc"),
-            limit(300)
-          );
-          const snap = await getDocs(q);
-          snap.forEach((doc) => fetched.push({ ...doc.data(), idDocFirestoreDB: doc.id }));
+          fetched = await getEventsByProject(projectId, 300);
         }
 
         const feed = Array.isArray(props.totalEventServiceAITLIST)

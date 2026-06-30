@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
+  ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import styles from "./index.styles";
 import { SearchBar, Icon } from "@rneui/themed";
@@ -17,6 +19,9 @@ import { areaLists } from "../../../utils/areaList";
 import { sortByCodigo } from "../../../utils/sortByCodigo";
 import { getTagEquipoLabel } from "../../../utils/tagEquipoList";
 import { useRouter } from "expo-router";
+import EquipmentBrowser from "../operations/EquipmentBrowser";
+import { createHomeWebStyles } from "../home/homeWebStyles";
+import { LoadingSpinner } from "../../../components/LoadingSpinner";
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -32,11 +37,18 @@ const numColumns = getNumColumns();
 function SearchAssetRaw(props: any) {
   let AITServiceList;
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const { styles: uiStyles } = useMemo(
+    () => createHomeWebStyles(windowWidth),
+    [windowWidth],
+  );
 
   const [data, setData] = useState<any>(null);
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState<any>(null);
-  // const navigation = useNavigation();
+
+  const hasProjectData =
+    Array.isArray(props.servicesData) && props.servicesData.length > 0;
 
   //Data about the company belong this event
   function capitalizeFirstLetter(str: string) {
@@ -98,7 +110,37 @@ function SearchAssetRaw(props: any) {
     });
   };
 
-  if (props.servicesData?.length === 0 || !props.email || !data) {
+  if (!hasProjectData) {
+    return (
+      <SafeAreaView style={[uiStyles.safeArea, styles.AndroidSafeArea]}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {props.email && props.user_photo ? (
+            <View style={uiStyles.page}>
+              <View style={uiStyles.pageHeader}>
+                <Text style={uiStyles.pageTitle}>Catálogo de equipos</Text>
+                <Text style={uiStyles.pageSubtitle}>
+                  Selecciona un equipo para ver historial de eventos,
+                  mantenimientos y gestionar el seguimiento como supervisor o
+                  planificador.
+                </Text>
+              </View>
+              <EquipmentBrowser embedded selectionMode="browse" nestedScroll />
+            </View>
+          ) : (
+            <View style={uiStyles.loadingWrap}>
+              <LoadingSpinner />
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (!props.email || !data) {
     return (
       <View
         style={{
@@ -108,15 +150,7 @@ function SearchAssetRaw(props: any) {
           alignItems: "center",
         }}
       >
-        <Text
-          style={{
-            fontSize: 50,
-            // fontFamily: "Arial",
-            color: "#2A3B76",
-          }}
-        >
-          Bienvenido
-        </Text>
+        <LoadingSpinner />
       </View>
     );
   }
@@ -250,7 +284,7 @@ const mapStateToProps = (reducers: any) => {
   return {
     servicesData: reducers.home.servicesData,
     email: reducers.profile.email,
-    // user_photo: reducers.profile.user_photo,
+    user_photo: reducers.profile.user_photo,
   };
 };
 const SearchAsset = connect(mapStateToProps, { EquipmentListUpper })(

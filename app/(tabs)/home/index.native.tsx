@@ -10,24 +10,13 @@ import {
   Dimensions,
 } from "react-native";
 import { connect } from "react-redux";
-import {
-  collection,
-  onSnapshot,
-  query,
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  limit,
-  where,
-  orderBy,
-} from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { saveTotalEventServiceAITList } from "../../../redux/actions/home";
 import { resetPostPerPageHome } from "../../../redux/actions/home";
 import { saveApprovalListnew } from "../../../redux/actions/search";
 import { updateAITServicesDATA } from "../../../redux/actions/home";
-import { db } from "@/firebaseConfig";
+import { subscribeAllEvents, addEventLike, removeEventLike } from "@/lib/db/events";
+import { subscribeApprovalsByEmail } from "@/lib/db/approvals";
 import { mineraCorreosList } from "@/utils/MineraList";
 import { areaLists } from "@/utils/areaList";
 import Toast from "react-native-toast-message";
@@ -55,80 +44,39 @@ function HomeScreenRaw(props: any) {
   const regex = /@(.+?)\./i;
   // this useEffect is used to retrive all data from firebase
   useEffect(() => {
-    let unsubscribe: any;
+    let unsubscribe: (() => void) | undefined;
 
     if (props.email) {
       const companyName =
         capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo";
-      const companyNameLowercase = companyName?.toLowerCase();
 
-      async function fetchData() {
-        let queryRef;
-
-        queryRef = query(
-          collection(db, "events"),
-          limit(20),
-          // where("visibilidad", "==", "Todos"),
-          // where(
-          //   "AITEmpresaMinera",
-          //   "==",
-          //   mineraCorreosList[companyNameLowercase]
-          // ),
-          orderBy("createdAt", "desc")
-        );
-
-        unsubscribe = onSnapshot(queryRef, async (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-          //order the list by date
-          lista.sort((a: any, b: any) => {
-            return b.createdAt - a.createdAt;
-          });
-
-          setPosts(lista);
+      unsubscribe = subscribeAllEvents(
+        (lista) => {
+          setPosts(lista as never[]);
           setCompanyName(companyName);
           props.saveTotalEventServiceAITList(lista);
-        });
-        setIsLoading(false);
-      }
-
-      fetchData();
-
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
+          setIsLoading(false);
+        },
+        undefined,
+        20
+      );
     }
+
+    return () => {
+      unsubscribe?.();
+    };
   }, [props.email]);
 
   useEffect(() => {
-    let unsubscribe: any;
+    let unsubscribe: (() => void) | undefined;
     if (props.email) {
-      function fetchData() {
-        let queryRef = query(
-          collection(db, "approvals"),
-          orderBy("date", "desc"),
-          where("ApprovalRequestSentTo", "array-contains", props.email),
-          limit(20)
-        );
-        unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-          props.saveApprovalListnew(lista);
-        });
-      }
-      fetchData();
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
+      unsubscribe = subscribeApprovalsByEmail(props.email, (lista) => {
+        props.saveApprovalListnew(lista);
+      });
     }
+    return () => {
+      unsubscribe?.();
+    };
   }, [props.email]);
 
   const loadMorePosts = () => {
@@ -160,16 +108,10 @@ function HomeScreenRaw(props: any) {
   //---activate like/unlike Post using useCallback--------
   const likePost = useCallback(
     async (item: any) => {
-      const postRef = doc(db, "events", item.idDocFirestoreDB);
-
       if (item.likes?.includes(props.email)) {
-        await updateDoc(postRef, {
-          likes: arrayRemove(props.email),
-        });
+        await removeEventLike(item.idDocFirestoreDB, props.email);
       } else {
-        await updateDoc(postRef, {
-          likes: arrayUnion(props.email),
-        });
+        await addEventLike(item.idDocFirestoreDB, props.email);
       }
     },
     [props.email]

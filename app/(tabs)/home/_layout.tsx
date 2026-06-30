@@ -16,7 +16,6 @@ import { update_firebaseEmail } from "../../../redux/actions/profile";
 import { update_firebaseUid } from "../../../redux/actions/profile";
 import { saveActualAITServicesFirebaseGlobalState } from "../../../redux/actions/post";
 import { getAuth } from "firebase/auth";
-import { db } from "@/firebaseConfig";
 
 function _layoutRaw(props: any) {
   return (

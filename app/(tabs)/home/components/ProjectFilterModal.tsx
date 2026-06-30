@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/firebaseConfig"; // Adjust path if needed
+import { getAllProjects } from "@/lib/db/projects";
 
 // Mock data for companies and project types
 const COMPANIES = [
@@ -69,19 +68,7 @@ const ProjectFilterModal = ({
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const proyectosRef = collection(db, "proyectos");
-        const proyectosQuery = query(
-          proyectosRef,
-          orderBy("createdAt", "desc")
-        );
-
-        const snapshot = await getDocs(proyectosQuery);
-        const projects = snapshot.docs.map((doc, index) => {
-          // You can customize this to use projectName or any other field
-          const data = doc.data();
-          return data;
-          // return data.projectName || doc.id;
-        });
+        const projects = await getAllProjects();
         setFirebaseProjects(projects);
       } catch (error) {
         console.error("Error fetching proyectos:", error);
@@ -110,6 +97,10 @@ const ProjectFilterModal = ({
     setSelectedProject(project);
     // onClose();
   };
+
+  const highlightedProject = selectedProject ?? currentProject;
+  const isProjectSelected = (project: any) =>
+    highlightedProject?.projectName === project?.projectName;
 
   if (!isOpen) return null;
 
@@ -437,11 +428,11 @@ const ProjectFilterModal = ({
                       padding: "10px 12px",
                       borderRadius: 5,
                       backgroundColor:
-                        currentProject.projectName === project.projectName
+                        isProjectSelected(project)
                           ? "#f0f5ff"
                           : "white",
                       border: `1px solid ${
-                        currentProject.projectName === project.projectName
+                        isProjectSelected(project)
                           ? "#2A3B76"
                           : "#eee"
                       }`,
@@ -476,7 +467,7 @@ const ProjectFilterModal = ({
                         {project.Area || "PARADA DE PLANTA"}
                       </div>
                     </div>
-                    {currentProject.projectName === project.projectName && (
+                    {isProjectSelected(project) && (
                       <div style={{ color: "#2A3B76" }}>
                         <svg
                           width="18"
@@ -533,11 +524,16 @@ const ProjectFilterModal = ({
 
           <button
             onClick={() => {
-              const projectName =
-                filteredProjects.length > 0
-                  ? filteredProjects[0]
-                  : currentProject;
-              setIdProyecto(selectedProject?.id || "");
+              const projectToLoad = selectedProject ?? highlightedProject;
+              if (projectToLoad) {
+                onSelectProject(
+                  projectToLoad,
+                  selectedCompany,
+                  selectedType,
+                  selectedDate
+                );
+                setIdProyecto(projectToLoad?.id || "");
+              }
               onClose();
             }}
             style={{

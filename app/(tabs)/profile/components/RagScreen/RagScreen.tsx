@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,22 +9,19 @@ import {
   StyleSheet,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
-  ColorValue,
-  ViewStyle,
-  TextStyle,
-  ImageStyle,
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
 import { styles } from "./RagScreen.styles";
 import { connect } from "react-redux";
 import { Feather } from "@expo/vector-icons";
-import axios from "axios";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { queryRag } from "@/lib/rag/queryRag";
+import { supabase } from "@/lib/supabase";
 
-// Define message type
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  mode?: string;
 }
 
 interface RagScreenProps {
@@ -32,118 +29,74 @@ interface RagScreenProps {
 }
 
 function RagScreenBare({ isModal = true }: RagScreenProps) {
-  const [sourceId, setSourceId] = useState("src_SlffbbdYgjBVAXDXjdNF0");
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
-  const [content, setContent] = useState("");
   const [pregunta, setPregunta] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
-  useEffect(() => {
-    const addPdfUrl = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.post(
-          "https://api.chatpdf.com/v1/sources/add-url",
-          {
-            url: "https://firebasestorage.googleapis.com/v0/b/fh-servicios.firebasestorage.app/o/pdfPost%2FPARADA%20DE%20PLANTA.pdf?alt=media&token=c427c68e-825d-4cec-9c33-424e4efcbf22",
-          },
-          {
-            headers: {
-              "x-api-key":
-                process.env.EXPO_PUBLIC_CHATPDF_API_KEY ||
-                "sec_dBMhcmZhRXPUT8NUmLeqAMEtcqVlNiqr",
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        console.log("Source ID:", response.data.sourceId);
-        setSourceId(response.data.sourceId);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error adding PDF:", error);
-        setIsLoading(false);
-      }
-    };
-
-    addPdfUrl();
-  }, []);
-
-  const chatPDF = async (pregunta: string) => {
-    if (!pregunta.trim()) return;
+  const askQuestion = async (question: string) => {
+    if (!question.trim()) return;
 
     setIsLoading(true);
-
-    // Add user question to chat history
-    const newMessage: ChatMessage = {
-      role: "user",
-      content: pregunta,
-    };
-
-    setChatHistory((prevHistory) => [...prevHistory, newMessage]);
-    setPregunta(""); // Clear input field
+    const userMessage: ChatMessage = { role: "user", content: question };
+    setChatHistory((prev) => [...prev, userMessage]);
+    setPregunta("");
 
     try {
-      const response = await axios.post(
-        "https://api.chatpdf.com/v1/chats/message",
-        {
-          sourceId: sourceId,
-          messages: [
-            {
-              role: "user",
-              content:
-                "Si te pregunto quien eres tu respondes que eres el agente de mantenimiento MineTrack AI y eres un ingeniero de planificacion de mantenimiento y responde esta pregunta:" +
-                pregunta,
-            },
-          ],
-        },
-        {
-          headers: {
-            "x-api-key":
-              process.env.EXPO_PUBLIC_CHATPDF_API_KEY ||
-              "sec_dBMhcmZhRXPUT8NUmLeqAMEtcqVlNiqr",
-            "Content-Type": "application/json",
-          },
+      let answer: string;
+      let mode = "hybrid";
+
+      try {
+        const { data, error } = await supabase.functions.invoke("rag-query", {
+          body: { question },
+        });
+        if (!error && data?.answer) {
+          answer = data.answer;
+          mode = data.mode ?? "edge";
+        } else {
+          throw new Error(error?.message ?? "Edge function unavailable");
         }
-      );
+      } catch {
+        const result = await queryRag(question);
+        answer = result.answer;
+        mode = result.mode;
+      }
 
-      // Add AI response to chat history
-      const aiResponse: ChatMessage = {
-        role: "assistant",
-        content: response.data.content,
-      };
-
-      setChatHistory((prevHistory) => [...prevHistory, aiResponse]);
-      setIsLoading(false);
+      setChatHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: answer, mode },
+      ]);
     } catch (error) {
-      console.error("Error sending chat message:", error);
+      console.error("RAG error:", error);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "No pude consultar la base de datos. Verifica la conexión y que las migraciones RAG estén aplicadas (006_rag_knowledge.sql).",
+        },
+      ]);
+    } finally {
       setIsLoading(false);
-
-      // Add error message to chat history
-      const errorMessage: ChatMessage = {
-        role: "assistant",
-        content:
-          "Lo siento, ocurrió un error al procesar tu pregunta. Por favor, intenta nuevamente.",
-      };
-
-      setChatHistory((prevHistory) => [...prevHistory, errorMessage]);
     }
   };
 
-  // Handle Enter key press in web
   const handleKeyPress = (
     e: NativeSyntheticEvent<TextInputKeyPressEventData>
   ) => {
     if (Platform.OS === "web" && e.nativeEvent.key === "Enter") {
       e.preventDefault?.();
-      chatPDF(pregunta);
+      askQuestion(pregunta);
     }
   };
 
-  const getMessageTextColor = (role: "user" | "assistant"): string => {
-    return role === "user" ? "#ffffff" : "#111827";
-  };
+  const getMessageTextColor = (role: "user" | "assistant"): string =>
+    role === "user" ? "#ffffff" : "#111827";
+
+  const suggestions = [
+    "¿Qué trabajos se hicieron en la chancadora 001-CR002?",
+    "¿Cuáles son las actividades más atrasadas?",
+    "¿Cuáles son los eventos de seguridad de hoy?",
+  ];
 
   return (
     <View style={[styles.container, webStyles.container]}>
@@ -152,7 +105,8 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
           Asistente de Planificación de Mantenimiento
         </Text>
         <Text style={webStyles.subtitle}>
-          Consulta información sobre la parada de planta concentradora
+          Consulta planificación, eventos de campo, HSE y historial por equipo
+          (TagEquipo)
         </Text>
       </View>
 
@@ -171,17 +125,10 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
             />
             <Text style={webStyles.botName}>MineTrack AI</Text>
             <Text style={webStyles.botDescription}>
-              Especialista en planificación de mantenimiento
+              RAG sobre Supabase: actividades, eventos, mantenimiento diario y
+              equipos
             </Text>
           </View>
-
-          {/* <View style={webStyles.documentInfo}>
-            <Text style={webStyles.documentTitle}>Documento Cargado:</Text>
-            <View style={webStyles.documentCard}>
-              <Feather name="file-text" size={24} color="#2A3B76" />
-              <Text style={webStyles.documentName}>PARADA DE PLANTA.pdf</Text>
-            </View>
-          </View> */}
         </View>
 
         <View style={webStyles.chatSection}>
@@ -193,32 +140,18 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
               <View style={webStyles.emptyChat}>
                 <Feather name="message-circle" size={48} color="#d1d5db" />
                 <Text style={webStyles.emptyChatText}>
-                  Haz una pregunta para comenzar la conversación
+                  Pregunta sobre equipos, atrasos o seguridad
                 </Text>
                 <View style={webStyles.suggestionContainer}>
-                  <TouchableOpacity
-                    style={webStyles.suggestionButton}
-                    onPress={() =>
-                      chatPDF(
-                        "¿Cuáles son las actividades programadas para el alimentador Pebbles 3M?"
-                      )
-                    }
-                  >
-                    <Text style={webStyles.suggestionText}>
-                      ¿Cuáles son las actividades para el alimentador Pebbles
-                      3M?
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={webStyles.suggestionButton}
-                    onPress={() =>
-                      chatPDF("¿Cuánto tiempo dura la parada de planta?")
-                    }
-                  >
-                    <Text style={webStyles.suggestionText}>
-                      ¿Cuánto tiempo dura la parada de planta?
-                    </Text>
-                  </TouchableOpacity>
+                  {suggestions.map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={webStyles.suggestionButton}
+                      onPress={() => askQuestion(s)}
+                    >
+                      <Text style={webStyles.suggestionText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
             ) : (
@@ -233,29 +166,22 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
                   ]}
                 >
                   <View style={webStyles.messageBubble}>
-                    {message.role === "user" ? (
-                      <View style={webStyles.userBubble}>
-                        <Text
-                          style={[
-                            webStyles.messageText,
-                            { color: getMessageTextColor(message.role) },
-                          ]}
-                        >
-                          {message.content}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={webStyles.aiBubble}>
-                        <Text
-                          style={[
-                            webStyles.messageText,
-                            { color: getMessageTextColor(message.role) },
-                          ]}
-                        >
-                          {message.content}
-                        </Text>
-                      </View>
-                    )}
+                    <View
+                      style={
+                        message.role === "user"
+                          ? webStyles.userBubble
+                          : webStyles.aiBubble
+                      }
+                    >
+                      <Text
+                        style={[
+                          webStyles.messageText,
+                          { color: getMessageTextColor(message.role) },
+                        ]}
+                      >
+                        {message.content}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               ))
@@ -270,14 +196,14 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
           <View style={webStyles.inputContainer}>
             <TextInput
               style={webStyles.input}
-              placeholder="Ingresa tu pregunta sobre la parada de planta..."
+              placeholder="Ej: trabajos en 001-CR002, actividades atrasadas, HSE hoy..."
               value={pregunta}
-              onChangeText={(text) => setPregunta(text)}
+              onChangeText={setPregunta}
               multiline={Platform.OS === "web"}
               onKeyPress={handleKeyPress}
             />
             <TouchableOpacity
-              onPress={() => chatPDF(pregunta)}
+              onPress={() => askQuestion(pregunta)}
               style={webStyles.sendButton}
               disabled={isLoading || !pregunta.trim()}
             >
@@ -290,25 +216,17 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
   );
 }
 
-const mapStateToProps = (reducers: any) => {
-  return {
-    email: reducers.profile.email,
-    profile: reducers.profile.profile,
-  };
-};
+const mapStateToProps = (reducers: any) => ({
+  email: reducers.profile.email,
+  profile: reducers.profile.profile,
+});
 
-// Modern web styles for the RAG screen
 const webStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9fafb",
-  },
+  container: { flex: 1, backgroundColor: "#f9fafb" },
   header: {
     padding: 24,
     backgroundColor: "#2A3B76",
     alignItems: "center" as const,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
   },
   title: {
     fontSize: 24,
@@ -321,10 +239,7 @@ const webStyles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.8)",
     textAlign: "center" as const,
   },
-  chatContainer: {
-    flexDirection: "row" as const,
-    flex: 1,
-  },
+  chatContainer: { flexDirection: "row" as const, flex: 1 },
   sidebar: {
     width: 300,
     backgroundColor: "#ffffff",
@@ -339,12 +254,7 @@ const webStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 16,
-  },
+  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 16 },
   botName: {
     fontSize: 18,
     fontWeight: "600" as const,
@@ -356,40 +266,9 @@ const webStyles = StyleSheet.create({
     color: "#6b7280",
     textAlign: "center" as const,
   },
-  documentInfo: {
-    marginTop: 8,
-  },
-  documentTitle: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#111827",
-    marginBottom: 12,
-  },
-  documentCard: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    backgroundColor: "#f3f4f6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    gap: 10,
-  },
-  documentName: {
-    fontSize: 14,
-    color: "#4b5563",
-    flexShrink: 1,
-  },
-  chatSection: {
-    flex: 1,
-    flexDirection: "column" as const,
-  },
-  messagesContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  messagesContent: {
-    paddingBottom: 20,
-  },
+  chatSection: { flex: 1, flexDirection: "column" as const },
+  messagesContainer: { flex: 1, padding: 20 },
+  messagesContent: { paddingBottom: 20 },
   emptyChat: {
     flex: 1,
     justifyContent: "center" as const,
@@ -415,24 +294,11 @@ const webStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
-  suggestionText: {
-    fontSize: 14,
-    color: "#4b5563",
-  },
-  messageItem: {
-    marginBottom: 16,
-    width: "80%",
-  },
-  userMessage: {
-    alignSelf: "flex-end" as const,
-  },
-  aiMessage: {
-    alignSelf: "flex-start" as const,
-  },
-  messageBubble: {
-    borderRadius: 18,
-    padding: 2,
-  },
+  suggestionText: { fontSize: 14, color: "#4b5563" },
+  messageItem: { marginBottom: 16, width: "90%" },
+  userMessage: { alignSelf: "flex-end" as const },
+  aiMessage: { alignSelf: "flex-start" as const },
+  messageBubble: { borderRadius: 18, padding: 2 },
   userBubble: {
     backgroundColor: "#2A3B76",
     borderRadius: 18,
@@ -445,14 +311,8 @@ const webStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    alignItems: "center" as const,
-    margin: 20,
-  },
+  messageText: { fontSize: 15, lineHeight: 22 },
+  loadingContainer: { alignItems: "center" as const, margin: 20 },
   inputContainer: {
     flexDirection: "row" as const,
     padding: 16,

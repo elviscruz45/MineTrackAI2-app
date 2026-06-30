@@ -16,8 +16,6 @@ import { update_firebaseUserUid } from "../../../redux/actions/auth";
 import ConnectedChangeDisplayNameForm from "./components/ChangeDisplayNameForm/ChangeDisplayNameForm";
 import { Modal } from "@/components/Modal/Modal";
 import { update_firebaseProfile } from "../../../redux/actions/profile";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import { Image as ImageExpo } from "expo-image";
 import { screen } from "../../../utils";
 import ProfileDateScreen from "./components/ProfileDateScreen/ProfileDateScreen";
@@ -71,25 +69,8 @@ function ProfileRaw(props: any) {
   };
 
   useEffect(() => {
-    let q;
     if (startDate && endDate) {
-      async function fetchData() {
-        q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-
-        try {
-          const querySnapshot = await getDocs(q);
-          const lista: any = [];
-          querySnapshot.forEach((doc) => {
-            lista.push(doc.data());
-          });
-
-          setPost(lista);
-        } catch (error) {
-          console.error("Error fetching data: ", error);
-        }
-      }
-
-      // fetchData();
+      // Date-filtered events fetch disabled; profile uses embedded service events.
     }
   }, [startDate, endDate]);
 

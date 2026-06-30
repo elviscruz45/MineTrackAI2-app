@@ -1,0 +1,7 @@
+-- Webhook helper for maintenance_logs notifications
+-- Configure in Supabase Dashboard:
+-- Database → Webhooks → New webhook on `maintenance_logs` INSERT
+-- → Edge Function `on-event-created`
+-- Filter: aprobacion_requerida = true
+--
+-- Payload should include { "table": "maintenance_logs", "record": <new row> }

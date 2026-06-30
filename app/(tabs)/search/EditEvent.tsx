@@ -10,16 +10,8 @@ import EditEventData from "./EditEvent.data";
 // import { saveActualPostFirebase } from "../../redux/actions/post";
 import { useFormik } from "formik";
 
-import { db } from "@/firebaseConfig";
-// import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  arrayUnion,
-  getDoc,
-} from "firebase/firestore";
+import { updateEvent } from "@/lib/db/events";
+import { getServicioAitById, updateServicioAit } from "@/lib/db/serviciosAit";
 // import { areaLists } from "../../../utils/areaList";
 import TitleForms from "../post/components/TitleForms/TitleForms";
 // import { resetPostPerPageHome } from "../../redux/home";
@@ -46,43 +38,32 @@ function EditEventSearchScreenBare(props: any) {
       try {
         const newData = formValue;
 
-        //update the doc from events collections
-        const eventDocRef = doc(db, "events", idDocFirestoreDB);
         const updatedData: any = {
           visibilidad: newData.visibilidad,
         };
         if (newData?.porcentajeAvance) {
           updatedData.porcentajeAvance = newData.porcentajeAvance;
         }
-        await updateDoc(eventDocRef, updatedData);
+        await updateEvent(idDocFirestoreDB, updatedData);
 
-        //updating events in ServiciosAIT to filter the deleted event
-        const Ref = doc(db, "ServiciosAIT", idDocAITFirestoreDB);
-        const docSnapshot: any = await getDoc(Ref);
-        const eventList = docSnapshot.data().events;
+        const servicio = await getServicioAitById(idDocAITFirestoreDB);
+        const eventList = (servicio?.events as any[]) ?? [];
         const updatedList = eventList.map((obj: any) => {
           if (obj.idDocFirestoreDB === idDocFirestoreDB) {
-            // Create the updated object with visibilidad
             const updatedObj = { ...obj, visibilidad: newData.visibilidad };
-
-            // Conditionally add porcentajeAvance if it exists in newData
             if (newData?.porcentajeAvance) {
               updatedObj.porcentajeAvance = newData.porcentajeAvance;
             }
-
             return updatedObj;
           }
           return obj;
         });
 
-        const updatedData2: any = {
-          events: updatedList,
-        };
+        const updatedData2: any = { events: updatedList };
         if (newData?.porcentajeAvance) {
-          // Option 1: Set AvanceEjecucion directly to the new porcentajeAvance
           updatedData2.AvanceEjecucion = newData.porcentajeAvance;
         }
-        await updateDoc(Ref, updatedData2);
+        await updateServicioAit(idDocAITFirestoreDB, updatedData2);
 
         router.back();
 

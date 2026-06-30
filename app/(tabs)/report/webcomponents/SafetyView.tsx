@@ -431,7 +431,7 @@ const SafetyView: React.FC<SafetyViewProps> = ({ data }) => {
               <table className="sf-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    {["Fecha", "Clasificación", "Servicio / AIT", "HH Perd.", "Equipo", "Descripción"].map((h) => (
+                    {["Fecha", "Clasificación", "Servicio / AIT", "HH Perd.", "Componente", "Descripción"].map((h) => (
                       <th key={h}>{h}</th>
                     ))}
                   </tr>

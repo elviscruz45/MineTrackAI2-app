@@ -3,14 +3,12 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  Button,
   FlatList,
-  KeyboardAvoidingView,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
-import React, { useState } from "react";
-import styles from "./GeneralForms.styles";
-import { Input } from "@rneui/themed";
+import React, { useMemo, useState } from "react";
+import { createGeneralFormsStyles } from "./GeneralForms.styles";
+import { Input, Button } from "@rneui/themed";
 import * as DocumentPicker from "expo-document-picker";
 import { Modal } from "../../../../../components/Modal/Modal";
 import ChangeDisplayMonto from "../FormsGeneral/ChangeNumeroMonto/ChangeDisplayMonto";
@@ -30,9 +28,12 @@ import { Image as ImageExpo } from "expo-image";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImageManipulator from "expo-image-manipulator";
 
-const windowWidth = Dimensions.get("window").width;
-
 function GeneralFormsBare(props: any) {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(
+    () => createGeneralFormsStyles(windowWidth),
+    [windowWidth],
+  );
   const { formik, setMoreImages, agregarImagenes } = props;
   const [pickedDocument, setPickedDocument] = useState(null);
   const [renderComponent, setRenderComponent] = useState<any>(null);
@@ -124,7 +125,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setTipoFile={setTipoFile}
-        />
+        />,
       );
     }
     if (key === "MontoModificado") {
@@ -133,7 +134,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setMonto={setMonto}
-        />
+        />,
       );
     }
     if (key === "NuevaFechaEstimada") {
@@ -142,7 +143,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setFechafin={setFechafin}
-        />
+        />,
       );
     }
     if (key === "HHModificado") {
@@ -151,7 +152,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setHorashombre={setHorashombre}
-        />
+        />,
       );
     }
     if (key === "causa") {
@@ -160,7 +161,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setCausa={setCausa}
-        />
+        />,
       );
     }
     if (key === "tipoEvento") {
@@ -169,7 +170,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setTipoEvento={setTipoEvento}
-        />
+        />,
       );
     }
     if (key === "clasificacionHSE") {
@@ -178,7 +179,7 @@ function GeneralFormsBare(props: any) {
           onClose={onCloseOpenModal}
           formik={formik}
           setClasificacionHSE={setClasificacionHSE}
-        />
+        />,
       );
     }
     onCloseOpenModal();
@@ -201,7 +202,7 @@ function GeneralFormsBare(props: any) {
         const resizedPhoto = await ImageManipulator.manipulateAsync(
           item.uri,
           [{ resize: { width: 800 } }],
-          { compress: 0.4, format: SaveFormat.JPEG, base64: true }
+          { compress: 0.4, format: SaveFormat.JPEG, base64: true },
         );
         return resizedPhoto.uri;
       });
@@ -226,13 +227,7 @@ function GeneralFormsBare(props: any) {
 
   return (
     <>
-      <View
-        style={{
-          backgroundColor: "white",
-          width: windowWidth > 1000 ? "55%" : "100%",
-          alignSelf: "center",
-        }} // Add backgroundColor here
-      >
+      <View style={styles.container}>
         {formik?.values?.titulo == "Tareo" && (
           <>
             <Input
@@ -303,8 +298,6 @@ function GeneralFormsBare(props: any) {
           }}
         /> */}
 
-
-
         {shortNameFileUpdated && (
           <Input
             value={formik.values.tipoFile}
@@ -341,20 +334,6 @@ function GeneralFormsBare(props: any) {
           }}
         />
 
-                <Input
-          value={shortNameFileUpdated}
-          label="Adjuntar PDF (Opcional)"
-          multiline={true}
-          editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => {
-              pickDocument();
-            },
-          }}
-        />
-
         {tipoEvento === "HSE" && (
           <Input
             value={formik.values.clasificacionHSE}
@@ -370,10 +349,16 @@ function GeneralFormsBare(props: any) {
 
         {(tipoEvento === "HSE" || tipoEvento === "Técnico") && (
           <>
+            <Text style={styles.hseGroupLabel}>
+              Impacto operacional (HSE / Técnico)
+            </Text>
             <Input
-              label="Equipo afectado"
+              label="Componente afectado"
+              placeholder="Ej. motor principal, correa transportadora, válvula…"
               value={formik.values.equipoAfectado}
-              onChangeText={(text) => formik.setFieldValue("equipoAfectado", text)}
+              onChangeText={(text) =>
+                formik.setFieldValue("equipoAfectado", text)
+              }
             />
             <Input
               label="Horas perdidas"
@@ -386,42 +371,47 @@ function GeneralFormsBare(props: any) {
             />
           </>
         )}
-
+        <Input
+          value={shortNameFileUpdated}
+          label="Adjuntar PDF (Opcional)"
+          multiline={true}
+          editable={false}
+          rightIcon={{
+            type: "material-community",
+            name: "arrow-right-circle-outline",
+            onPress: () => {
+              pickDocument();
+            },
+          }}
+        />
         <Text> </Text>
 
         {agregarImagenes !== "editar" && (
           <View style={styles.pickImagesButton}>
-            <Button title="Agregar Imagenes" onPress={pickImages} />
+            <Button
+              title="Agregar imágenes"
+              onPress={pickImages}
+              buttonStyle={styles.pickImagesBtn}
+              titleStyle={styles.pickImagesBtnTitle}
+            />
           </View>
         )}
 
         <FlatList
-          style={{
-            backgroundColor: "white",
-            paddingTop: 10,
-            paddingVertical: 10,
-          }}
-          horizontal={true}
+          style={styles.imageStrip}
+          horizontal
           showsHorizontalScrollIndicator={false}
           data={images}
-          renderItem={({ item }) => {
-            return (
-              <View>
-                <ImageExpo
-                  source={{ uri: item }}
-                  style={{
-                    marginLeft: 20,
-                    width: 80,
-                    height: 80,
-                    // borderRadius: 80,
-                    // borderWidth: 0.3,
-                  }}
-                  // cachePolicy={"memory-disk"}
-                />
-              </View>
-            );
-          }}
-          keyExtractor={(index) => `${index}`}
+          renderItem={({ item }) => (
+            <View>
+              <ImageExpo
+                source={{ uri: item }}
+                style={styles.thumb}
+                contentFit="cover"
+              />
+            </View>
+          )}
+          keyExtractor={(_, index) => `${index}`}
         />
       </View>
 

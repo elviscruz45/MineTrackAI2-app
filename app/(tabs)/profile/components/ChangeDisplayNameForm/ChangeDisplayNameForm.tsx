@@ -8,9 +8,11 @@ import ChangeDisplayRulers from "./ChangeDisplayNameForm.data";
 
 import styles from "./ChangeDisplayNameForm.styles";
 import { connect } from "react-redux";
-import { db } from "@/firebaseConfig";
-// import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  getProfileByFirebaseUid,
+  createProfile,
+  updateProfile as updateSupabaseProfile,
+} from "@/lib/db/profiles";
 import { update_firebaseProfile } from "../../../../../redux/actions/profile";
 import { update_firebaseUserName } from "../../../../../redux/actions/profile";
 import { userTypeList } from "../../../../../utils/userTypeList";
@@ -38,24 +40,21 @@ function ChangeDisplayNameForm(props: any) {
           displayName: newData.displayNameform,
         });
 
-        //checking up if there are data in users
-        const docRef = doc(db, "users", props.uid);
+        //checking up if there are data in profiles
+        const existingProfile = await getProfileByFirebaseUid(props.uid);
 
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap?.exists()) {
+        if (existingProfile) {
           const updateDataLasEventPost = {
             displayNameform: newData.displayNameform,
             cargo: newData.cargo,
             descripcion: newData.descripcion,
             photoURL: props.user_photo,
-            // ExpoPushNotificationToken: expoPushToken?.data,
           };
           if (props.user_photo) {
             updateDataLasEventPost.photoURL = props.user_photo;
           }
 
-          await updateDoc(docRef, updateDataLasEventPost);
+          await updateSupabaseProfile(props.uid, updateDataLasEventPost);
 
           props.update_firebaseProfile(newData);
           props.update_firebaseUserName(newData.displayNameform);
@@ -75,9 +74,8 @@ function ChangeDisplayNameForm(props: any) {
           newData.EquipmentFavorities = [];
 
           // newData.ExpoPushNotificationToken = expoPushToken?.data || "";
-          ///checking up if there are data in users
-          const docRef = doc(collection(db, "users"), newData.uid);
-          await setDoc(docRef, newData);
+          ///checking up if there are data in profiles
+          await createProfile(props.uid, newData);
         }
 
         props.update_firebaseProfile(newData);

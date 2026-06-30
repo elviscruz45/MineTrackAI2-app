@@ -10,13 +10,11 @@ import {
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
 import styles from "./file.styles";
-import { getStorage, ref, deleteObject } from "firebase/storage";
-import { screen } from "../../../utils";
+import { addPdfToServicio, removePdfFromServicio } from "@/lib/db/serviciosAit";
+import { deleteFile } from "@/lib/db/storage";
 import { connect } from "react-redux";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Toast from "react-native-toast-message";
-import { db } from "@/firebaseConfig";
-import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 
@@ -85,6 +83,23 @@ function FileScreenBare(props: any) {
     // });
   };
 
+  const removePdfRecord = async (item: any) => {
+    const servicioId = props.actualServiceAIT?.idServiciosAIT;
+    await removePdfFromServicio(servicioId, item.pdfPrincipal);
+    if (item.pdfPrincipal) {
+      try {
+        const marker = "/object/public/pdfs/";
+        const idx = item.pdfPrincipal.indexOf(marker);
+        if (idx !== -1) {
+          const path = item.pdfPrincipal.slice(idx + marker.length);
+          await deleteFile("pdfs", path);
+        }
+      } catch (error) {
+        console.error("Error deleting document:", error);
+      }
+    }
+  };
+
   const deleteDoc = async (item: any) => {
     if (Platform.OS === "web") {
       const confirmed = window.confirm(
@@ -92,23 +107,12 @@ function FileScreenBare(props: any) {
       );
 
       if (confirmed) {
-        const Ref = doc(
-          db,
-          "ServiciosAIT",
-          props.actualServiceAIT?.idServiciosAIT
-        );
-        const docSnapshot = await getDoc(Ref);
-        const docList = docSnapshot?.data()?.pdfFile;
-
-        const filteredList = docList?.filter(
-          (obj: any) => obj.pdfPrincipal !== item?.pdfPrincipal
-        );
-
-        const updatedData = {
-          pdfFile: filteredList,
-        };
-
-        await updateDoc(Ref, updatedData);
+        await removePdfRecord(item);
+        Toast.show({
+          type: "success",
+          position: "bottom",
+          text1: "Se ha eliminado correctamente",
+        });
       }
     } else {
       Alert.alert(
@@ -122,38 +126,7 @@ function FileScreenBare(props: any) {
           {
             text: "Aceptar",
             onPress: async () => {
-              //updating events in ServiciosAIT to filter the deleted event
-              const Ref = doc(
-                db,
-                "ServiciosAIT",
-                props.actualServiceAIT?.idServiciosAIT
-              );
-              const docSnapshot: any = await getDoc(Ref);
-              const eventList = docSnapshot.data().pdfFile;
-
-              const filteredList = eventList.filter(
-                (obj: any) =>
-                  obj.pdfPrincipal !== props.actualServiceAIT?.pdfPrincipal
-              );
-
-              const updatedData = {
-                pdfFile: filteredList,
-              };
-
-              await updateDoc(Ref, updatedData);
-
-              //delete doc from storage
-              const documentPath = `pdfPost/${item.fechaPostFormato}-${item.FilenameTitle}`;
-              try {
-                const storage = getStorage();
-                const storageRef = ref(storage, documentPath);
-                await deleteObject(storageRef);
-              } catch (error) {
-                console.error("Error deleting document:", error);
-                // Handle errors as needed
-              }
-
-              //send success message
+              await removePdfRecord(item);
               Toast.show({
                 type: "success",
                 position: "bottom",

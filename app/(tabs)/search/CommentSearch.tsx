@@ -16,23 +16,17 @@ import { connect } from "react-redux";
 import { Icon } from "@rneui/themed";
 import styles from "./CommentSearch.styles";
 import {
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  onSnapshot,
-  getDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+  addEventComment,
+  deleteEvent,
+  getEventById,
+} from "@/lib/db/events";
+import { getServicioAitById, updateServicioAit } from "@/lib/db/serviciosAit";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
 import { Image as ImageExpo } from "expo-image";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { screen } from "../../../utils";
 import Toast from "react-native-toast-message";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { useRouter, useLocalSearchParams } from "expo-router";
 const windowWidth = Dimensions.get("window").width;
 
 function CommentSearchScreen(props: any) {
@@ -59,18 +53,9 @@ function CommentSearchScreen(props: any) {
 
   useEffect(() => {
     async function fetchData() {
-      const q = query(
-        collection(db, "events"),
-        where("idDocFirestoreDB", "==", Index)
-      );
-
       try {
-        const querySnapshot = await getDocs(q);
-        const lista: any = [];
-        querySnapshot.forEach((doc) => {
-          lista.push(doc.data());
-        });
-        setPost(lista[0]);
+        const event = await getEventById(Index);
+        setPost(event);
       } catch (error) {
         console.error("Error fetching data: ", error);
       }
@@ -111,8 +96,6 @@ function CommentSearchScreen(props: any) {
       return;
     }
 
-    const PostRef = doc(db, "events", post?.idDocFirestoreDB);
-
     const commentObj = {
       comment: comment,
       commenterEmail: props.email,
@@ -120,9 +103,7 @@ function CommentSearchScreen(props: any) {
       commenterPhoto: props.user_photo,
       date: new Date().getTime(),
     };
-    await updateDoc(PostRef, {
-      comentariosUsuarios: arrayUnion(commentObj),
-    });
+    await addEventComment(post?.idDocFirestoreDB, commentObj);
     // Clear the comment input
     setComment("");
     // navigation.goBack();
@@ -138,7 +119,7 @@ function CommentSearchScreen(props: any) {
       if (confirmed) {
         //delete the doc from events collections
         router.back();
-        await deleteDoc(doc(db, "events", idDoc));
+        await deleteEvent(idDoc);
       }
     } else {
       Alert.alert(
@@ -155,21 +136,15 @@ function CommentSearchScreen(props: any) {
               //delete the doc from events collections
               // navigation.navigate(screen.home.home);
 
-              await deleteDoc(doc(db, "events", idDoc));
-              //updating events in ServiciosAIT to filter the deleted event
-              const Ref = doc(db, "ServiciosAIT", AITidServicios);
-              const docSnapshot: any = await getDoc(Ref);
-              const eventList = docSnapshot.data().events;
+              await deleteEvent(idDoc);
+              const servicio = await getServicioAitById(AITidServicios);
+              const eventList = (servicio?.events as any[]) ?? [];
 
               const filteredList = eventList.filter(
                 (obj: any) => obj.idDocFirestoreDB !== idDocFirestoreDB
               );
 
-              const updatedData = {
-                events: filteredList,
-              };
-
-              await updateDoc(Ref, updatedData);
+              await updateServicioAit(AITidServicios, { events: filteredList });
               Toast.show({
                 type: "success",
                 position: "bottom",

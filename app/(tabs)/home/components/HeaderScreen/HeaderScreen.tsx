@@ -1,13 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-} from "firebase/firestore";
 import { connect } from "react-redux";
-import { db } from "@/firebaseConfig";
+import { subscribeServiciosAitByProject } from "@/lib/db/serviciosAit";
 import { areaLists } from "@/utils/areaList";
 import { Image as ImageExpo } from "expo-image";
 import { saveActualAITServicesFirebaseGlobalState } from "@/redux/actions/post";
@@ -33,37 +27,18 @@ function HeaderScreenNoRedux(props: any) {
   }
   // const regex = /@(.+?)\./i;
   useEffect(() => {
-    let unsubscribe: any;
     if (props.email && props.idproyecto) {
-      // <-- check for idproyecto
-      function fetchData() {
-        let queryRef;
-
-        queryRef = query(
-          collection(db, "ServiciosAIT"),
-          where("projectId", "==", props.idproyecto) // <-- use idproyecto here
-        );
-
-        unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-
+      const unsubscribe = subscribeServiciosAitByProject(
+        props.idproyecto,
+        (lista) => {
           const listaOrdenada = sortByCodigo(lista);
-
           setData(listaOrdenada);
           props.updateAITServicesDATA(listaOrdenada);
-        });
-      }
-      props.idproyecto && fetchData();
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
         }
-      };
+      );
+      return unsubscribe;
     }
-  }, [props.email, props.idproyecto, props.refreshGantt]); // <-- add idproyecto to dependencies
+  }, [props.email, props.idproyecto, props.refreshGantt]);
 
   const selectAsset = async (item: any) => {
     await router.push({
@@ -115,6 +90,15 @@ function HeaderScreenNoRedux(props: any) {
         return (
           <TouchableOpacity
             onPress={() => selectAsset(item.idServiciosAIT)}
+            onLongPress={() => {
+              const code = String(item.TagEquipo || "").trim();
+              if (code) {
+                router.push({
+                  pathname: "/operations/equipment/[tagCode]",
+                  params: { tagCode: code },
+                });
+              }
+            }}
             activeOpacity={0.75}
           >
             <View

@@ -2,14 +2,9 @@ import { v4 as uuidv4 } from "uuid";
 // import uuid from "react-native-uuid";
 // import "react-native-get-random-values";
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-} from "firebase/storage";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { supabase } from "@/lib/supabase";
+import { getAllProfiles } from "@/lib/db/profiles";
+import { uploadEventImage, uploadPdf as uploadPdfToStorage } from "@/lib/db/storage";
 import { useEffect } from "react";
 import Toast from "react-native-toast-message";
 
@@ -21,37 +16,7 @@ const useUserData = (email: any, saveTotalUsers: any, getTotalUsers: any) => {
 
       async function fetchData() {
         try {
-          const queryRef1 = query(
-            collection(db, "users"),
-            // where("companyName", "!=", companyName),
-            orderBy("email", "desc")
-          );
-
-          // const queryRef2 = query(
-          //   collection(db, "users"),
-          //   where("companyName", "==", companyName),
-          //   orderBy("email", "desc")
-          // );
-
-          const getDocs1 = await getDocs(queryRef1);
-          // const getDocs2 = await getDocs(queryRef2);
-
-          const lista: any = [];
-
-          // Process results from the first query
-          if (getDocs1) {
-            getDocs1.forEach((doc) => {
-              lista.push(doc.data());
-            });
-          }
-
-          // // Process results from the second query
-          // if (getDocs2) {
-          //   getDocs2.forEach((doc) => {
-          //     lista.push(doc.data());
-          //   });
-          // }
-          // Save the merged results to the state or do any other necessary operations
+          const lista = await getAllProfiles();
           saveTotalUsers(lista);
         } catch (error) {
           // console.error("Error fetching data:", error);
@@ -97,32 +62,19 @@ export const dateFormat = () => {
   return formattedDate;
 };
 
-export const uploadImage = async (uri: any) => {
-  // const uuid = "asdfdscvcxdre";
-
+export const uploadImage = async (uri: any): Promise<string> => {
   const response = await fetch(uri);
-
   const blob = await response.blob();
-
-  const storage = getStorage();
-
-  const storageRef = ref(
-    storage,
-    `mainImageEvents/${JSON.stringify(new Date())}`
-  );
-  return uploadBytesResumable(storageRef, blob);
+  const path = `${Date.now()}.jpg`;
+  return uploadEventImage(path, blob, blob.type || "image/jpeg");
 };
 
 export const uploadPdf = async (
   uri: any,
   FilenameTitle: any,
   formattedDate: any
-) => {
+): Promise<string> => {
   try {
-    // const uuid = uuidv4();
-    // const response = await fetch(uri);
-    // const blob = await response.blob();
-    // const fileSize = blob.size;
     const blob: Blob = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.onload = function () {
@@ -141,20 +93,15 @@ export const uploadPdf = async (
       throw new Error("El archivo excede los 25 MB");
     }
 
-    const storage = getStorage();
-
-    const storageRef = ref(
-      storage,
-      `pdfPost/${JSON.stringify(new Date())}-${FilenameTitle}`
-    );
-
-    return uploadBytesResumable(storageRef, blob);
+    const path = `${Date.now()}-${FilenameTitle}`;
+    return uploadPdfToStorage(path, blob);
   } catch (error) {
     Toast.show({
       type: "error",
       position: "bottom",
       text1: "El archivo excede los 25 MB",
     });
+    throw error;
   }
 };
 

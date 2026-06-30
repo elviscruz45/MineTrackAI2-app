@@ -13,16 +13,7 @@ import {
 import * as DocumentPicker from "expo-document-picker";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import Toast from "react-native-toast-message";
-import { db } from "@/firebaseConfig";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { createProject, deleteProject } from "@/lib/db/projects";
 
 interface ProjectUploadModalProps {
   isVisible: boolean;
@@ -112,28 +103,19 @@ const ProjectUploadModal = ({
     try {
       //-------------------------------------------------------------------
 
-      // 1. PRIMERO: Crear proyecto en Firebase
-      const proyectosRef = collection(db, "proyectos");
-      const newProjectDoc = await addDoc(proyectosRef, {
+      const newProject = await createProject({
         projectName,
         projectType,
-        createdAt: new Date().toISOString(),
       });
 
-      // Guardar el ID para posible limpieza
-      newProjectDocId = newProjectDoc.id;
-
-      // Add the document ID to the document fields
-      await updateDoc(newProjectDoc, {
-        id: newProjectDoc.id,
-      });
+      newProjectDocId = newProject.id;
 
       // 2. DESPUÉS: Validar y procesar el archivo (esto lanzará error si hay problemas)
       await onUploadFile(
         projectName,
         projectType,
         selectedFile,
-        newProjectDoc.id
+        newProjectDocId
       );
 
       // ✅ Solo cerrar modal y mostrar éxito si no hubo errores
@@ -148,7 +130,7 @@ const ProjectUploadModal = ({
       // 🧹 LIMPIEZA: Si se creó el proyecto pero falló la validación, eliminarlo
       if (newProjectDocId) {
         try {
-          await deleteDoc(doc(db, "proyectos", newProjectDocId));
+          await deleteProject(newProjectDocId);
           console.log(
             `🗑️ Proyecto ${newProjectDocId} eliminado debido a error de validación`
           );

@@ -31,19 +31,7 @@ import Papa from "papaparse";
 import { useFormik } from "formik";
 import { saveTotalActivities } from "../../../redux/actions/post";
 import { initialValues, validationSchema } from "./index.data";
-import {
-  addDoc,
-  collection,
-  query,
-  doc,
-  updateDoc,
-  where,
-  orderBy,
-  getDocs,
-  setDoc,
-  Timestamp,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { createServicioAit } from "@/lib/db/serviciosAit";
 
 interface CSVRow {
   Codigo: string;
@@ -105,8 +93,7 @@ function PublishRaw(props: any) {
       return null;
     }
 
-    // Return a Firestore timestamp
-    return Timestamp.fromDate(parsedDate);
+    return parsedDate;
   };
 
   //retrieving serviceAIT list data from firebase
@@ -335,7 +322,7 @@ function PublishRaw(props: any) {
         // setIdServiciosAIT(newData.idServiciosAIT)
 
         // // Directly submit to Firebase
-        await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
+        await createServicioAit(newData);
 
         // Optional: Add a small delay
         await new Promise((resolve) => setTimeout(resolve, 200));

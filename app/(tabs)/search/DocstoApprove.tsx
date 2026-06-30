@@ -14,21 +14,12 @@ import { connect } from "react-redux";
 import { update_firebaseUserUid } from "../../../redux/actions/auth";
 import { update_firebaseProfile } from "../../../redux/actions/profile";
 import {
-  arrayUnion,
-  updateDoc,
-  doc,
-  deleteDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+  getApprovalsByServicioAit,
+  appendApprovalPerformed,
+  appendRejectionPerformed,
+  deleteApproval,
+} from "@/lib/db/approvals";
 import { Image as ImageExpo } from "expo-image";
-import { getStorage, ref, deleteObject } from "firebase/storage";
-
 import { update_approvalList } from "../../../redux/actions/home";
 import * as MailComposer from "expo-mail-composer";
 import Toast from "react-native-toast-message";
@@ -88,26 +79,13 @@ function DocstoApproveScreenBare(props: any) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const queryRef1 = query(
-          collection(db, "approvals"),
-          where("IdAITService", "==", idServiciosAIT),
-          orderBy("date", "desc")
+        const lista = await getApprovalsByServicioAit(idServiciosAIT);
+        const filtered = lista.filter(
+          (item: any) =>
+            item.ApprovalRequestedBy === emailUser ||
+            item.ApprovalRequestSentTo?.includes(emailUser)
         );
-        const getDocs1 = await getDocs(queryRef1);
-        const lista: any = [];
-        // Process results from the first query
-        if (getDocs1) {
-          getDocs1.forEach((doc) => {
-            if (
-              doc.data()?.ApprovalRequestedBy === emailUser ||
-              doc.data()?.ApprovalRequestSentTo.includes(emailUser)
-            ) {
-              lista.push(doc.data());
-            }
-          });
-        }
-
-        setApproval(lista);
+        setApproval(filtered as any);
       } catch (error) {
         console.error("Error fetching data:", error);
         Toast.show({
@@ -177,16 +155,12 @@ function DocstoApproveScreenBare(props: any) {
     companyName = "",
     NumeroServicio = ""
   ) => {
-    const PostRef = doc(db, "approvals", idApproval);
-
     if (Platform.OS === "web") {
       const confirmed = window.confirm(
         "Estas Seguro de Aprobar esta Solicitud?"
       );
       if (confirmed) {
-        await updateDoc(PostRef, {
-          ApprovalPerformed: arrayUnion(emailUser),
-        });
+        await appendApprovalPerformed(idApproval, emailUser);
         const tipo = "Aprobacion";
 
         sendEmail(
@@ -217,9 +191,7 @@ function DocstoApproveScreenBare(props: any) {
           {
             text: "Aprobar",
             onPress: async () => {
-              await updateDoc(PostRef, {
-                ApprovalPerformed: arrayUnion(emailUser),
-              });
+              await appendApprovalPerformed(idApproval, emailUser);
               const tipo = "Aprobacion";
 
               sendEmail(
@@ -261,16 +233,12 @@ function DocstoApproveScreenBare(props: any) {
     companyName = "",
     NumeroServicio = ""
   ) => {
-    const PostRef = doc(db, "approvals", idApproval);
-
     if (Platform.OS === "web") {
       const confirmed = window.confirm(
         "Estas Seguro de Desaprobar esta Solicitud?"
       );
       if (confirmed) {
-        await updateDoc(PostRef, {
-          RejectionPerformed: arrayUnion(emailUser),
-        });
+        await appendRejectionPerformed(idApproval, emailUser);
         const tipo = "Desaprobacion";
 
         sendEmail(
@@ -301,9 +269,7 @@ function DocstoApproveScreenBare(props: any) {
           {
             text: "Aceptar",
             onPress: async () => {
-              await updateDoc(PostRef, {
-                RejectionPerformed: arrayUnion(emailUser),
-              });
+              await appendRejectionPerformed(idApproval, emailUser);
               const tipo = "Desaprobacion";
 
               sendEmail(
@@ -384,8 +350,7 @@ function DocstoApproveScreenBare(props: any) {
           text: "Aceptar",
           onPress: async () => {
             //updating events in ServiciosAIT to filter the deleted event
-            const Ref = doc(db, "approvals", item.idApproval);
-            await deleteDoc(Ref);
+            await deleteApproval(item.idApproval);
 
             // // //delete doc from storage
             // const documentPath = `pdfPost/${item.fileName}-${item.fechaPostFormato}`;

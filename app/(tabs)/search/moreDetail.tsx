@@ -26,17 +26,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import BarChartTareo from "./moreDetail.Chart";
 import ChangeDisplayFechaReal from "./components/FechaReal/ChangeDisplayFechaReal";
 import { Modal } from "@/components/Modal/Modal";
-import {
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  onSnapshot,
-  getDoc,
-  deleteDoc,
-  setDoc,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { updateServicioAit, createServicioAit } from "@/lib/db/serviciosAit";
 import Toast from "react-native-toast-message";
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
 // import {
@@ -159,14 +149,12 @@ const processOfflineFormsQueue = async (): Promise<void> => {
 
     for (const operation of queue) {
       try {
-        if (operation.type === "setDoc") {
-          await setDoc(
-            doc(db, operation.collection, operation.docId),
-            operation.data
-          );
-        } else if (operation.type === "updateDoc") {
-          const docRef = doc(db, operation.collection, operation.docId);
-          await updateDoc(docRef, operation.data);
+        if (operation.collection === "ServiciosAIT") {
+          if (operation.type === "setDoc") {
+            await createServicioAit(operation.data);
+          } else {
+            await updateServicioAit(operation.docId, operation.data);
+          }
         }
 
         processed.push(operation.id);
@@ -931,8 +919,7 @@ function MoreDetailScreenNoRedux(props: any) {
 
       // Operación updateDoc con manejo offline
       const updateDocOperation = async () => {
-        const Ref = doc(db, "ServiciosAIT", idServiciosAIT);
-        await updateDoc(Ref, updatedData);
+        await updateServicioAit(idServiciosAIT, updatedData);
       };
 
       const isOnlineOperation = await handleFirebaseOperationWithOffline(

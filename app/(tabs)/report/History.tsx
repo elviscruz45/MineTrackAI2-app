@@ -8,15 +8,7 @@ import InactiveServiceList from "./components/Resources/InactiveServiceList";
 import MontoServiceList from "./components/Resources/MontoServiceList";
 import BarInactiveServices from "./components/Resources/BarInactiveServices";
 import { getExcelReportData } from "../../../utils/excelData";
-import { db } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  limit,
-} from "firebase/firestore";
+import { getServiciosAitByDateRange } from "@/lib/db/serviciosAit";
 import { Modal } from "@/components/Modal/Modal";
 import ChangeDisplayCompany from "./components/ChangeCompany/ChangeCompany";
 import HistoryServiceList from "./components/HistoryServiceList";
@@ -83,28 +75,14 @@ const HistoryScreenNoRedux = (props: any) => {
   }, [props.servicesData, removeFilter, company]);
 
   useEffect(() => {
-    let q;
     if (startDate && endDate) {
       async function fetchData() {
         const CompanySelectedHistory = capitalizeFirstLetter(
           company.toLowerCase()
         );
-        q = query(
-          collection(db, "ServiciosAIT"),
-          orderBy("createdAt", "desc"),
-          where("createdAt", ">=", startDate),
-          where("createdAt", "<=", endDate)
-          // where("companyName", "==", CompanySelectedHistory)
-        );
-
         try {
-          const querySnapshot = await getDocs(q);
-          const lista: any = [];
-          querySnapshot.forEach((doc) => {
-            lista.push(doc.data());
-          });
-
-          setData(lista);
+          const lista = await getServiciosAitByDateRange(startDate, endDate);
+          setData(lista as never[]);
         } catch (error) {
           console.error("Error fetching data: ", error);
         }

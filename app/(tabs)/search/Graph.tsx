@@ -9,8 +9,6 @@ import {
   Platform,
 } from "react-native";
 import styles from "./Item.styles";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import { screen } from "../../../utils";
 import { connect } from "react-redux";
 import { saveActualServiceAIT } from "../../../redux/actions/post";

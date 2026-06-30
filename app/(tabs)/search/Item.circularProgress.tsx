@@ -7,21 +7,8 @@ import { Image as ImageExpo } from "expo-image";
 import { Platform, TouchableOpacity } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  uploadBytesResumable,
-} from "firebase/storage";
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { uploadServiceAvatar } from "@/lib/db/storage";
+import { updateServicioAit } from "@/lib/db/serviciosAit";
 
 const CircularProgress = ({
   imageSourceDefault,
@@ -62,26 +49,16 @@ const CircularProgress = ({
   const uploadImage = async (uri: any) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-
-    const storage = getStorage();
-    const storageRef = ref(storage, `Serviceavatar/${idait}`);
-
-    uploadBytesResumable(storageRef, blob).then((snapshot) => {
-      updatePhotoUrl(snapshot.metadata.fullPath);
-    });
+    const imageUrl = await uploadServiceAvatar(
+      idait,
+      blob,
+      blob.type || "image/jpeg"
+    );
+    updatePhotoUrl(imageUrl);
   };
 
-  const updatePhotoUrl = async (imagePath: any) => {
-    const storage = getStorage();
-    const imageRef = ref(storage, imagePath);
-    const imageUrl = await getDownloadURL(imageRef);
-    const RefFirebaseServiceAIT = doc(db, "ServiciosAIT", idait);
-
-    const updateDataLasEventPost = {
-      photoServiceURL: imageUrl,
-    };
-    await updateDoc(RefFirebaseServiceAIT, updateDataLasEventPost);
-
+  const updatePhotoUrl = async (imageUrl: string) => {
+    await updateServicioAit(idait, { photoServiceURL: imageUrl });
     setAvatar(imageUrl);
   };
 

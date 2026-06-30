@@ -13,23 +13,19 @@ import {
 // Importar estilos CSS para gradientes y efectos web
 import "./mobile-styles.css";
 import { connect } from "react-redux";
-import {
-  collection,
-  onSnapshot,
-  query,
-  doc,
-  limit,
-  where,
-  orderBy,
-  Timestamp,
-  setDoc,
-} from "firebase/firestore";
 import { useRouter } from "expo-router";
 import { saveTotalEventServiceAITList } from "../../../redux/actions/home";
 import { resetPostPerPageHome } from "../../../redux/actions/home";
 import { saveApprovalListnew } from "../../../redux/actions/search";
 import { updateAITServicesDATA } from "../../../redux/actions/home";
-import { db } from "@/firebaseConfig";
+import { subscribeEventsByProject } from "@/lib/db/events";
+import { subscribeApprovalsByEmail } from "@/lib/db/approvals";
+import { createServicioAit } from "@/lib/db/serviciosAit";
+import { upsertKnowledgeChunk } from "@/lib/db/knowledgeEmbeddings";
+import {
+  buildServiceSummaryChunk,
+  buildActivityChunk,
+} from "@/lib/rag/chunkText";
 import { mineraCorreosList } from "@/utils/MineraList";
 import { areaLists } from "@/utils/areaList";
 import Toast from "react-native-toast-message";
@@ -51,6 +47,7 @@ import { initialValues, validationSchema } from "./index.data";
 import { GoogleGenAI } from "@google/genai"; // Uncomment after installing: npm install @google/genai
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
+import { tagEquipoList } from "@/utils/tagEquipoList";
 
 interface CSVRow {
   Codigo: string;
@@ -72,7 +69,48 @@ interface CSVRow {
   NumeroLider?: string;
   NumeroSoldador?: string;
   HorasTotales?: any;
+  TagEquipo?: string;
+  AreaServicio?: string;
+  esRutaCritica?: string;
 }
+
+const LEVEL4_REQUIRED_FIELDS = [
+  "Codigo",
+  "NombreServicio",
+  "FechaInicio",
+  "FechaFin",
+  "HorasTotales",
+  "SupervisorMina",
+  "SupervisorEECC",
+  "OrdenCompra",
+  "EmpresaMinera",
+  "TipoServicio",
+  "AreaServicio",
+  "esRutaCritica",
+  "TagEquipo",
+  "NumeroCotizacion",
+  "Moneda",
+  "Monto",
+  "NumeroSupervisorSeguridad",
+  "NumeroSupervisor",
+  "NumeroTecnicos",
+  "NumeroLider",
+  "NumeroSoldador",
+] as const;
+
+const isLevel4Codigo = (codigo: unknown): boolean =>
+  String(codigo || "")
+    .trim()
+    .split(".")
+    .filter(Boolean).length === 4;
+
+const isUploadFieldEmpty = (value: unknown): boolean => {
+  if (value === null || value === undefined) return true;
+  if (value instanceof Date) return isNaN(value.getTime());
+  if (typeof value === "number") return isNaN(value);
+  if (typeof value === "string") return value.trim() === "";
+  return false;
+};
 
 const windowWidth = Dimensions.get("window").width;
 const numColumns = windowWidth > 1000 ? 3 : 1; // 2 columns for Mac/large screens, 1 for mobile
@@ -110,6 +148,9 @@ function HomeScreenRaw(props: any) {
 
   // upload zip whatsapp
   const [showZIPwhatsappModal, setShowZIPwhatsappModal] = useState(false);
+  const [tagValidationError, setTagValidationError] = useState<{
+    rows: { rowNum: number; codigo: string; tagFound: string }[];
+  } | null>(null);
 
   // const navigation = useNavigation();
   //Data about the company belong this event
@@ -119,82 +160,40 @@ function HomeScreenRaw(props: any) {
   const regex = /@(.+?)\./i;
   // this useEffect is used to retrive all data from firebase
   useEffect(() => {
-    let unsubscribe: any;
+    let unsubscribe: (() => void) | undefined;
 
-    if (props.email) {
+    if (props.email && idproyecto) {
       const companyName =
         capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo";
-      const companyNameLowercase = companyName?.toLowerCase();
 
-      async function fetchData() {
-        let queryRef;
-
-        queryRef = query(
-          collection(db, "events"),
-          limit(20),
-          where("projectId", "==", idproyecto),
-
-          // where("visibilidad", "==", "Todos"),
-          // where(
-          //   "AITEmpresaMinera",
-          //   "==",
-          //   mineraCorreosList[companyNameLowercase]
-          // ),
-          orderBy("createdAt", "desc")
-        );
-
-        unsubscribe = onSnapshot(queryRef, async (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-          //order the list by date
-          lista.sort((a: any, b: any) => {
-            return b.createdAt - a.createdAt;
-          });
-
-          setPosts(lista);
+      unsubscribe = subscribeEventsByProject(
+        idproyecto,
+        (lista) => {
+          setPosts(lista as never[]);
           setCompanyName(companyName);
           props.saveTotalEventServiceAITList(lista);
-        });
-        setIsLoading(false);
-      }
-
-      idproyecto && fetchData();
-
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
+          setIsLoading(false);
+        },
+        undefined,
+        20
+      );
     }
+
+    return () => {
+      unsubscribe?.();
+    };
   }, [props.email, idproyecto]);
 
   useEffect(() => {
-    let unsubscribe: any;
+    let unsubscribe: (() => void) | undefined;
     if (props.email) {
-      function fetchData() {
-        let queryRef = query(
-          collection(db, "approvals"),
-          orderBy("date", "desc"),
-          where("ApprovalRequestSentTo", "array-contains", props.email),
-          limit(20)
-        );
-        unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-          props.saveApprovalListnew(lista);
-        });
-      }
-      fetchData();
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
+      unsubscribe = subscribeApprovalsByEmail(props.email, (lista) => {
+        props.saveApprovalListnew(lista);
+      });
     }
+    return () => {
+      unsubscribe?.();
+    };
   }, [props.email]);
 
   const formik = useFormik({
@@ -236,11 +235,13 @@ HORAS TOTALES: ${HorasTotales || "No especificado"}
 
 ACTIVIDADES INCLUIDAS:`;
 
-    // Add detailed activities information
+    // Add detailed activities informationF
     activitiesData.forEach((activity, index) => {
+      const tag = activity.TagEquipo || activity.tag_equipo || "";
       ragText += `
 ${index + 1}. ${activity.NombreServicio || "Actividad sin nombre"}
    - Código: ${activity.Codigo || "N/A"}
+   - Tag equipo: ${tag || "N/A"}
    - Fechas: ${
      activity.FechaInicio
        ? new Date(activity.FechaInicio.seconds * 1000).toLocaleDateString()
@@ -271,43 +272,54 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
     return ragText;
   };
 
-  // Function to generate embeddings for text content
-  const generateEmbedding = async (text: string): Promise<number[] | null> => {
-    try {
-      // Temporary mock embedding for development (remove when implementing real embeddings)
-      return Array.from({ length: 768 }, () => Math.random() * 2 - 1);
-    } catch (error) {
-      console.error("Error generating embedding:", error);
-      return null;
-    }
-  };
-  // Function to save embedding to Supabase
-  const saveEmbeddingToSupabase = async (
+  const saveKnowledgeEmbeddings = async (
     serviceId: string,
-    content: string,
-    embedding: number[],
-    metadata: any
+    serviceData: Record<string, unknown>,
+    activitiesData: Record<string, unknown>[],
+    projectId: string,
+    projectName: string,
+    projectType: string
   ) => {
     try {
-      const { data, error } = await supabase
-        .from("activity_embeddings") // Make sure this table exists in your Supabase
-        .insert({
-          service_id: serviceId,
-          content: content,
-          embedding: embedding,
-          metadata: metadata,
-          created_at: new Date().toISOString(),
+      const summaryText = buildServiceSummaryChunk(
+        { ...serviceData, projectName, projectType },
+        activitiesData
+      );
+      await upsertKnowledgeChunk({
+        docType: "service_summary",
+        sourceId: serviceId,
+        content: summaryText,
+        servicioAitId: serviceId,
+        projectId,
+        tagEquipo: String(serviceData.TagEquipo ?? ""),
+        metadata: {
+          codigo: serviceData.Codigo,
+          nombreServicio: serviceData.NombreServicio,
+          projectName,
+          projectType,
+        },
+      });
+
+      for (const activity of activitiesData) {
+        const actCode = String(activity.Codigo ?? activity.codigo ?? "");
+        const actKey = actCode || String(activity.NombreServicio ?? "");
+        if (!actKey) continue;
+        await upsertKnowledgeChunk({
+          docType: "activity_plan",
+          sourceId: `${serviceId}-${actKey}`,
+          content: buildActivityChunk(activity, serviceData),
+          servicioAitId: serviceId,
+          projectId,
+          tagEquipo: String(
+            activity.TagEquipo ?? activity.tag_equipo ?? serviceData.TagEquipo ?? ""
+          ),
+          activityCodigo: actCode,
+          metadata: { nombre: activity.NombreServicio },
         });
-
-      if (error) {
-        console.error("Error saving embedding to Supabase:", error);
-        return false;
       }
-
-      console.log("Embedding saved successfully:", data);
       return true;
     } catch (error) {
-      console.error("Error in saveEmbeddingToSupabase:", error);
+      console.error("Error saving knowledge embeddings:", error);
       return false;
     }
   };
@@ -320,44 +332,202 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
   ) => {
     try {
       setIsLoading(true);
-      // Get file content
-      let fileContent = "";
-      if (Platform.OS === "web") {
-        // 🔥 SOLUCIÓN: Leer como ArrayBuffer primero y luego decodificar manualmente
-        const webFile = fileAsset.file;
+      setTagValidationError(null);
 
+      let data: CSVRow[] = [];
+      const webFile = fileAsset.file;
+      const fileName = webFile?.name || fileAsset.name || "";
+      const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+
+      if (Platform.OS === "web") {
         const arrayBuffer = await new Promise<ArrayBuffer>(
           (resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) =>
               resolve(event.target?.result as ArrayBuffer);
             reader.onerror = (e) => reject(e);
-            reader.readAsArrayBuffer(webFile); // Leer como binario
+            reader.readAsArrayBuffer(webFile);
           }
         );
 
-        // Decodificar manualmente con TextDecoder UTF-8
-        const decoder = new TextDecoder("utf-8");
-        fileContent = decoder.decode(arrayBuffer);
+        if (isExcel) {
+          // 📊 Parse Excel con XLSX
+          const workbook = XLSX.read(arrayBuffer, {
+            type: "array",
+            cellDates: true, // 🔥 Convierte seriales de fecha a objetos Date
+            cellText: false,
+            raw: false,
+            dateNF: "dd/mm/yyyy", // Formato de fecha
+          });
+
+          // Obtener la primera hoja
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+
+          // Convertir a JSON con encoding UTF-8
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            defval: "",
+            blankrows: false,
+          });
+
+          // Convertir array de arrays a array de objetos con headers
+          const headers = jsonData[0] as string[];
+          data = (jsonData.slice(1) as any[]).map((row: any[]) => {
+            const obj: any = {};
+            headers.forEach((header, index) => {
+              // 🔥 FIX 1: Limpiar espacios iniciales y finales de strings
+              const value = row[index];
+              obj[header] =
+                typeof value === "string" ? value.trim() : value || "";
+            });
+            return obj;
+          });
+        } else {
+          // 📄 Parse CSV con PapaParse y UTF-8
+          const decoder = new TextDecoder("utf-8");
+          const fileContent = decoder.decode(arrayBuffer);
+
+          const result = Papa.parse<CSVRow>(fileContent, {
+            header: true,
+            skipEmptyLines: true,
+            transform: (value) => {
+              // 🔥 FIX 1: Limpiar espacios iniciales y finales de strings
+              return typeof value === "string" ? value.trim() : value;
+            },
+          });
+
+          data = result.data;
+        }
       } else {
         // Native: use FileSystem
         const fileUri = fileAsset.uri;
-        fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        const fileContent = await FileSystem.readAsStringAsync(fileUri, {
           encoding: FileSystem.EncodingType.UTF8,
         });
+
+        const result = Papa.parse<CSVRow>(fileContent, {
+          header: true,
+          skipEmptyLines: true,
+        });
+
+        data = result.data;
       }
 
-      // 2️⃣ Parse CSV and filter activities
-      const { data } = Papa.parse<CSVRow>(fileContent, { header: true });
+      // ✅ VALIDACIÓN nivel 4 (ej. 1.1.1.1): todos los campos obligatorios del paquete WBS
+      const level4InvalidRows: {
+        row: number;
+        codigo: string;
+        missing: string[];
+      }[] = [];
+
+      data.forEach((row, index) => {
+        const rowData = row as any;
+        const codigo = String(rowData.Codigo || "").trim();
+        if (!isLevel4Codigo(codigo)) return;
+
+        const missingFields = LEVEL4_REQUIRED_FIELDS.filter((field) =>
+          isUploadFieldEmpty(rowData[field])
+        );
+
+        if (missingFields.length > 0) {
+          level4InvalidRows.push({
+            row: index + 2,
+            codigo,
+            missing: [...missingFields],
+          });
+        }
+      });
+
+      if (level4InvalidRows.length > 0) {
+        setIsLoading(false);
+        const first = level4InvalidRows[0];
+        const firstRowMissing = first.missing.join(", ");
+
+        console.error("❌ Validación fallida - Paquetes nivel 4 incompletos:");
+        level4InvalidRows.forEach((item) => {
+          console.error(
+            `  Fila ${item.row} (Cód. ${item.codigo}): Faltan [${item.missing.join(", ")}]`
+          );
+        });
+
+        Toast.show({
+          type: "error",
+          text1: "❌ Paquete WBS nivel 4 incompleto",
+          text2: `Fila ${first.row} (Cód. ${first.codigo}): faltan "${firstRowMissing}". ${level4InvalidRows.length} paquete(s) nivel 4 con campos vacíos.`,
+          visibilityTime: 9000,
+        });
+
+        throw new Error(
+          `Validación fallida: Fila ${first.row} (Cód. ${first.codigo}) - Faltan campos nivel 4: ${firstRowMissing}. Total: ${level4InvalidRows.length} paquete(s)`
+        );
+      }
+
+      // ✅ VALIDACIÓN TagEquipo: verificar que los tags sean de la lista conocida
+      const validTagSet = new Set(tagEquipoList.map((t) => t.key));
+      const csvTagErrors: { rowNum: number; codigo: string; tagFound: string }[] = [];
+      data.forEach((row, index) => {
+        const tag = ((row as any).TagEquipo || "").trim();
+        if (tag && !validTagSet.has(tag)) {
+          csvTagErrors.push({
+            rowNum: index + 2,
+            codigo: (row as any).Codigo || "",
+            tagFound: tag,
+          });
+        }
+      });
+      if (csvTagErrors.length > 0) {
+        setIsLoading(false);
+        setTagValidationError({ rows: csvTagErrors });
+        const uniqueTags = [...new Set(csvTagErrors.map((e) => e.tagFound))];
+        const first = csvTagErrors[0];
+        const tagsPreview = uniqueTags.slice(0, 4).join(", ");
+        const tagsSuffix =
+          uniqueTags.length > 4 ? ` (+${uniqueTags.length - 4} más)` : "";
+
+        console.error("❌ Validación fallida - Tags no reconocidos:");
+        csvTagErrors.forEach((item) => {
+          console.error(
+            `  Fila ${item.rowNum} (Cód. ${item.codigo}): TagEquipo "${item.tagFound}"`
+          );
+        });
+
+        Toast.show({
+          type: "error",
+          text1: "❌ TagEquipo no válido",
+          text2: `Fila ${first.rowNum} (Cód. ${first.codigo || "—"}): "${first.tagFound}" no está en la lista. ${csvTagErrors.length} fila(s) con error. Tags: ${tagsPreview}${tagsSuffix}`,
+          visibilityTime: 9000,
+        });
+
+        throw new Error(
+          `Validación fallida: ${csvTagErrors.length} fila(s) con TagEquipo inválido (${uniqueTags.join(", ")})`
+        );
+      }
+
+      // 2️⃣ Filter activities
       const list4 = data?.filter((row) => row.Codigo?.split(".")?.length === 4);
       const list5 = data
         ?.filter((row) => row.Codigo?.split(".")?.length === 5)
         .map((row) => ({
           ...row,
-          parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."), // Relacionarlo con su código padre de 4 niveles
+          parentCode: row.Codigo?.split(".")?.slice(0, 4).join("."),
         }));
-        
+
       // 3️⃣ Upload only new activities, referencing the new project
+
+      // Parse Excel duration format "D/01/00 H:MM" → numeric hours
+      // e.g. "0/01/00 11:00" → 11, "2/01/00 12:30" → 60.5
+      const parseHorasTotales = (val: any): number => {
+        if (!val) return 0;
+        const str = String(val).trim();
+        const parts = str.split(" ");
+        if (parts.length < 2) return 0;
+        const days = parseInt(parts[0].split("/")[0]) || 0;
+        const timeParts = parts[1].split(":");
+        const hours = parseInt(timeParts[0]) || 0;
+        const mins  = parseInt(timeParts[1]) || 0;
+        return days * 24 + hours + mins / 60;
+      };
 
       //----------------------------------------------------------------------------------------------------------------------------
       for (const item of list4) {
@@ -380,8 +550,11 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           NumeroLider,
           NumeroSoldador,
           HorasTotales,
+          TagEquipo,
+          AreaServicio,
+          esRutaCritica,
         } = item;
-        // 👇 MODIFICADO: Parsear fechas y guardar como Timestamp
+        // Parsear fechas como Date (Supabase)
         const fechaInicioDate = parseAnyDate(FechaInicio);
         const fechaFinDate = parseAnyDate(FechaFin);
 
@@ -394,20 +567,21 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
 
               console.log(
                 "fechaInicioDatefechaInicioDatefechaInicioDate",
-                Timestamp.fromDate(fechaInicioDate ?? new Date())
+                fechaInicioDate ?? new Date()
               );
               console.log(
                 "fechaFinDatefechaFinDatefechaFinDatefechaFinDate",
-                Timestamp.fromDate(fechaFinDate ?? new Date())
+                fechaFinDate ?? new Date()
               );
               return {
                 ...item,
-                FechaInicio: fechaInicioDate
-                  ? Timestamp.fromDate(fechaInicioDate)
-                  : null,
-                FechaFin: fechaFinDate
-                  ? Timestamp.fromDate(fechaFinDate)
-                  : null,
+                FechaInicio: fechaInicioDate ?? null,
+                FechaFin: fechaFinDate ?? null,
+                HorasTotales: parseHorasTotales(item.HorasTotales),
+                esRutaCritica: (item.esRutaCritica || "").trim().toLowerCase() === "si",
+                // Inherit from parent service if activity has no value
+                TagEquipo: (item.TagEquipo || "").trim() || (TagEquipo || "").trim(),
+                AreaServicio: (item.AreaServicio || "").trim() || (AreaServicio || "").trim(),
               };
             }) ?? [];
 
@@ -431,10 +605,8 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           Soldador: NumeroSoldador || "0",
           TipoServicio: TipoServicio || projectType,
           NumeroCotizacion: NumeroCotizacion,
-          FechaInicio: fechaInicioDate
-            ? Timestamp.fromDate(fechaInicioDate)
-            : null,
-          FechaFin: fechaFinDate ? Timestamp.fromDate(fechaFinDate) : null,
+          FechaInicio: fechaInicioDate ?? null,
+          FechaFin: fechaFinDate ?? null,
           ResponsableEmpresaUsuario3: SupervisorMina,
           ResponsableEmpresaContratista3: SupervisorEECC,
           // Global project properties
@@ -448,57 +620,34 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           idServiciosAIT: `${Date.now()}-${Math.random()
             .toString(36)
             .substring(2, 9)}`,
+          HorasTotales: parseHorasTotales(HorasTotales),
+          TagEquipo: (TagEquipo || "").trim(),
+          AreaServicio: AreaServicio || "",
+          esRutaCritica: (esRutaCritica || "").trim().toLowerCase() === "si",
           activities: filterNamesActivities,
           activitiesData: filteredData,
-          createdAt: Timestamp.now(),
+          createdAt: new Date(),
         };
 
         // -----------------------🚀 NEW: Generate single comprehensive RAG embedding
-        const ragText = createRAGText(
+        await saveKnowledgeEmbeddings(
+          newData.idServiciosAIT,
           {
             NombreServicio,
             Codigo,
             EmpresaMinera,
             TipoServicio,
-            SupervisorMina,
-            SupervisorEECC,
-            FechaInicio,
-            FechaFin,
-            HorasTotales,
+            TagEquipo: (TagEquipo || "").trim(),
+            AreaServicio: AreaServicio || "",
           },
           filteredData,
+          newProjectDocID,
           projectName,
           projectType
         );
 
-        const embedding = await generateEmbedding(ragText);
-
-        if (embedding) {
-          await saveEmbeddingToSupabase(
-            newData.idServiciosAIT,
-            ragText,
-            embedding,
-            {
-              codigo: Codigo,
-              nombreServicio: NombreServicio || projectName,
-              empresaMinera: EmpresaMinera,
-              tipoServicio: TipoServicio,
-              projectId: newProjectDocID,
-              projectName: projectName,
-              projectType: projectType,
-              fechaInicio: fechaInicioDate?.toISOString(),
-              fechaFin: fechaFinDate?.toISOString(),
-              totalActivities: filteredData.length,
-              supervisorMina: SupervisorMina,
-              supervisorEECC: SupervisorEECC,
-              horasTotales: HorasTotales,
-              actividades: filterNamesActivities,
-            }
-          );
-        }
-
-        // Directly submit to Firebase
-        await setDoc(doc(db, "ServiciosAIT", newData.idServiciosAIT), newData);
+        // Submit to Supabase
+        await createServicioAit(newData);
 
         // Optional: Add a small delay
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -514,12 +663,23 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
       setIsLoading(false);
     } catch (error) {
       console.error("Error al procesar el archivo:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error al procesar el archivo",
-        text2: error instanceof Error ? error.message : "Error desconocido",
-      });
+
+      // Si es un error de validación, ya se mostró el Toast, solo relanzar
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
+
+      if (!errorMessage.includes("Validación fallida")) {
+        Toast.show({
+          type: "error",
+          text1: "Error al procesar el archivo",
+          text2: errorMessage,
+        });
+      }
+
       setIsLoading(false);
+
+      // ⚠️ IMPORTANTE: Relanzar el error para que handleSubmit lo capture
+      throw error;
     }
   };
 
@@ -769,6 +929,233 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           isVisible={showZIPwhatsappModal}
           onClose={() => setShowZIPwhatsappModal(false)}
         />
+
+        {/* ── MODAL: Tags inválidos en CSV ─────────────────────────────── */}
+        {tagValidationError && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 16,
+            }}
+            onClick={() => setTagValidationError(null)}
+          >
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: 16,
+                width: "100%",
+                maxWidth: 640,
+                maxHeight: "85vh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  background: "#c62828",
+                  padding: "16px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>⛔</span>
+                  <div>
+                    <div style={{ color: "white", fontWeight: 700, fontSize: 15 }}>
+                      Tags de equipo inválidos
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 2 }}>
+                      {tagValidationError.rows.length} fila(s) con TagEquipo desconocido
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setTagValidationError(null)}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    border: "none",
+                    borderRadius: 8,
+                    color: "white",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div style={{ overflowY: "auto", padding: "16px 20px", flex: 1 }}>
+                {/* Filas con error */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#1e293b", marginBottom: 8 }}>
+                    Filas con error en el CSV:
+                  </div>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      fontSize: 12,
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ backgroundColor: "#fef2f2" }}>
+                        {["Fila", "Código", "TagEquipo encontrado"].map((h) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: "7px 10px",
+                              textAlign: "left",
+                              borderBottom: "1px solid #fecaca",
+                              color: "#7f1d1d",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tagValidationError.rows.map((r, i) => (
+                        <tr
+                          key={i}
+                          style={{ borderBottom: "1px solid #fee2e2" }}
+                        >
+                          <td style={{ padding: "6px 10px", color: "#dc2626", fontWeight: 600 }}>
+                            {r.rowNum}
+                          </td>
+                          <td style={{ padding: "6px 10px", color: "#374151", fontFamily: "monospace" }}>
+                            {r.codigo}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 10px",
+                              color: "#dc2626",
+                              fontFamily: "monospace",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {r.tagFound || <em style={{ color: "#94a3b8" }}>(vacío)</em>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Lista de tags válidos */}
+                <div
+                  style={{
+                    backgroundColor: "#f0f9ff",
+                    border: "1px solid #bae6fd",
+                    borderRadius: 10,
+                    padding: 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: "#0369a1",
+                      marginBottom: 10,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    ✅ Tags válidos disponibles ({tagEquipoList.length})
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                      gap: 6,
+                    }}
+                  >
+                    {tagEquipoList.map((t) => (
+                      <div
+                        key={t.key}
+                        style={{
+                          backgroundColor: "white",
+                          border: "1px solid #e0f2fe",
+                          borderRadius: 6,
+                          padding: "5px 8px",
+                          fontSize: 11,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "monospace",
+                            fontWeight: 700,
+                            color: "#0369a1",
+                            fontSize: 11,
+                          }}
+                        >
+                          {t.key}
+                        </span>
+                        <div style={{ color: "#64748b", fontSize: 10, marginTop: 1 }}>
+                          {t.value.split("  —  ")[0]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 10 }}>
+                    Corrige el CSV usando uno de los tags de arriba y vuelve a cargar.
+                    Si el equipo no está en la lista, agrégalo en{" "}
+                    <code style={{ fontSize: 11, color: "#0369a1" }}>utils/tagEquipoList.ts</code>.
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                style={{
+                  padding: "12px 20px",
+                  borderTop: "1px solid #f1f5f9",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  onClick={() => setTagValidationError(null)}
+                  style={{
+                    backgroundColor: "#2A3B76",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "9px 20px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <ProjectUploadModal
           isVisible={showNewProjectModal}
           onClose={() => setShowNewProjectModal(false)}
@@ -800,17 +1187,30 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
             >
               {/* Logo con efecto de sombra */}
               <View
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 20,
-                  elevation: 15,
-                  marginBottom: 30,
-                }}
+                style={
+                  {
+                    // shadowColor: "#000",
+                    // shadowOffset: { width: 0, height: 10 },
+                    // shadowOpacity: 0.3,
+                    // shadowRadius: 20,
+                    // elevation: 15,
+                    // marginBottom: 30,
+                  }
+                }
               >
-                <ImageExpo
+                {/* <ImageExpo
                   source={require("../../../assets/logoPandora.jpg")}
+                  style={{
+                    width: windowWidth > 768 ? 180 : 140,
+                    height: windowWidth > 768 ? 180 : 140,
+                    borderRadius: windowWidth > 768 ? 90 : 70,
+                    borderWidth: 4,
+                    borderColor: "white",
+                  }}
+                  cachePolicy={"memory-disk"}
+                /> */}
+                <ImageExpo
+                  source={require("../../../assets/login/poderosa.png")}
                   style={{
                     width: windowWidth > 768 ? 180 : 140,
                     height: windowWidth > 768 ? 180 : 140,
@@ -1076,31 +1476,33 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         <div
           style={{
             backgroundColor: "white",
-            padding: "12px 24px",
+            padding: windowWidth > 768 ? "12px 24px" : "8px 12px",
             borderBottom: "1px solid #eaeaeaff",
             display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
+            flexDirection: windowWidth > 768 ? "row" : "column",
+            justifyContent: windowWidth > 768 ? "space-between" : "flex-start",
+            alignItems: windowWidth > 768 ? "center" : "stretch",
+            gap: windowWidth > 768 ? "12px" : "8px",
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
-              justifyContent: "flex-start",
-              padding: "8px 20px",
+              justifyContent: windowWidth > 768 ? "flex-start" : "center",
+              padding: windowWidth > 768 ? "8px 20px" : "4px 0",
+              marginBottom: windowWidth > 768 ? 0 : 8,
             }}
           >
             <span
               style={{
-                fontSize: 18,
+                fontSize: windowWidth > 768 ? 18 : 15,
                 fontWeight: 600,
                 color: "#2A3B76",
                 fontFamily: "'Inter', 'Segoe UI', 'Arial', sans-serif",
-                marginLeft: 4,
-                textAlign: "left",
+                textAlign: windowWidth > 768 ? "left" : "center",
                 letterSpacing: 0.2,
+                wordBreak: "break-word",
               }}
             >
               {selectedProject?.projectName
@@ -1108,76 +1510,90 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 : "Selecciona un Proyecto"}
             </span>
           </div>
-          <button
-            onClick={() => msProject()}
+          
+          <div
             style={{
-              backgroundColor: "green",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 16px",
-              fontSize: 14,
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+              flexDirection: windowWidth > 768 ? "row" : "column",
+              gap: windowWidth > 768 ? "8px" : "8px",
+              alignItems: "stretch",
             }}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ marginRight: 6 }}
+            <button
+              onClick={() => msProject()}
+              style={{
+                backgroundColor: "green",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: windowWidth > 768 ? "8px 16px" : "10px 12px",
+                fontSize: windowWidth > 768 ? 14 : 13,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+                whiteSpace: "nowrap",
+                fontWeight: "600",
+              }}
             >
-              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              <path
-                d="M12 8V16M8 12H16"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Crear Proyecto
-          </button>
-          <Text> </Text>
-          <Text> </Text>
-          <button
-            onClick={() => setShowProjectModal(true)}
-            style={{
-              backgroundColor: "#2A3B76",
-              color: "white",
-              border: "none",
-              borderRadius: 4,
-              padding: "8px 16px",
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+              <svg
+                width={windowWidth > 768 ? "18" : "16"}
+                height={windowWidth > 768 ? "18" : "16"}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+                <path
+                  d="M12 8V16M8 12H16"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Crear Proyecto
+            </button>
+            
+            <button
+              onClick={() => setShowProjectModal(true)}
+              style={{
+                backgroundColor: "#2A3B76",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                padding: windowWidth > 768 ? "8px 16px" : "10px 12px",
+                fontSize: windowWidth > 768 ? 14 : 13,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                boxShadow: "0 2px 4px rgba(42, 59, 118, 0.2)",
+                whiteSpace: "nowrap",
+                fontWeight: "600",
+              }}
             >
-              <path
-                d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Cambiar Proyecto
-          </button>
+              <svg
+                width={windowWidth > 768 ? "16" : "14"}
+                height={windowWidth > 768 ? "16" : "14"}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Cambiar Proyecto
+            </button>
+          </div>
 
           {/* Project Filter Modal */}
           {showProjectModal && (
@@ -1236,7 +1652,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                   color: "#2A3B76",
                 }}
               >
-                Actividad Reciente
+                Actividad Recientes
               </Text>
               {/* <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <MaterialIcon
@@ -1251,137 +1667,195 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
               </View> */}
             </View>
 
-            {/* Summary Stats Section */}
-            <View
-              style={{
-                flexDirection: windowWidth > 800 ? "row" : "column",
-                justifyContent: "space-between",
-                marginBottom: 24,
-              }}
-            >
-              {[
+            {/* ── KPI STRIP: 4 indicadores reales del proyecto ───────────── */}
+            {(() => {
+              // ── Cálculo en vivo a partir de posts (events collection) ──
+              const hhPerdidas = (posts as any[]).reduce(
+                (sum, p) => sum + Number(p.horasPerdidas || 0),
+                0
+              );
+              const eventosHSE = (posts as any[]).filter(
+                (p) => p.clasificacionHSE && String(p.clasificacionHSE).trim() !== ""
+              ).length;
+
+              // Días desde el último LTI o FAT
+              const lastSevere = (posts as any[])
+                .filter((p) =>
+                  ["LTI", "FAT"].includes((p.clasificacionHSE || "").toUpperCase())
+                )
+                .sort(
+                  (a, b) =>
+                    (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+                )[0];
+              const diasSinLTI = lastSevere
+                ? Math.floor(
+                    (Date.now() - (lastSevere.createdAt?.seconds || 0) * 1000) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : null;
+
+              const kpis = [
                 {
-                  title: "Eventos Totales",
-                  value: posts.length,
+                  title: "Total Eventos",
+                  value: (posts as any[]).length,
                   icon: "calendar",
-                  color: "#4CAF50",
-                  change: "+12%",
+                  color: "#2A3B76",
+                  sub:
+                    (posts as any[]).length === 0
+                      ? "Sin eventos registrados"
+                      : `${(posts as any[]).length} en este proyecto`,
+                  positive: true,
                 },
                 {
-                  title: "Mantenimientos",
-                  value: 36,
-                  icon: "tool",
-                  color: "#2196F3",
-                  change: "+5%",
-                },
-                {
-                  title: "Tiempo Promedio",
-                  value: "4.5h",
+                  title: "HH Perdidas (HSE)",
+                  value: `${hhPerdidas.toFixed(0)}h`,
                   icon: "clock",
-                  color: "#FF9800",
-                  change: "-8%",
+                  color: hhPerdidas > 0 ? "#dc3545" : "#198754",
+                  sub:
+                    hhPerdidas === 0
+                      ? "Sin horas perdidas"
+                      : `${hhPerdidas.toFixed(0)}h de impacto acumulado`,
+                  positive: hhPerdidas === 0,
                 },
                 {
-                  title: "Eficiencia",
-                  value: "92%",
-                  icon: "trending-up",
-                  color: "#9C27B0",
-                  change: "+3%",
+                  title: "Eventos HSE",
+                  value: eventosHSE,
+                  icon: "shield",
+                  color: eventosHSE === 0 ? "#198754" : "#FF9800",
+                  sub:
+                    eventosHSE === 0
+                      ? "Sin incidentes clasificados"
+                      : `${eventosHSE} con clasificación HSE`,
+                  positive: eventosHSE === 0,
                 },
-              ].map((stat, index) => (
+                {
+                  title: "Días sin LTI",
+                  value: diasSinLTI !== null ? diasSinLTI : "—",
+                  icon: diasSinLTI === 0 ? "alert-triangle" : "trending-up",
+                  color:
+                    diasSinLTI === null
+                      ? "#198754"
+                      : diasSinLTI === 0
+                      ? "#dc3545"
+                      : "#198754",
+                  sub:
+                    diasSinLTI === null
+                      ? "Sin LTI/FAT registrados"
+                      : diasSinLTI === 0
+                      ? "¡LTI registrado hoy!"
+                      : "Días consecutivos sin LTI",
+                  positive: diasSinLTI !== 0,
+                },
+              ];
+
+              return (
                 <View
-                  key={index}
                   style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 12,
-                    padding: 16,
-                    width: windowWidth > 800 ? "24%" : "100%",
-                    marginBottom: windowWidth > 800 ? 0 : 12,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 3,
-                    elevation: 2,
-                    borderWidth: 1,
-                    borderColor: "#f0f0f0",
+                    flexDirection: windowWidth > 800 ? "row" : "column",
+                    justifyContent: "space-between",
+                    marginBottom: 24,
                   }}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: "#666",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {stat.title}
-                    </Text>
+                  {kpis.map((stat, index) => (
                     <View
+                      key={index}
                       style={{
-                        backgroundColor: `${stat.color}20`,
-                        width: 40,
-                        height: 40,
-                        borderRadius: 8,
-                        justifyContent: "center",
-                        alignItems: "center",
+                        backgroundColor: "#fff",
+                        borderRadius: 12,
+                        padding: 16,
+                        width: windowWidth > 800 ? "24%" : "100%",
+                        marginBottom: windowWidth > 800 ? 0 : 12,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 3,
+                        elevation: 2,
+                        borderWidth: 1,
+                        borderColor: "#f0f0f0",
+                        borderTopWidth: 3,
+                        borderTopColor: stat.color,
                       }}
                     >
-                      <FeatherIcon
-                        name={stat.icon}
-                        size={20}
-                        color={stat.color}
-                      />
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          marginBottom: 12,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#64748b",
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.4,
+                            flex: 1,
+                            paddingRight: 8,
+                          }}
+                        >
+                          {stat.title}
+                        </Text>
+                        <View
+                          style={{
+                            backgroundColor: `${stat.color}18`,
+                            width: 38,
+                            height: 38,
+                            borderRadius: 8,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <FeatherIcon
+                            name={stat.icon}
+                            size={18}
+                            color={stat.color}
+                          />
+                        </View>
+                      </View>
+
+                      <Text
+                        style={{
+                          fontSize: 28,
+                          fontWeight: "800",
+                          color: stat.color,
+                          marginBottom: 8,
+                          lineHeight: 32,
+                        }}
+                      >
+                        {stat.value}
+                      </Text>
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FeatherIcon
+                          name={stat.positive ? "trending-up" : "trending-down"}
+                          size={14}
+                          color={stat.positive ? "#198754" : "#dc3545"}
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: stat.positive ? "#198754" : "#dc3545",
+                            flex: 1,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {stat.sub}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-
-                  <Text
-                    style={{
-                      fontSize: 24,
-                      fontWeight: "700",
-                      color: "#333",
-                      marginBottom: 8,
-                    }}
-                  >
-                    {stat.value}
-                  </Text>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <FeatherIcon
-                      name={
-                        stat.change.includes("+")
-                          ? "trending-up"
-                          : "trending-down"
-                      }
-                      size={16}
-                      color={stat.change.includes("+") ? "#4CAF50" : "#F44336"}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: stat.change.includes("+")
-                          ? "#4CAF50"
-                          : "#F44336",
-                      }}
-                    >
-                      {stat.change} este mes
-                    </Text>
-                  </View>
+                  ))}
                 </View>
-              ))}
-            </View>
+              );
+            })()}
 
             <FlatList
               data={posts}
@@ -1408,7 +1882,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 );
                 const imageSource =
                   areaLists[indexareaList]?.image ??
-                  require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
+                  require("../../../assets/equipmentplant/logoMetso4.png");
                 return (
                   <View
                     style={{
@@ -1649,39 +2123,80 @@ const HomeScreen = connect(mapStateToProps, {
 
 // Intenta parsear fechas en múltiples formatos y seriales de Excel
 function parseAnyDate(value: any) {
-  if (!value) return null;
+  // 🔥 FIX 2: Log para debug
+  console.log("parseAnyDate - Input:", value, "Type:", typeof value);
 
-  // 1. Si es número (serial Excel)
+  if (!value) {
+    console.log("parseAnyDate - Empty value, returning null");
+    return null;
+  }
+
+  // 1. Si es un objeto Date de JavaScript (común en Excel parseado)
+  if (value instanceof Date) {
+    console.log("parseAnyDate - Already a Date object:", value);
+    return value;
+  }
+
+  // 2. Si es número (serial Excel)
   if (typeof value === "number") {
-    const date = XLSX.SSF.parse_date_code(value);
-    if (date) {
-      return new Date(date.y, date.m - 1, date.d, date.H, date.M, date.S);
+    try {
+      const date = XLSX.SSF.parse_date_code(value);
+      if (date) {
+        const parsedDate = new Date(
+          date.y,
+          date.m - 1,
+          date.d,
+          date.H || 0,
+          date.M || 0,
+          date.S || 0
+        );
+        console.log("parseAnyDate - Parsed from Excel serial:", parsedDate);
+        return parsedDate;
+      }
+    } catch (error) {
+      console.error("parseAnyDate - Error parsing Excel serial:", error);
     }
   }
 
-  // 2. Si es string, prueba varios formatos
+  // 3. Si es string, prueba varios formatos
   if (typeof value === "string") {
-    // Normaliza separador
-    let str = value.replace(",", " ").replace("  ", " ").trim();
+    // Normaliza separador y limpia espacios múltiples
+    let str = value.trim().replace(/,/g, "").replace(/\s+/g, " ");
 
-    // Siempre intenta primero con DD/MM/YYYY (o DD/MM/YY) con o sin hora
+    if (!str) {
+      console.log("parseAnyDate - Empty string after trim");
+      return null;
+    }
+
+    // 🔥 Regex mejorado para soportar múltiples formatos:
+    // 19/10/2025 10:00:00 PM
+    // 19/10/25 22:00:00
+    // 19/10/2025 10:00 PM
+    // 19/10/2025
     const regex =
-      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?)?$/i;
+      /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i;
     const match = str.match(regex);
+
     if (match) {
       let [, day, month, year, hour = "0", minute = "0", second = "0", ampm] =
         match;
-      if (year?.length === 2) year = "20" + year;
-      if (ampm) {
-        hour = String(
-          ampm.toUpperCase() === "PM" && hour !== "12"
-            ? Number(hour) + 12
-            : hour === "12" && ampm.toUpperCase() === "AM"
-            ? 0
-            : hour
-        );
+
+      // Normalizar año de 2 dígitos a 4
+      if (year?.length === 2) {
+        year = "20" + year;
       }
-      return new Date(
+
+      // Convertir hora en formato 12h a 24h si hay AM/PM
+      if (ampm) {
+        const hourNum = Number(hour);
+        if (ampm.toUpperCase() === "PM" && hourNum !== 12) {
+          hour = String(hourNum + 12);
+        } else if (ampm.toUpperCase() === "AM" && hourNum === 12) {
+          hour = "0";
+        }
+      }
+
+      const parsedDate = new Date(
         Number(year),
         Number(month) - 1,
         Number(day),
@@ -1689,14 +2204,29 @@ function parseAnyDate(value: any) {
         Number(minute),
         Number(second)
       );
+
+      // Validar que la fecha sea válida
+      if (!isNaN(parsedDate.getTime())) {
+        console.log(
+          "parseAnyDate - Parsed from DD/MM/YYYY format:",
+          parsedDate
+        );
+        return parsedDate;
+      } else {
+        console.log("parseAnyDate - Invalid date after parsing");
+      }
     }
 
-    // Si no es formato DD/MM/YYYY, intenta con Date.parse (ISO, etc)
+    // Si no funcionó el regex, intenta con Date.parse (ISO, etc)
     let d = new Date(str);
-    if (!isNaN(d.getTime())) return d;
+    if (!isNaN(d.getTime())) {
+      console.log("parseAnyDate - Parsed with Date.parse:", d);
+      return d;
+    }
   }
 
   // Si nada funcionó, retorna null
+  console.log("parseAnyDate - Could not parse, returning null");
   return null;
 }
 

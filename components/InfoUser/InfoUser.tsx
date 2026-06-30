@@ -3,13 +3,8 @@ import { View, TouchableOpacity, Image } from "react-native";
 import { Avatar, Text, Icon } from "@rneui/themed";
 import * as ImagePicker from "expo-image-picker";
 import { getAuth, updateProfile } from "firebase/auth";
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  uploadBytesResumable,
-} from "firebase/storage";
+import { uploadAvatar } from "@/lib/db/storage";
+import { updateProfile as updateSupabaseProfile } from "@/lib/db/profiles";
 import styles from "./InfoUser.styles";
 import { Modal } from "../Modal/Modal";
 import { connect } from "react-redux";
@@ -45,24 +40,14 @@ function InfoUser(props: any) {
   const uploadImage = async (uri: any) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-
-    const storage = getStorage();
-    const storageRef = ref(storage, `avatar/${props.uid}`);
-
-    uploadBytesResumable(storageRef, blob).then((snapshot) => {
-      updatePhotoUrl(snapshot.metadata.fullPath);
-    });
+    const imageUrl = await uploadAvatar(props.uid, blob, blob.type || "image/jpeg");
+    updatePhotoUrl(imageUrl);
   };
 
-  const updatePhotoUrl = async (imagePath: any) => {
-    const storage = getStorage();
-    const imageRef = ref(storage, imagePath);
-
-    const imageUrl = await getDownloadURL(imageRef);
-
+  const updatePhotoUrl = async (imageUrl: string) => {
     const auth: any = getAuth();
     updateProfile(auth?.currentUser, { photoURL: imageUrl });
-
+    await updateSupabaseProfile(props.uid, { photoURL: imageUrl });
     props.update_firebasePhoto(imageUrl);
   };
 

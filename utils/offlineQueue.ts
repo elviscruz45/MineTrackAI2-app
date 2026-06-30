@@ -1,12 +1,15 @@
 import * as Network from "expo-network";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { doc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import Toast from "react-native-toast-message";
 import { Platform } from "react-native";
+import { createServicioAit, updateServicioAit } from "@/lib/db/serviciosAit";
+import { createEvent, updateEvent } from "@/lib/db/events";
+import { updateApproval } from "@/lib/db/approvals";
+import { createManpower } from "@/lib/db/manpower";
+import { createProject } from "@/lib/db/projects";
+import { upsertProfile } from "@/lib/db/profiles";
 
-// Offline queue configuration
-const OFFLINE_QUEUE_KEY = "offline_firebase_queue";
+const OFFLINE_QUEUE_KEY = "offline_supabase_queue";
 
 export interface OfflineFirebaseOperation {
   id: string;
@@ -17,7 +20,6 @@ export interface OfflineFirebaseOperation {
   docId?: string;
 }
 
-// Storage wrapper que usa localStorage en web y AsyncStorage en mobile
 const StorageManager = {
   async getItem(key: string): Promise<string | null> {
     if (Platform.OS === "web") {
@@ -59,9 +61,51 @@ const StorageManager = {
   },
 };
 
-/**
- * Agrega una operación Firebase a la cola offline
- */
+async function executeOfflineOperation(
+  operation: OfflineFirebaseOperation
+): Promise<void> {
+  const { type, collection: col, docId, data } = operation;
+  const id = docId ?? data?.idServiciosAIT ?? data?.idDocFirestoreDB ?? data?.idApproval;
+
+  switch (col) {
+    case "ServiciosAIT":
+      if (type === "setDoc") {
+        await createServicioAit(data);
+      } else if (id) {
+        await updateServicioAit(String(id), data);
+      }
+      break;
+    case "events":
+      if (type === "setDoc") {
+        await createEvent({ ...data, idDocFirestoreDB: id });
+      } else if (id) {
+        await updateEvent(String(id), data);
+      }
+      break;
+    case "approvals":
+      if (id) {
+        await updateApproval(String(id), data);
+      }
+      break;
+    case "manpower":
+      await createManpower(data);
+      break;
+    case "proyectos":
+      await createProject({
+        projectName: data.projectName,
+        projectType: data.projectType ?? "",
+      });
+      break;
+    case "users":
+      if (data?.uid) {
+        await upsertProfile(String(data.uid), data);
+      }
+      break;
+    default:
+      throw new Error(`Unsupported offline collection: ${col}`);
+  }
+}
+
 export const queueFirebaseOperation = async (
   operation: OfflineFirebaseOperation
 ): Promise<void> => {
@@ -76,9 +120,6 @@ export const queueFirebaseOperation = async (
   }
 };
 
-/**
- * Procesa la cola offline cuando hay conexión
- */
 export const processOfflineQueue = async (): Promise<void> => {
   try {
     const queueData = await StorageManager.getItem(OFFLINE_QUEUE_KEY);
@@ -93,25 +134,15 @@ export const processOfflineQueue = async (): Promise<void> => {
 
     for (const operation of queue) {
       try {
-        if (operation.type === "setDoc") {
-          await setDoc(
-            doc(db, operation.collection, operation.docId),
-            operation.data
-          );
-        } else if (operation.type === "updateDoc") {
-          const docRef = doc(db, operation.collection, operation.docId);
-          await updateDoc(docRef, operation.data);
-        }
+        await executeOfflineOperation(operation);
         console.log(`Operación procesada: ${operation.id}`);
         processedCount++;
       } catch (error) {
         console.error(`Error procesando operación ${operation.id}:`, error);
-        // Mantener operaciones fallidas para reintento
         failedOperations.push(operation);
       }
     }
 
-    // Actualizar la cola solo con operaciones fallidas
     if (failedOperations.length > 0) {
       await StorageManager.setItem(
         OFFLINE_QUEUE_KEY,
@@ -121,12 +152,10 @@ export const processOfflineQueue = async (): Promise<void> => {
         `${failedOperations.length} operaciones fallaron y permanecen en cola`
       );
     } else {
-      // Limpiar la cola si todas las operaciones fueron exitosas
       await StorageManager.removeItem(OFFLINE_QUEUE_KEY);
       console.log("Cola offline procesada y limpiada completamente");
     }
 
-    // Mostrar notificación de sincronización si se procesaron operaciones
     if (processedCount > 0) {
       Toast.show({
         type: "success",
@@ -141,18 +170,13 @@ export const processOfflineQueue = async (): Promise<void> => {
   }
 };
 
-/**
- * Verifica la conectividad y procesa la cola si hay conexión
- */
 export const checkConnectivityAndProcess = async (): Promise<void> => {
   try {
-    // En web, asumimos conectividad si el navigator está online
     if (Platform.OS === "web") {
       if (navigator.onLine) {
         await processOfflineQueue();
       }
     } else {
-      // En mobile, usar expo-network
       const networkState = await Network.getNetworkStateAsync();
       if (networkState.isConnected && networkState.isInternetReachable) {
         await processOfflineQueue();
@@ -163,9 +187,6 @@ export const checkConnectivityAndProcess = async (): Promise<void> => {
   }
 };
 
-/**
- * Función wrapper para operaciones Firebase con manejo offline automático
- */
 export const safeFirebaseOperation = async (
   operation: () => Promise<void>,
   fallbackData: OfflineFirebaseOperation
@@ -174,10 +195,8 @@ export const safeFirebaseOperation = async (
     let isOnline = false;
 
     if (Platform.OS === "web") {
-      // En web, verificar con navigator.onLine
       isOnline = navigator.onLine;
     } else {
-      // En mobile, usar expo-network
       const networkState = await Network.getNetworkStateAsync();
       isOnline = !!(
         networkState.isConnected && networkState.isInternetReachable
@@ -185,11 +204,9 @@ export const safeFirebaseOperation = async (
     }
 
     if (isOnline) {
-      // Hay conexión, ejecutar operación directamente
       await operation();
       return true;
     } else {
-      // Sin conexión, agregar a cola offline
       await queueFirebaseOperation(fallbackData);
       Toast.show({
         type: "info",
@@ -201,8 +218,7 @@ export const safeFirebaseOperation = async (
       return false;
     }
   } catch (error) {
-    // Error en la operación online, intentar guardar offline
-    console.error("Error en operación Firebase, guardando offline:", error);
+    console.error("Error en operación, guardando offline:", error);
     await queueFirebaseOperation(fallbackData);
     Toast.show({
       type: "warning",
@@ -215,33 +231,19 @@ export const safeFirebaseOperation = async (
   }
 };
 
-/**
- * Obtiene el estado actual de la cola offline
- */
 export const getOfflineQueueStatus = async (): Promise<{
   pendingOperations: number;
   operations: OfflineFirebaseOperation[];
 }> => {
-  try {
-    const queueData = await StorageManager.getItem(OFFLINE_QUEUE_KEY);
-    const operations = queueData ? JSON.parse(queueData) : [];
+  const queueData = await StorageManager.getItem(OFFLINE_QUEUE_KEY);
+  const operations = queueData ? JSON.parse(queueData) : [];
 
-    return {
-      pendingOperations: operations.length,
-      operations,
-    };
-  } catch (error) {
-    console.error("Error obteniendo estado de cola offline:", error);
-    return {
-      pendingOperations: 0,
-      operations: [],
-    };
-  }
+  return {
+    pendingOperations: operations.length,
+    operations,
+  };
 };
 
-/**
- * Limpia manualmente la cola offline (uso administrativo)
- */
 export const clearOfflineQueue = async (): Promise<void> => {
   try {
     await StorageManager.removeItem(OFFLINE_QUEUE_KEY);
@@ -258,21 +260,15 @@ export const clearOfflineQueue = async (): Promise<void> => {
   }
 };
 
-/**
- * Hook para monitorear conectividad automáticamente
- */
 export const useConnectivityMonitor = (intervalMs: number = 30000) => {
   const startMonitoring = () => {
-    // Verificar cola offline al iniciar
     checkConnectivityAndProcess();
 
     if (Platform.OS === "web") {
-      // En web, usar eventos de navigator y interval de respaldo
       const handleOnline = () => checkConnectivityAndProcess();
 
       window.addEventListener("online", handleOnline);
 
-      // Interval de respaldo
       const interval = setInterval(async () => {
         await checkConnectivityAndProcess();
       }, intervalMs);
@@ -282,7 +278,6 @@ export const useConnectivityMonitor = (intervalMs: number = 30000) => {
         clearInterval(interval);
       };
     } else {
-      // En mobile, usar solo interval
       const interval = setInterval(async () => {
         await checkConnectivityAndProcess();
       }, intervalMs);

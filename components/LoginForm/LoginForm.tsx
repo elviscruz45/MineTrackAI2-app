@@ -9,8 +9,7 @@ import styles from "./LoginForm.styles";
 import { connect } from "react-redux";
 import { update_firebaseUserUid } from "@/redux/actions/auth";
 import { update_firebaseProfile } from "@/redux/actions/profile";
-import { db } from "@/firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { getProfileByFirebaseUid } from "@/lib/db/profiles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { saveTotalActivities } from "@/redux/actions/post";
@@ -54,12 +53,12 @@ function LoginForm(props: any) {
 
         const user_uid = userCredential.user.uid;
 
-        const docRef = doc(db, "users", user_uid);
+        const docRef = user_uid;
         try {
-          const docSnap = (await getDoc(docRef)) ?? null;
+          const profileData = await getProfileByFirebaseUid(user_uid);
 
-          if (docSnap.exists()) {
-            props.update_firebaseProfile(docSnap.data()); //redux
+          if (profileData) {
+            props.update_firebaseProfile(profileData); //redux
             router.push({
               pathname: "/home",
             });

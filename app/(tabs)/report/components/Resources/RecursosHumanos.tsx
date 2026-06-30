@@ -1,50 +1,19 @@
 import React, { useState, useEffect } from "react";
 import RecursosProgress from "./RecursosProgress";
 import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
-import {
-  collection,
-  onSnapshot,
-  query,
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  limit,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { subscribeManpower } from "@/lib/db/manpower";
 const RecursosHumanos = (props: any) => {
   const [manpower, setManpower] = useState<any>([]);
   // this useEffect is used to retrive all data from firebase
   useEffect(() => {
-    let unsubscribe: any;
+    if (!props.company) return;
 
-    if (props.company) {
-      function fetchData() {
-        let queryRef = query(
-          collection(db, "manpower"),
-          // where("companyName", "==", props.company.toLowerCase()),
-          orderBy("createdAt", "desc"),
-          limit(10)
-        );
-
-        unsubscribe = onSnapshot(queryRef, (ItemFirebase) => {
-          const lista: any = [];
-          ItemFirebase.forEach((doc) => {
-            lista.push(doc.data());
-          });
-
-          setManpower(lista[0]);
-        });
-      }
-      fetchData();
-    }
+    const unsubscribe = subscribeManpower((data) => {
+      setManpower(data);
+    });
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      unsubscribe();
     };
   }, [props.company]);
 

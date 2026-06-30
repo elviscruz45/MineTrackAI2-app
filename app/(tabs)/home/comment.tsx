@@ -16,15 +16,11 @@ import { connect } from "react-redux";
 import { Icon } from "@rneui/themed";
 import { styles } from "./_styles/comment.styles";
 import {
-  doc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  onSnapshot,
-  getDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+  addEventComment,
+  deleteEvent,
+  getEventById,
+} from "@/lib/db/events";
+import { getServicioAitById, updateServicioAit } from "@/lib/db/serviciosAit";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Image as ImageExpo } from "expo-image";
@@ -133,7 +129,6 @@ function CommentScreen(props: any) {
       return;
     }
 
-    const PostRef = doc(db, "events", idDocFirestoreDB);
     const commentObj = {
       comment: comment,
       commenterEmail: props.email,
@@ -141,9 +136,7 @@ function CommentScreen(props: any) {
       commenterPhoto: props.user_photo,
       date: new Date().getTime(),
     };
-    await updateDoc(PostRef, {
-      comentariosUsuarios: arrayUnion(commentObj),
-    });
+    await addEventComment(idDocFirestoreDB, commentObj);
     // Clear the comment input
     setComment("");
   };
@@ -160,7 +153,7 @@ function CommentScreen(props: any) {
       if (confirmed) {
         //delete the doc from events collections
         router.back();
-        await deleteDoc(doc(db, "events", idDoc));
+        await deleteEvent(idDoc);
       }
     } else {
       Alert.alert(
@@ -177,21 +170,15 @@ function CommentScreen(props: any) {
               //delete the doc from events collections
               // navigation.navigate(screen.home.home);
 
-              await deleteDoc(doc(db, "events", idDoc));
-              //updating events in ServiciosAIT to filter the deleted event
-              const Ref = doc(db, "ServiciosAIT", AITidServicios);
-              const docSnapshot: any = await getDoc(Ref);
-              const eventList = docSnapshot.data().events;
+              await deleteEvent(idDoc);
+              const servicio = await getServicioAitById(AITidServicios);
+              const eventList = (servicio?.events as any[]) ?? [];
 
               const filteredList = eventList?.filter(
                 (obj: any) => obj.idDocFirestoreDB !== idDocFirestoreDB
               );
 
-              const updatedData = {
-                events: filteredList,
-              };
-
-              await updateDoc(Ref, updatedData);
+              await updateServicioAit(AITidServicios, { events: filteredList });
               Toast.show({
                 type: "success",
                 position: "bottom",

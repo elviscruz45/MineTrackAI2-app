@@ -8,18 +8,10 @@ import ChangeDisplayFileTipo from "../ChangeFIleTipo/ChangeDisplayFileTipo";
 import { connect } from "react-redux";
 import { useFormik } from "formik";
 import AddFormsData from "./AddForms.data";
-import { db } from "@/firebaseConfig";
-import { router } from "expo-router";
-
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  uploadBytesResumable,
-} from "firebase/storage";
-import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { addPdfToServicio } from "@/lib/db/serviciosAit";
+import { uploadPdf as uploadPdfToStorage } from "@/lib/db/storage";
 import Toast from "react-native-toast-message";
+import { router } from "expo-router";
 import * as FileSystem from "expo-file-system";
 // import "react-native-get-random-values";
 
@@ -66,40 +58,22 @@ function AddDocsFormBare(props: any) {
         newData.email = props.email;
 
         //manage the file updated to ask for aprovals
-        let imageUrlPDF;
-        let snapshotPDF: any;
-
+        let imageUrlPDF = "";
         if (newData.pdfFile) {
-          // const snapshotPDF = await uploadPdf(newData.pdfFile);
-          // proving
-          snapshotPDF = await uploadPdf(
+          imageUrlPDF = (await uploadPdf(
             newData.pdfFile,
             formattedDate,
             newData.size
-          );
-
-          //proving
-
-          const imagePathPDF = snapshotPDF.metadata.fullPath;
-
-          imageUrlPDF = await getDownloadURL(ref(getStorage(), imagePathPDF));
+          )) ?? "";
         }
 
         newData.pdfPrincipal = imageUrlPDF || "";
         newData.FilenameTitle = shortNameFileUpdated || "";
 
-        //Modifying the Service State ServiciosAIT considering the LasEventPost events
-        const RefFirebaseLasEventPostd = doc(
-          db,
-          "ServiciosAIT",
-          props.actualServiceAIT?.idServiciosAIT
+        await addPdfToServicio(
+          props.actualServiceAIT?.idServiciosAIT,
+          newData
         );
-
-        const updatedData = {
-          pdfFile: arrayUnion(newData),
-        };
-
-        await updateDoc(RefFirebaseLasEventPostd, updatedData);
 
         router.back();
 
@@ -150,13 +124,8 @@ function AddDocsFormBare(props: any) {
         throw new Error("El archivo excede los 25 MB");
       }
 
-      const storage = getStorage();
-
-      const storageRef = ref(
-        storage,
-        `pdfPost/${JSON.stringify(new Date())}-${shortNameFileUpdated}`
-      );
-      return await uploadBytesResumable(storageRef, blob);
+      const path = `${Date.now()}-${shortNameFileUpdated}`;
+      return uploadPdfToStorage(path, blob);
     } catch (error) {
       Toast.show({
         type: "error",

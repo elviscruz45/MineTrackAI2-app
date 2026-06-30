@@ -1,12 +1,18 @@
-import { View, Text, Linking, Button, Image } from "react-native";
-import React, { useState } from "react";
-import styles from "./TitleForms.styles";
+import { View, Image } from "react-native";
+import React, { useMemo, useState } from "react";
+import { createTitleFormsStyles } from "./TitleForms.styles";
 import { Input } from "@rneui/themed";
 import { Modal } from "@/components/Modal/Modal";
 import ChangeDisplayTitulo from "../ChangeTitulo/ChangeDisplayTitulo";
 import { connect } from "react-redux";
+import { useWindowDimensions } from "react-native";
 
 function TitleFormsBare(props: any) {
+  const { width: windowWidth } = useWindowDimensions();
+  const styles = useMemo(
+    () => createTitleFormsStyles(windowWidth),
+    [windowWidth],
+  );
   const { formik, id, idServiciosAIT } = props;
   const [renderComponent, setRenderComponent] = useState<any>(null);
   const [showModal, setShowModal] = useState<any>(false);
@@ -23,7 +29,7 @@ function TitleFormsBare(props: any) {
           setTitulo={setTitulo}
           id={id}
           idServiciosAIT={idServiciosAIT}
-        />
+        />,
       );
     }
     onCloseOpenModal();
@@ -36,15 +42,15 @@ function TitleFormsBare(props: any) {
           uri: props.savePhotoUri,
         }}
         style={styles.postPhoto}
+        resizeMode="cover"
       />
 
-      <View style={{}}>
+      <View style={styles.formColumn}>
         <Input
           value={formik.values.titulo}
-          label="Titulo del Evento"
-          // style={{ marginHorizontal: 40 }}
-          multiline={true}
-          editable={true}
+          label="Título del evento"
+          multiline
+          editable
           inputContainerStyle={styles.textArea}
           errorMessage={formik.errors.titulo}
           onChangeText={(text) => {
@@ -62,13 +68,13 @@ function TitleFormsBare(props: any) {
         <Input
           value={formik.values.comentarios}
           label="Comentarios"
-          placeholder="Agregar Aqui"
+          placeholder="Describe lo ocurrido, acciones tomadas y observaciones…"
           errorMessage={formik.errors.comentarios}
-          multiline={true}
+          multiline
           inputContainerStyle={styles.textArea2}
           onChangeText={(text) => {
             formik.setFieldValue("comentarios", text);
-          }} // errorMessage={formik.errors.observacion}
+          }}
         />
       </View>
 
@@ -82,7 +88,6 @@ function TitleFormsBare(props: any) {
 const mapStateToProps = (reducers: any) => {
   return {
     savePhotoUri: reducers.post.savePhotoUri,
-
     actualServiceAIT: reducers.post.actualServiceAIT,
   };
 };

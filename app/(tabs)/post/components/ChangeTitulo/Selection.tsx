@@ -7,17 +7,7 @@ import {
   Ingenieria,
   IngenieriayFabricacion,
 } from "../../../../../utils/tipoServicioList";
-import { db } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  onSnapshot,
-  where,
-  limit,
-  getDocs,
-  getDoc,
-  doc,
-} from "firebase/firestore";
+import { getServicioAitById } from "@/lib/db/serviciosAit";
 
 type Task = {
   id: string;
@@ -117,15 +107,9 @@ const SelectExampleBare = (props: any) => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const docRef = doc(db, "ServiciosAIT", idServiciosAIT); // Replace with your document ID
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const documentData = docSnap.data();
-          setData((documentData.activities || []).map((s: string) => s.trimStart()));
-          console.log("Document data:", documentData.activities);
-        } else {
-        }
+        const servicio = await getServicioAitById(idServiciosAIT);
+        const activities = (servicio?.activities as string[]) ?? [];
+        setData(activities.map((s: string) => s.trimStart()));
       } catch (error) {
         console.error("Error fetching document:", error);
       }

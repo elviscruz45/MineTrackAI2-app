@@ -6,16 +6,6 @@ import styles from "./Approval.styles";
 import { connect } from "react-redux";
 import { Modal } from "@/components/Modal/Modal";
 import { update_firebaseProfile } from "../../../redux/actions/profile";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  doc,
-  getDocs,
-  limit,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import { Image as ImageExpo } from "expo-image";
 import { screen } from "../../../utils";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";

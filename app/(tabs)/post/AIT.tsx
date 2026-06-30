@@ -11,16 +11,8 @@ import initialValues, {
 } from "./AIT.data";
 import { saveActualPostFirebase } from "../../../redux/actions/post";
 import { useFormik } from "formik";
-import { db } from "@/firebaseConfig";
-import {
-  collection,
-  query,
-  doc,
-  orderBy,
-  getDocs,
-  setDoc,
-  Timestamp,
-} from "firebase/firestore";
+import { createServicioAit } from "@/lib/db/serviciosAit";
+import { getAllProfiles } from "@/lib/db/profiles";
 import AITForms from "./components/AITForms/AITForms";
 import { areaLists } from "../../../utils/areaList";
 import { saveTotalUsers } from "../../../redux/actions/post";
@@ -66,8 +58,8 @@ function buildFirebasePayload(formValue: any, props: any, projectId: string) {
   const numeroAIT =
     String(formValue.NumeroAIT || "").trim() ||
     `ADT-${Date.now().toString().slice(-8)}`;
-  const fechaInicioTs = fechaInicio ? Timestamp.fromDate(fechaInicio) : null;
-  const fechaFinTs = fechaFin ? Timestamp.fromDate(fechaFin) : null;
+  const fechaInicioTs = fechaInicio ?? null;
+  const fechaFinTs = fechaFin ?? null;
   const esRutaCritica =
     String(formValue.esRutaCritica || "").trim().toLowerCase() === "si";
 
@@ -116,8 +108,8 @@ function buildFirebasePayload(formValue: any, props: any, projectId: string) {
     pdfFile: [],
     fechaPostFormato: formattedDate,
     fechaPostISO: new Date().toISOString(),
-    createdAt: Timestamp.now(),
-    LastEventPosted: Timestamp.now(),
+    createdAt: new Date(),
+    LastEventPosted: new Date(),
     NuevaFechaEstimada: 0,
     fechaFinEjecucion: 0,
     photoServiceURL: "",
@@ -156,15 +148,7 @@ function AITNoReduxScreen(props: any) {
     if (props.email) {
       async function fetchData() {
         try {
-          const queryRef1 = query(
-            collection(db, "users"),
-            orderBy("email", "desc")
-          );
-          const getDocs1 = await getDocs(queryRef1);
-          const lista: any = [];
-          if (getDocs1) {
-            getDocs1.forEach((d) => lista.push(d.data()));
-          }
+          const lista = await getAllProfiles();
           props.saveTotalUsers(lista);
         } catch (error) {
           console.error("Error fetching data:", error);
@@ -182,7 +166,7 @@ function AITNoReduxScreen(props: any) {
     onSubmit: async (formValue) => {
       try {
         const payload = buildFirebasePayload(formValue, props, projectId);
-        await setDoc(doc(db, "ServiciosAIT", payload.idServiciosAIT), payload);
+        await createServicioAit(payload);
 
         Toast.show({
           type: "success",
