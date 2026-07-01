@@ -19,11 +19,13 @@ import { updateAITServicesDATA } from "../../../redux/actions/home";
 import { subscribeEventsByProject } from "@/lib/db/events";
 import { subscribeApprovalsByEmail } from "@/lib/db/approvals";
 import { createServicioAit } from "@/lib/db/serviciosAit";
-import { upsertKnowledgeChunk } from "@/lib/db/knowledgeEmbeddings";
 import {
-  buildServiceSummaryChunk,
-  buildActivityChunk,
-} from "@/lib/rag/chunkText";
+  enqueueEmbeddingJobs,
+  triggerProcessEmbeddings,
+} from "@/lib/db/embeddingJobs";
+import { processEmbeddingQueueClient } from "@/lib/rag/embeddingQueue";
+import type { ProjectServicePayload } from "@/lib/rag/indexProjectEmbeddings";
+import { runWithConcurrency } from "@/lib/utils/runWithConcurrency";
 import { mineraCorreosList } from "@/utils/MineraList";
 import { areaLists } from "@/utils/areaList";
 import Toast from "react-native-toast-message";
@@ -46,8 +48,9 @@ import { GoogleGenAI } from "@google/genai"; // Uncomment after installing: npm 
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 import { tagEquipoList } from "@/utils/tagEquipoList";
-import EquipmentBrowser from "../operations/EquipmentBrowser";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 import HomeWebToolbar from "./components/HomeWebToolbar";
+import HomeWelcomeView from "./components/HomeWelcomeView";
 import { createHomeWebStyles } from "./homeWebStyles";
 
 interface CSVRow {
@@ -205,136 +208,17 @@ function HomeScreenRaw(props: any) {
     onSubmit: async (formValue) => {},
   });
 
-  // Function to create comprehensive text for RAG embedding
-  const createRAGText = (
-    serviceData: any,
-    activitiesData: any[],
-    projectName: string,
-    projectType: string
-  ): string => {
-    const {
-      NombreServicio,
-      Codigo,
-      EmpresaMinera,
-      TipoServicio,
-      SupervisorMina,
-      SupervisorEECC,
-      FechaInicio,
-      FechaFin,
-      HorasTotales,
-    } = serviceData;
-
-    // Build comprehensive context text for RAG
-    let ragText = `SERVICIO PRINCIPAL: ${NombreServicio || projectName}
-CÓDIGO: ${Codigo}
-TIPO DE PROYECTO: ${projectType}
-TIPO DE SERVICIO: ${TipoServicio}
-EMPRESA MINERA: ${EmpresaMinera}
-FECHAS: Desde ${FechaInicio} hasta ${FechaFin}
-SUPERVISOR MINA: ${SupervisorMina || "No asignado"}
-SUPERVISOR EECC: ${SupervisorEECC || "No asignado"}
-HORAS TOTALES: ${HorasTotales || "No especificado"}
-
-ACTIVIDADES INCLUIDAS:`;
-
-    // Add detailed activities informationF
-    activitiesData.forEach((activity, index) => {
-      const tag = activity.TagEquipo || activity.tag_equipo || "";
-      ragText += `
-${index + 1}. ${activity.NombreServicio || "Actividad sin nombre"}
-   - Código: ${activity.Codigo || "N/A"}
-   - Tag equipo: ${tag || "N/A"}
-   - Fechas: ${
-     activity.FechaInicio
-       ? new Date(activity.FechaInicio.seconds * 1000).toLocaleDateString()
-       : "N/A"
-   } hasta ${
-        activity.FechaFin
-          ? new Date(activity.FechaFin.seconds * 1000).toLocaleDateString()
-          : "N/A"
-      }
-   - Empresa: ${EmpresaMinera || "N/A"}`;
-    });
-
-    // Add summary context
-    ragText += `
-
-RESUMEN DEL CONTEXTO:
-Este servicio forma parte del proyecto "${projectName}" de tipo "${projectType}" para la empresa minera "${EmpresaMinera}". 
-Incluye ${
-      activitiesData.length
-    } actividades principales relacionadas con ${TipoServicio}. 
-Las actividades van desde ${FechaInicio} hasta ${FechaFin} con un total de ${
-      HorasTotales || "N/A"
-    } horas programadas.
-Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
-      SupervisorEECC || "No asignado"
-    }.`;
-
-    return ragText;
-  };
-
-  const saveKnowledgeEmbeddings = async (
-    serviceId: string,
-    serviceData: Record<string, unknown>,
-    activitiesData: Record<string, unknown>[],
-    projectId: string,
-    projectName: string,
-    projectType: string
-  ) => {
-    try {
-      const summaryText = buildServiceSummaryChunk(
-        { ...serviceData, projectName, projectType },
-        activitiesData
-      );
-      await upsertKnowledgeChunk({
-        docType: "service_summary",
-        sourceId: serviceId,
-        content: summaryText,
-        servicioAitId: serviceId,
-        projectId,
-        tagEquipo: String(serviceData.TagEquipo ?? ""),
-        metadata: {
-          codigo: serviceData.Codigo,
-          nombreServicio: serviceData.NombreServicio,
-          projectName,
-          projectType,
-        },
-      });
-
-      for (const activity of activitiesData) {
-        const actCode = String(activity.Codigo ?? activity.codigo ?? "");
-        const actKey = actCode || String(activity.NombreServicio ?? "");
-        if (!actKey) continue;
-        await upsertKnowledgeChunk({
-          docType: "activity_plan",
-          sourceId: `${serviceId}-${actKey}`,
-          content: buildActivityChunk(activity, serviceData),
-          servicioAitId: serviceId,
-          projectId,
-          tagEquipo: String(
-            activity.TagEquipo ?? activity.tag_equipo ?? serviceData.TagEquipo ?? ""
-          ),
-          activityCodigo: actCode,
-          metadata: { nombre: activity.NombreServicio },
-        });
-      }
-      return true;
-    } catch (error) {
-      console.error("Error saving knowledge embeddings:", error);
-      return false;
-    }
-  };
-
   const handleProjectFileUpload = async (
     projectName: string,
     projectType: string,
     fileAsset: any,
-    newProjectDocID: any
+    newProjectDocID: any,
+    onProgress?: (message: string, current?: number, total?: number) => void
   ) => {
     try {
       setIsLoading(true);
       setTagValidationError(null);
+      onProgress?.("Validando archivo…");
 
       let data: CSVRow[] = [];
       const webFile = fileAsset.file;
@@ -532,6 +416,11 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
       };
 
       //----------------------------------------------------------------------------------------------------------------------------
+      const servicePayloads: {
+        newData: Record<string, unknown>;
+        embeddingPayload: ProjectServicePayload;
+      }[] = [];
+
       for (const item of list4) {
         const {
           Codigo,
@@ -580,7 +469,7 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
                 FechaInicio: fechaInicioDate ?? null,
                 FechaFin: fechaFinDate ?? null,
                 HorasTotales: parseHorasTotales(item.HorasTotales),
-                esRutaCritica: (item.esRutaCritica || "").trim().toLowerCase() === "si",
+                esRutaCritica: isRutaCritica(item.esRutaCritica),
                 // Inherit from parent service if activity has no value
                 TagEquipo: (item.TagEquipo || "").trim() || (TagEquipo || "").trim(),
                 AreaServicio: (item.AreaServicio || "").trim() || (AreaServicio || "").trim(),
@@ -625,44 +514,94 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
           HorasTotales: parseHorasTotales(HorasTotales),
           TagEquipo: (TagEquipo || "").trim(),
           AreaServicio: AreaServicio || "",
-          esRutaCritica: (esRutaCritica || "").trim().toLowerCase() === "si",
+          esRutaCritica: isRutaCritica(esRutaCritica),
           activities: filterNamesActivities,
           activitiesData: filteredData,
           createdAt: new Date(),
         };
 
-        // -----------------------🚀 NEW: Generate single comprehensive RAG embedding
-        await saveKnowledgeEmbeddings(
-          newData.idServiciosAIT,
-          {
-            NombreServicio,
-            Codigo,
-            EmpresaMinera,
-            TipoServicio,
-            TagEquipo: (TagEquipo || "").trim(),
-            AreaServicio: AreaServicio || "",
+        servicePayloads.push({
+          newData,
+          embeddingPayload: {
+            serviceId: newData.idServiciosAIT,
+            serviceData: {
+              NombreServicio,
+              Codigo,
+              EmpresaMinera,
+              TipoServicio,
+              TagEquipo: (TagEquipo || "").trim(),
+              AreaServicio: AreaServicio || "",
+            },
+            activitiesData: filteredData,
+            projectId: newProjectDocID,
+            projectName,
+            projectType,
           },
-          filteredData,
-          newProjectDocID,
-          projectName,
-          projectType
-        );
-
-        // Submit to Supabase
-        await createServicioAit(newData);
-
-        // Optional: Add a small delay
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        });
       }
+
+      const totalServices = servicePayloads.length;
+      onProgress?.("Guardando servicios…", 0, totalServices);
+      let savedCount = 0;
+
+      await runWithConcurrency(servicePayloads, 5, async ({ newData }) => {
+        await createServicioAit(newData as any);
+        savedCount += 1;
+        onProgress?.(
+          `Guardando ${savedCount}/${totalServices} servicios…`,
+          savedCount,
+          totalServices
+        );
+      });
+
+      onProgress?.("Encolando indexación IA…");
+      const embeddingServices = servicePayloads.map((p) => p.embeddingPayload);
+
+      setIsLoading(false);
 
       Toast.show({
         type: "success",
-        text1: "Proyecto global creado exitosamente",
-        text2: "Vectores de embeddings guardados en Supabase",
-        visibilityTime: 3000,
+        text1: "Proyecto cargado exitosamente",
+        text2: "Indexando para IA en segundo plano…",
+        visibilityTime: 4000,
       });
 
-      setIsLoading(false);
+      void (async () => {
+        try {
+          await enqueueEmbeddingJobs(embeddingServices);
+          const triggered = await triggerProcessEmbeddings(newProjectDocID, 50);
+          if (triggered) {
+            Toast.show({
+              type: "info",
+              text1: "Indexación IA en servidor",
+              text2: "Los embeddings se procesarán en segundo plano.",
+              visibilityTime: 4000,
+            });
+            return;
+          }
+        } catch (enqueueErr) {
+          console.warn(
+            "embedding_jobs queue unavailable; using client fallback",
+            enqueueErr
+          );
+        }
+
+        const result = await processEmbeddingQueueClient(
+          embeddingServices,
+          (message, current, total) => onProgress?.(message, current, total),
+          { forceHash: true }
+        );
+
+        Toast.show({
+          type: result.failed === 0 ? "success" : "info",
+          text1:
+            result.failed === 0
+              ? "Indexación IA completada"
+              : "Indexación parcial",
+          text2: `${result.succeeded}/${result.total} chunks indexados`,
+          visibilityTime: 5000,
+        });
+      })();
     } catch (error) {
       console.error("Error al procesar el archivo:", error);
 
@@ -1019,14 +958,17 @@ Supervisión a cargo de: Mina - ${SupervisorMina || "No asignado"}, EECC - ${
         >
           {props.email && props.user_photo ? (
             <View style={uiStyles.page}>
-              <View style={uiStyles.pageHeader}>
-                <Text style={uiStyles.pageTitle}>Catálogo de equipos</Text>
-                <Text style={uiStyles.pageSubtitle}>
-                  Selecciona un equipo para ver historial de eventos, mantenimientos
-                  y gestionar el seguimiento como supervisor o planificador.
-                </Text>
-              </View>
-              <EquipmentBrowser embedded selectionMode="browse" />
+              <HomeWelcomeView
+                windowWidth={windowWidth}
+                userName={
+                  companyName ||
+                  capitalizeFirstLetter(props.email?.match(regex)?.[1]) ||
+                  ""
+                }
+                userPhoto={props.user_photo}
+                onSelectProject={() => setShowProjectModal(true)}
+                onCreateProject={msProject}
+              />
             </View>
           ) : (
             <View style={uiStyles.loadingWrap}>

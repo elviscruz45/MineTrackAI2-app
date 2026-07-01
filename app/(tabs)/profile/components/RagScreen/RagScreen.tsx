@@ -26,9 +26,10 @@ interface ChatMessage {
 
 interface RagScreenProps {
   isModal?: boolean;
+  embedded?: boolean;
 }
 
-function RagScreenBare({ isModal = true }: RagScreenProps) {
+function RagScreenBare({ isModal = true, embedded = false }: RagScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [pregunta, setPregunta] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -99,22 +100,31 @@ function RagScreenBare({ isModal = true }: RagScreenProps) {
   ];
 
   return (
-    <View style={[styles.container, webStyles.container]}>
-      <View style={webStyles.header}>
-        <Text style={webStyles.title}>
+    <View
+      style={[
+        styles.container,
+        webStyles.container,
+        embedded && webStyles.embeddedContainer,
+      ]}
+    >
+      <View style={[webStyles.header, embedded && webStyles.embeddedHeader]}>
+        <Text style={[webStyles.title, embedded && webStyles.embeddedTitle]}>
           Asistente de Planificación de Mantenimiento
         </Text>
-        <Text style={webStyles.subtitle}>
+        <Text style={[webStyles.subtitle, embedded && webStyles.embeddedSubtitle]}>
           Consulta planificación, eventos de campo, HSE y historial por equipo
           (TagEquipo)
         </Text>
       </View>
 
-      <View style={webStyles.chatContainer}>
+      <View style={[webStyles.chatContainer, embedded && webStyles.embeddedChat]}>
         <View
           style={[
             webStyles.sidebar,
-            { display: Platform.OS === "web" ? "flex" : "none" },
+            {
+              display:
+                Platform.OS === "web" && !embedded ? "flex" : "none",
+            },
           ]}
         >
           <View style={webStyles.profileSection}>
@@ -223,10 +233,19 @@ const mapStateToProps = (reducers: any) => ({
 
 const webStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9fafb" },
+  embeddedContainer: {
+    flex: undefined,
+    height: "100%",
+    backgroundColor: "#ffffff",
+  },
   header: {
     padding: 24,
     backgroundColor: "#2A3B76",
     alignItems: "center" as const,
+  },
+  embeddedHeader: {
+    padding: 16,
+    alignItems: "flex-start" as const,
   },
   title: {
     fontSize: 24,
@@ -234,12 +253,22 @@ const webStyles = StyleSheet.create({
     color: "white",
     marginBottom: 8,
   },
+  embeddedTitle: {
+    fontSize: 17,
+    marginBottom: 4,
+  },
   subtitle: {
     fontSize: 16,
     color: "rgba(255, 255, 255, 0.8)",
     textAlign: "center" as const,
   },
+  embeddedSubtitle: {
+    fontSize: 13,
+    textAlign: "left" as const,
+    lineHeight: 18,
+  },
   chatContainer: { flexDirection: "row" as const, flex: 1 },
+  embeddedChat: { flex: 1, minHeight: 420 },
   sidebar: {
     width: 300,
     backgroundColor: "#ffffff",
@@ -273,7 +302,7 @@ const webStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center" as const,
     alignItems: "center" as const,
-    minHeight: 400,
+    minHeight: 280,
   },
   emptyChatText: {
     fontSize: 16,

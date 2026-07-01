@@ -15,6 +15,12 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import Toast from "react-native-toast-message";
 import { createProject, deleteProject } from "@/lib/db/projects";
 
+export type UploadProgressCallback = (
+  message: string,
+  current?: number,
+  total?: number
+) => void;
+
 interface ProjectUploadModalProps {
   isVisible: boolean;
   onClose: () => void;
@@ -22,7 +28,8 @@ interface ProjectUploadModalProps {
     projectName: string,
     projectType: string,
     file: any,
-    projectId: string
+    projectId: string,
+    onProgress?: UploadProgressCallback
   ) => Promise<void>;
 }
 
@@ -35,6 +42,11 @@ const ProjectUploadModal = ({
   const [projectType, setProjectType] = useState("Parada de Planta");
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    message: string;
+    current?: number;
+    total?: number;
+  } | null>(null);
 
   const projectTypes = [
     "Parada de Planta",
@@ -96,6 +108,7 @@ const ProjectUploadModal = ({
     console.log("3333 este el primer paso");
 
     setIsLoading(true);
+    setUploadProgress({ message: "Iniciando carga…" });
 
     // Variable para almacenar el ID del proyecto (solo se crea si pasa validación)
     let newProjectDocId: string | null = null;
@@ -115,7 +128,10 @@ const ProjectUploadModal = ({
         projectName,
         projectType,
         selectedFile,
-        newProjectDocId
+        newProjectDocId,
+        (message, current, total) => {
+          setUploadProgress({ message, current, total });
+        }
       );
 
       // ✅ Solo cerrar modal y mostrar éxito si no hubo errores
@@ -158,6 +174,7 @@ const ProjectUploadModal = ({
       // No cerrar el modal para que el usuario pueda corregir el archivo (errores no de tags)
     } finally {
       setIsLoading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -165,7 +182,35 @@ const ProjectUploadModal = ({
   const isWeb = Platform.OS === "web";
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    const pct =
+      uploadProgress?.total && uploadProgress.current != null
+        ? Math.round((uploadProgress.current / uploadProgress.total) * 100)
+        : null;
+
+    return (
+      <Modal visible transparent animationType="fade">
+        <View style={styles.progressOverlay}>
+          <View style={styles.progressCard}>
+            <Text style={styles.progressTitle}>Cargando proyecto</Text>
+            <Text style={styles.progressMessage}>
+              {uploadProgress?.message ?? "Procesando…"}
+            </Text>
+            {pct != null ? (
+              <>
+                <View style={styles.progressBarTrack}>
+                  <View
+                    style={[styles.progressBarFill, { width: `${pct}%` }]}
+                  />
+                </View>
+                <Text style={styles.progressPct}>{pct}%</Text>
+              </>
+            ) : (
+              <LoadingSpinner />
+            )}
+          </View>
+        </View>
+      </Modal>
+    );
   }
 
   return (
@@ -443,6 +488,56 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  progressOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  progressCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 28,
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  progressTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 8,
+  },
+  progressMessage: {
+    fontSize: 14,
+    color: "#64748b",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  progressBarTrack: {
+    width: "100%",
+    height: 8,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#28A745",
+    borderRadius: 4,
+  },
+  progressPct: {
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "600",
   },
 });
 

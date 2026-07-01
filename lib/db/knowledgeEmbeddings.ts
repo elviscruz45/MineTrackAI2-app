@@ -17,9 +17,12 @@ export interface KnowledgeChunkInput {
 }
 
 export async function upsertKnowledgeChunk(
-  input: KnowledgeChunkInput
+  input: KnowledgeChunkInput,
+  options?: { forceHash?: boolean }
 ): Promise<void> {
-  const embedding = await generateEmbedding(input.content);
+  const embedding = await generateEmbedding(input.content, {
+    forceHash: options?.forceHash,
+  });
   const fecha =
     input.fecha instanceof Date
       ? input.fecha.toISOString()

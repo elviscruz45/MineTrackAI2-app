@@ -11,9 +11,7 @@ import { useRouter } from "expo-router";
 import { sortByCodigo } from "@/utils/sortByCodigo";
 import { calculateAvanceFromActivities } from "@/utils/calculateAvance";
 import { getTagEquipoLabel } from "@/utils/tagEquipoList";
-
-const isRutaCritica = (value: any): boolean =>
-  value === true || String(value || "").trim().toLowerCase() === "si";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 
 function HeaderScreenNoRedux(props: any) {
   const router = useRouter();

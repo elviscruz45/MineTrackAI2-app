@@ -29,8 +29,7 @@ const fmtUSD = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const isRutaCritica = (v: any) =>
-  v === true || String(v || "").trim().toLowerCase() === "si";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 
 const getEventTs = (ev: any): number => {
   if (ev?.createdAt?.seconds) return ev.createdAt.seconds * 1000;

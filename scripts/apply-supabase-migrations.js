@@ -8,8 +8,10 @@
  */
 const fs = require("fs");
 const path = require("path");
+const { loadEnv } = require("./load-env");
 
 async function main() {
+  loadEnv();
   let pg;
   try {
     pg = require("pg");
@@ -21,11 +23,23 @@ async function main() {
   const projectRef =
     process.env.SUPABASE_PROJECT_REF || "hsdfxbgwrmpszmrjqzel";
   const password = process.env.SUPABASE_DB_PASSWORD;
-  const connectionString =
-    process.env.SUPABASE_DB_URL ||
-    (password
-      ? `postgresql://postgres.${projectRef}:${encodeURIComponent(password)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
-      : null);
+  let connectionString = process.env.SUPABASE_DB_URL;
+
+  if (
+    connectionString &&
+    (connectionString.includes("YOUR_PASSWORD") || connectionString.includes("[YOUR-PASSWORD]"))
+  ) {
+    connectionString = null;
+  }
+
+  if (!connectionString && password) {
+    // Direct connection (most reliable for DDL migrations)
+    connectionString = `postgresql://postgres:${encodeURIComponent(password)}@db.${projectRef}.supabase.co:5432/postgres`;
+  }
+
+  if (!connectionString && password) {
+    connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(password)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+  }
 
   if (!connectionString) {
     console.error(

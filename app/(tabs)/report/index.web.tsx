@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -42,25 +42,10 @@ import CriticalRouteView from "./webcomponents/CriticalRouteView";
 import SafetyView from "./webcomponents/SafetyView";
 import EnvironmentView from "./webcomponents/EnvironmentView";
 import GerenciaDashboard from "./webcomponents/GerenciaDashboard";
-import MaintenanceDashboard from "./webcomponents/MaintenanceDashboard";
-import EquipmentHealthView from "./webcomponents/EquipmentHealthView";
 import PlantAvailabilityReport from "./webcomponents/PlantAvailabilityReport";
 import { sortByCodigo } from "../../../utils/sortByCodigo";
-
-// Mock data for projects
-const AVAILABLE_PROJECTS = [
-  "CHANCADO PRIMARIO",
-  "CHANCADO SECUNDARIO",
-  "MOLIENDA",
-  "FLOTACIÓN",
-  "ESPESADORES",
-  "FILTRADO",
-  "CHANCADO TERCIARIO",
-  "SISTEMA DE FAJAS",
-  "ALMACENAMIENTO DE CONCENTRADO",
-  "PLANTA DE CAL",
-  "SISTEMA DE BOMBEO",
-];
+import { subscribeServiciosAitByProject } from "@/lib/db/serviciosAit";
+import { updateAITServicesDATA } from "../../../redux/actions/home";
 
 function ReportnoRedux(props: any) {
   const router = useRouter();
@@ -73,9 +58,6 @@ function ReportnoRedux(props: any) {
   // const onCloseOpenModal = () => setShowModal((prevState) => !prevState);
   const userType = props.profile?.userType;
 
-  //real time updates
-  const [data, setData] = useState<any[] | undefined>();
-
   //states to view the tables
   const [serviciosActivos, setServiciosActivos] = useState(false);
   const [estadoServicios, setEstadoServicios] = useState(false);
@@ -84,7 +66,6 @@ function ReportnoRedux(props: any) {
   const [montoEDP, setMontoEDP] = useState(false);
   const [comprometido, setComprometido] = useState(false);
   const [activeTab, setActiveTab] = useState("Proyeccion");
-  const [selectedProject, setSelectedProject] = useState(AVAILABLE_PROJECTS[0]);
   const [selectedCompany, setSelectedCompany] = useState("Antapaccay");
   const [selectedType, setSelectedType] = useState("Parada de Planta");
   const [selectedDate, setSelectedDate] = useState("14/07/2025");
@@ -92,6 +73,22 @@ function ReportnoRedux(props: any) {
 
   const regex = /@(.+?)\./i;
   const companyName = props.email?.match(regex)?.[1].toUpperCase() || "Anonimo";
+
+  const hasProjectData =
+    Array.isArray(props.servicesData) && props.servicesData.length > 0;
+
+  const data = useMemo(() => {
+    if (!hasProjectData) return undefined;
+    return sortByCodigo(props.servicesData);
+  }, [props.servicesData, hasProjectData]);
+
+  const selectedProject = useMemo(() => {
+    if (!hasProjectData) return null;
+    const first = props.servicesData[0];
+    return first?.projectName ?? null;
+  }, [props.servicesData, hasProjectData]);
+
+  const projectId = hasProjectData ? props.servicesData[0]?.projectId : null;
 
   useEffect(() => {
     if (Array.isArray(props.servicesData)) {
@@ -103,25 +100,24 @@ function ReportnoRedux(props: any) {
   }, []);
 
   useEffect(() => {
-    if (Array.isArray(props.servicesData)) {
-      setData(sortByCodigo(props.servicesData));
-    } else {
-      setData(props.servicesData);
-    }
-  }, [props.servicesData, company]);
+    setActiveTab("Proyeccion");
+  }, [hasProjectData, projectId]);
+
+  useEffect(() => {
+    if (!projectId || !props.email) return;
+
+    const unsubscribe = subscribeServiciosAitByProject(
+      projectId,
+      (lista) => {
+        props.updateAITServicesDATA(sortByCodigo(lista));
+      },
+      (error) => console.error("Error en realtime report:", error)
+    );
+
+    return unsubscribe;
+  }, [projectId, props.email]);
 
   console.log("Data in Report Screenn:", data);
-
-  // go to a history screen
-
-  const handleProjectChange = (project: string) => {
-    setSelectedProject(project);
-    // Here you would typically fetch or filter data based on the selected project
-    console.log(`Selected project: ${project}`);
-  };
-
-  const hasProjectData =
-    Array.isArray(data) && data.length > 0;
 
   if (!hasProjectData) {
     return (
@@ -159,6 +155,7 @@ function ReportnoRedux(props: any) {
           </span>
         </div>
         <div
+          key="plant-availability"
           style={{
             backgroundColor: "#f0f4f8",
             overflowY: "auto",
@@ -182,6 +179,7 @@ function ReportnoRedux(props: any) {
         <ReportNavbar active={activeTab} onSelect={setActiveTab} />
 
         <div
+          key={projectId ?? "project-report"}
           style={{
             backgroundColor: "#f0f4f8",
             overflowY: "auto",
@@ -207,10 +205,6 @@ function ReportnoRedux(props: any) {
                 <EnvironmentView selectedProject={selectedProject} />
               ) : activeTab === "Gerencia" ? (
                 <GerenciaDashboard data={data} />
-              ) : activeTab === "Mantenimiento" ? (
-                <MaintenanceDashboard />
-              ) : activeTab === "Salud Equipos" ? (
-                <EquipmentHealthView />
               ) : (
                 <AvanceProgressChart data={data} />
               )}
@@ -230,6 +224,6 @@ const mapStateToProps = (reducers: any) => {
   };
 };
 
-const Report = connect(mapStateToProps, {})(ReportnoRedux);
+const Report = connect(mapStateToProps, { updateAITServicesDATA })(ReportnoRedux);
 
 export default Report;

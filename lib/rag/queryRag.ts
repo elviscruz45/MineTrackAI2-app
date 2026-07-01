@@ -8,6 +8,7 @@ import {
   formatEquipmentHistoryForAnswer,
 } from "@/lib/db/ragQueries";
 import { matchKnowledge } from "@/lib/db/knowledgeEmbeddings";
+import { generateRagAnswer } from "@/lib/rag/geminiChat";
 
 export interface RagAnswer {
   answer: string;
@@ -73,6 +74,18 @@ export async function queryRag(question: string): Promise<RagAnswer> {
       sources: [],
       mode: "structured",
     };
+  }
+
+  const contextBody = [
+    structuredParts.length ? structuredParts.join("\n\n") : "",
+    vectorContext ? `## Contexto semántico\n${vectorContext}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const geminiAnswer = await generateRagAnswer(question, contextBody);
+  if (geminiAnswer) {
+    return { answer: geminiAnswer, sources, mode };
   }
 
   const answer = buildAnswer(question, structuredParts, vectorContext, intent);

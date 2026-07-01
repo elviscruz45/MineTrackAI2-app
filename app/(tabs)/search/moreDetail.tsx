@@ -1,47 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
-  FlatList,
-  Dimensions,
   TouchableOpacity,
-  Button,
   Platform,
-  Alert,
-  ScrollView,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { MaterialIcon } from "@/components/MaterialIcon";
-import styles from "./moreDetail.styles";
-import { screen } from "../../../utils";
 import { connect } from "react-redux";
-// import { saveActualEquipment } from "../../redux/actions/post";
 import { EquipmentListUpper } from "../../../redux/actions/home";
-import { areaLists } from "../../../utils/areaList";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { userTypeList } from "../../../utils/userTypeList";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import BarChartTareo from "./moreDetail.Chart";
 import ChangeDisplayFechaReal from "./components/FechaReal/ChangeDisplayFechaReal";
 import { Modal } from "@/components/Modal/Modal";
-import { updateServicioAit, createServicioAit } from "@/lib/db/serviciosAit";
+import {
+  updateServicioAit,
+  createServicioAit,
+  updateServicioActivities,
+  subscribeServiceActivitiesByServicio,
+} from "@/lib/db/serviciosAit";
 import Toast from "react-native-toast-message";
 import OfflineFormsStatus from "@/components/OfflineFormsStatus/OfflineFormsStatus";
-// import {
-//   LineChart,
-//   BarChart,
-//   PieChart,
-//   ProgressChart,
-//   ContributionGraph,
-//   StackedBarChart,
-// } from "react-native-chart-kit";
-import * as Progress from "react-native-progress";
 import {
   buildGlobalSCurveWithProjection,
+  calculateAvanceFromActivities,
   parseActivityDate,
 } from "@/utils/calculateAvance";
+
+const BRAND = "#2A3B76";
+const PAGE_BG = "#f1f5f9";
+const CARD_BG = "#ffffff";
+const BORDER = "#e2e8f0";
+const MUTED = "#64748b";
 
 // Funciones específicas para manejo offline
 const OFFLINE_FORMS_QUEUE_KEY = "offline_forms_queue";
@@ -233,22 +227,13 @@ const handleFirebaseOperationWithOffline = async (
 };
 
 type ZingChartType = React.ComponentType<{ data: any }>;
-interface ProgressChartProps {
-  data?: any;
-}
-const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
-
-// Responsive breakpoints
-const isTablet = windowWidth > 768;
-const isMobile = windowWidth <= 480;
 
 function formatDateDisplay(dateInput: any) {
   if (!dateInput) return "No definido";
 
-  if (dateInput?.seconds) {
-    const date = new Date(dateInput.seconds * 1000);
-    return date.toLocaleDateString("es-ES", {
+  const parsed = parseActivityDate(dateInput);
+  if (parsed) {
+    return parsed.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -257,14 +242,447 @@ function formatDateDisplay(dateInput: any) {
     });
   }
 
-  return dateInput;
+  if (typeof dateInput === "string") return dateInput;
+  return "No definido";
+}
+
+function createMoreDetailStyles(windowWidth: number) {
+  const isCompact = windowWidth < 640;
+  const isDesktop = windowWidth >= 1024;
+  const contentMaxWidth = Math.min(windowWidth, 1100);
+  const horizontalPad = isCompact ? 16 : 24;
+  const diagramSize = isCompact
+    ? Math.min(windowWidth - 64, 320)
+    : Math.min(400, windowWidth * 0.35);
+
+  return StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      backgroundColor: PAGE_BG,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingBottom: 100,
+    },
+    page: {
+      width: "100%",
+      maxWidth: contentMaxWidth,
+      alignSelf: "center",
+      paddingHorizontal: horizontalPad,
+      paddingTop: isCompact ? 12 : 20,
+      gap: isCompact ? 12 : 16,
+    },
+    heroCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 16,
+      padding: isCompact ? 16 : 24,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 16,
+      elevation: 3,
+      alignItems: "center",
+      position: "relative",
+    },
+    editButton: {
+      position: "absolute",
+      top: 16,
+      right: 16,
+      backgroundColor: BRAND,
+      borderRadius: 12,
+      width: 40,
+      height: 40,
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 10,
+      shadowColor: BRAND,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    profileImage: {
+      width: isCompact ? 88 : 108,
+      height: isCompact ? 88 : 108,
+      borderRadius: isCompact ? 44 : 54,
+      borderWidth: 3,
+      borderColor: "#c7d2fe",
+      marginBottom: 12,
+    },
+    titleText: {
+      fontSize: isCompact ? 20 : 26,
+      fontWeight: "800",
+      color: "#1e293b",
+      textAlign: "center",
+      letterSpacing: -0.3,
+      marginBottom: 12,
+      paddingHorizontal: 40,
+    },
+    badgeRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      justifyContent: "center",
+      marginBottom: 14,
+    },
+    badge: {
+      backgroundColor: "#eef2ff",
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: "#c7d2fe",
+    },
+    badgeText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: BRAND,
+    },
+    kpiRow: {
+      flexDirection: isCompact ? "column" : "row",
+      gap: 10,
+      width: "100%",
+    },
+    kpiCard: {
+      flex: isCompact ? undefined : 1,
+      backgroundColor: "#f8fafc",
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: BORDER,
+      alignItems: "center",
+    },
+    kpiLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: MUTED,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+      marginBottom: 4,
+    },
+    kpiValue: {
+      fontSize: isCompact ? 16 : 18,
+      fontWeight: "800",
+      color: BRAND,
+    },
+    cardsGrid: {
+      flexDirection: isDesktop ? "row" : "column",
+      flexWrap: "wrap",
+      gap: isCompact ? 12 : 16,
+    },
+    cardHalf: {
+      flex: isDesktop ? 1 : undefined,
+      minWidth: isDesktop ? 280 : undefined,
+    },
+    infoCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 14,
+      padding: isCompact ? 14 : 18,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 14,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: BORDER,
+    },
+    infoCardTitle: {
+      fontSize: isCompact ? 15 : 16,
+      fontWeight: "700",
+      color: BRAND,
+      flex: 1,
+    },
+    infoRow: {
+      flexDirection: isCompact ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isCompact ? "flex-start" : "center",
+      marginBottom: 10,
+      gap: isCompact ? 2 : 8,
+    },
+    infoLabel: {
+      fontSize: 13,
+      fontWeight: "500",
+      color: MUTED,
+      flex: isCompact ? undefined : 0.45,
+    },
+    infoValue: {
+      fontSize: 14,
+      color: "#1e293b",
+      fontWeight: "600",
+      flex: isCompact ? undefined : 0.55,
+      textAlign: isCompact ? "left" : "right",
+    },
+    hhTable: {
+      borderWidth: 1,
+      borderColor: BORDER,
+      borderRadius: 10,
+      overflow: "hidden",
+    },
+    hhTableHeader: {
+      flexDirection: "row",
+      backgroundColor: "#f1f5f9",
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: BORDER,
+    },
+    hhTableRow: {
+      flexDirection: "row",
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: BORDER,
+    },
+    hhTableRowLast: {
+      borderBottomWidth: 0,
+    },
+    hhColRole: {
+      flex: 1.2,
+      fontSize: 13,
+      color: MUTED,
+      fontWeight: "500",
+    },
+    hhColQty: {
+      flex: 0.6,
+      fontSize: 13,
+      color: "#1e293b",
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    hhColTotal: {
+      flex: 0.8,
+      fontSize: 13,
+      color: BRAND,
+      fontWeight: "700",
+      textAlign: "right",
+    },
+    hhHeaderText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: MUTED,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    chartContainer: {
+      backgroundColor: CARD_BG,
+      borderRadius: 14,
+      padding: isCompact ? 14 : 20,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    chartTitle: {
+      fontSize: isCompact ? 16 : 18,
+      fontWeight: "700",
+      color: "#1e293b",
+      textAlign: "center",
+    },
+    chartSubtitle: {
+      fontSize: 12,
+      color: MUTED,
+      textAlign: "center",
+      marginTop: 6,
+      marginBottom: 12,
+      lineHeight: 18,
+    },
+    diagramContainer: {
+      backgroundColor: CARD_BG,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: BORDER,
+      alignItems: "center",
+    },
+    diagramImage: {
+      width: diagramSize,
+      height: diagramSize,
+      borderRadius: 10,
+    },
+    loadingText: {
+      textAlign: "center",
+      color: MUTED,
+      fontStyle: "italic",
+      padding: 24,
+    },
+    activityCard: {
+      backgroundColor: "#f8fafc",
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: BORDER,
+      borderLeftWidth: 3,
+      borderLeftColor: BRAND,
+    },
+    activityHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      marginBottom: 12,
+    },
+    activityCode: {
+      backgroundColor: BRAND,
+      color: "white",
+      fontSize: 11,
+      fontWeight: "700",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      overflow: "hidden",
+    },
+    activityTitle: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#1e293b",
+      flex: 1,
+      lineHeight: 20,
+    },
+    dateContainer: {
+      flexDirection: isCompact ? "column" : "row",
+      gap: 10,
+    },
+    dateColumn: {
+      flex: 1,
+      backgroundColor: CARD_BG,
+      borderRadius: 10,
+      padding: 10,
+      borderWidth: 1,
+      borderColor: BORDER,
+    },
+    dateColumnTitle: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: BRAND,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+      marginBottom: 10,
+    },
+    dateFieldLabel: {
+      fontSize: 11,
+      color: MUTED,
+      marginBottom: 4,
+    },
+    dateValue: {
+      fontSize: 13,
+      color: "#1e293b",
+      backgroundColor: "#f1f5f9",
+      padding: 8,
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    dateValueReal: {
+      fontSize: 13,
+      color: "#0369a1",
+      backgroundColor: "#e0f2fe",
+      padding: 8,
+      borderRadius: 8,
+      fontWeight: "600",
+      marginBottom: 8,
+    },
+    editableDate: {
+      fontSize: 13,
+      color: "#c2410c",
+      backgroundColor: "#fff7ed",
+      padding: 8,
+      borderRadius: 8,
+      fontWeight: "600",
+      borderWidth: 1,
+      borderColor: "#fdba74",
+      borderStyle: "dashed",
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    statusRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 10,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: BORDER,
+      gap: 8,
+    },
+    statusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    statusText: {
+      fontSize: 12,
+      color: MUTED,
+      fontWeight: "600",
+    },
+    responsableItem: {
+      fontSize: 14,
+      color: "#334155",
+      paddingVertical: 4,
+      paddingLeft: 8,
+      borderLeftWidth: 2,
+      borderLeftColor: "#c7d2fe",
+      marginBottom: 4,
+    },
+    floatingButton: {
+      position: "absolute",
+      bottom: isCompact ? 20 : 28,
+      right: isCompact ? 16 : 24,
+      backgroundColor: BRAND,
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      shadowColor: BRAND,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      elevation: 8,
+    },
+    floatingButtonDisabled: {
+      backgroundColor: "#94a3b8",
+    },
+    floatingButtonLabel: {
+      color: "white",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    progressBarTrack: {
+      height: 6,
+      backgroundColor: "#e2e8f0",
+      borderRadius: 3,
+      overflow: "hidden",
+      width: "100%",
+      marginTop: 4,
+    },
+    progressBarFill: {
+      height: "100%",
+      backgroundColor: BRAND,
+      borderRadius: 3,
+    },
+  });
 }
 
 function MoreDetailScreenNoRedux(props: any) {
-  const [data, setData] = useState();
-  const [showModal, setShowModal] = useState<any>(false);
+  const { width: windowWidth } = useWindowDimensions();
+  const ui = useMemo(() => createMoreDetailStyles(windowWidth), [windowWidth]);
+
+  const [data, setData] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
   const [renderComponent, setRenderComponent] = useState<any>("");
-  const [isClient, setIsClient] = useState(false);
   const [updateing, setUpdating] = useState(false);
 
   const [ZingChartComponent, setZingChartComponent] =
@@ -288,9 +706,7 @@ function MoreDetailScreenNoRedux(props: any) {
     return () => clearInterval(interval);
   }, []);
 
-  console.log("ELVIS DATA", data);
-
-  // Hook para escuchar eventos de reconexión en web
+  const router = useRouter();
   useEffect(() => {
     if (Platform.OS === "web") {
       const handleOnline = async () => {
@@ -322,9 +738,6 @@ function MoreDetailScreenNoRedux(props: any) {
   };
 
   useEffect(() => {
-    setIsClient(true);
-
-    // Only import ZingChart on the client side
     if (typeof window !== "undefined") {
       const importZingChart = async () => {
         try {
@@ -340,8 +753,6 @@ function MoreDetailScreenNoRedux(props: any) {
     }
   }, []);
 
-  const router = useRouter();
-  //global state management for the user_uid
   const {
     idServiciosAIT,
     area,
@@ -387,8 +798,8 @@ function MoreDetailScreenNoRedux(props: any) {
   }: any = useLocalSearchParams();
 
   // Función para generar configuración de ZingChart basada en Curva S
-  const generateCurvaSChartConfig = () => {
-    const listaActividades = JSON.parse(activitiesData || "[]");
+  const curvaSChartConfig = useMemo(() => {
+    const listaActividades = data;
 
     let fechaInicioProyecto: Date | null = parseActivityDate(
       FechaInicioISO || FechaInicio
@@ -613,255 +1024,159 @@ function MoreDetailScreenNoRedux(props: any) {
       },
       fechaProyeccionFin,
     };
+  }, [data, FechaInicioISO, FechaInicio, FechaFinISO, FechaFin]);
+
+  useEffect(() => {
+    if (!idServiciosAIT) {
+      const listaActividades = JSON.parse(activitiesData || "[]");
+      setData(listaActividades);
+      return;
+    }
+
+    const listaFromParams = JSON.parse(activitiesData || "[]");
+    if (listaFromParams.length > 0) {
+      setData(listaFromParams);
+    }
+
+    const unsubscribe = subscribeServiceActivitiesByServicio(
+      String(idServiciosAIT),
+      (activities) => setData(activities),
+      (error) => console.error("Error en realtime activities:", error)
+    );
+
+    return unsubscribe;
+  }, [idServiciosAIT, activitiesData]);
+
+  const photoServiceURLDecoded = photoServiceURL?.replace(/abcdefg/g, "%2F") ?? "";
+  const avance = useMemo(
+    () => calculateAvanceFromActivities(data, AvanceEjecucion),
+    [data, AvanceEjecucion]
+  );
+
+  const formattedMonto = Monto
+    ? new Intl.NumberFormat("es-PE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(Number(Monto))
+    : "—";
+
+  const UsuarioMantenimiento = ResponsableEmpresaUsuario3?.split(",") ?? [];
+  const ContratistaSupervisor = ResponsableEmpresaContratista3?.split(",") ?? [];
+
+  const staffRoles = [
+    { label: "Supervisor Mecánico", qty: Supervisor },
+    { label: "Supervisor Seguridad", qty: SupervisorSeguridad },
+    { label: "Líder Mecánico", qty: Lider },
+    { label: "Mecánico", qty: Tecnicos },
+    { label: "Soldador", qty: Soldador },
+  ];
+
+  const renderResponsables = (array: string[]) =>
+    array?.filter(Boolean).map((item, i) => (
+      <Text key={`${item}-${i}`} style={ui.responsableItem}>
+        {item.trim()}
+      </Text>
+    ));
+
+  const openDateModal = (codigo: string, tipo: "Inicio" | "Fin") => {
+    setRenderComponent(
+      <ChangeDisplayFechaReal
+        onClose={onCloseOpenModal}
+        setData={setData}
+        data={data}
+        codigo={codigo}
+        tipo={tipo}
+      />
+    );
+    onCloseOpenModal();
   };
 
-  const curvaSChartConfig = generateCurvaSChartConfig();
+  const renderActivityCard = (item: any, index: number) => {
+    const InicioReal = item?.RealFechaInicio
+      ? formatDateDisplay(item.RealFechaInicio)
+      : "";
+    const FinReal = item?.RealFechaFin
+      ? formatDateDisplay(item.RealFechaFin)
+      : "";
 
-  //retrieving serviceAIT list data from firebase
-  useEffect(() => {
-    const listaActividades = JSON.parse(activitiesData || "[]");
+    const status =
+      InicioReal && FinReal
+        ? { color: "#22c55e", label: "Completado" }
+        : InicioReal
+        ? { color: "#f59e0b", label: "En progreso" }
+        : { color: "#ef4444", label: "Pendiente" };
 
-    console.log("listaActividades", listaActividades);
-
-    setData(listaActividades);
-  }, []);
-
-  const userType = props.profile?.userType;
-  ///the algoritm to retrieve the image source to render the icon
-  const indexareaList = areaLists.findIndex((item) => item.value === area);
-  const imageSource =
-    areaLists[indexareaList]?.image ||
-    require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
-
-  const photoServiceURLDecoded = photoServiceURL.replace(/abcdefg/g, "%2F");
-
-  const durationInMilliseconds = FechaFinISO - FechaInicioISO;
-
-  //Algorithm to   convert string to a list to render a list of names
-
-  const UsuarioAdministrador = ResponsableEmpresaUsuario?.split(",");
-  const UsuarioPlaneamiento = ResponsableEmpresaUsuario2?.split(",");
-  const UsuarioMantenimiento = ResponsableEmpresaUsuario3?.split(",");
-
-  const ContratistaGerente = ResponsableEmpresaContratista?.split(",");
-  const ContratistaPlanificador = ResponsableEmpresaContratista2?.split(",");
-  const ContratistaSupervisor = ResponsableEmpresaContratista3?.split(",");
-
-  const ResposableList = (array: any) => {
     return (
-      <View>
-        <FlatList
-          data={array}
-          renderItem={({ item }) => {
-            return (
-              <View>
-                <Text style={styles.info3}>{item}</Text>
-              </View>
-            );
-          }}
-          keyExtractor={(item, index) => index.toString()}
-          scrollEnabled={false}
-        />
+      <View key={`${item.Codigo}-${index}`} style={ui.activityCard}>
+        <View style={ui.activityHeader}>
+          <Text style={ui.activityCode}>{item.Codigo}</Text>
+          <Text style={ui.activityTitle}>{item.NombreServicio}</Text>
+        </View>
+
+        <View style={ui.dateContainer}>
+          <View style={ui.dateColumn}>
+            <Text style={ui.dateColumnTitle}>Programadas</Text>
+            <Text style={ui.dateFieldLabel}>Inicio</Text>
+            <Text style={ui.dateValue}>
+              {formatDateDisplay(item.FechaInicio)}
+            </Text>
+            <Text style={ui.dateFieldLabel}>Fin</Text>
+            <Text style={ui.dateValue}>
+              {formatDateDisplay(item.FechaFin)}
+            </Text>
+          </View>
+
+          <View style={ui.dateColumn}>
+            <Text style={ui.dateColumnTitle}>Reales</Text>
+            <Text style={ui.dateFieldLabel}>Inicio</Text>
+            <TouchableOpacity onPress={() => openDateModal(item.Codigo, "Inicio")}>
+              <Text style={InicioReal ? ui.dateValueReal : ui.editableDate}>
+                {InicioReal || "Tap para agregar"}
+              </Text>
+            </TouchableOpacity>
+            <Text style={ui.dateFieldLabel}>Fin</Text>
+            <TouchableOpacity onPress={() => openDateModal(item.Codigo, "Fin")}>
+              <Text style={FinReal ? ui.dateValueReal : ui.editableDate}>
+                {FinReal || "Tap para agregar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={ui.statusRow}>
+          <View style={[ui.statusDot, { backgroundColor: status.color }]} />
+          <Text style={ui.statusText}>{status.label}</Text>
+        </View>
       </View>
     );
   };
 
-  const activitiesList = () => {
-    console.log("pppppppppp-----", data);
+  const SectionCard = ({
+    icon,
+    title,
+    children,
+    style,
+  }: {
+    icon: string;
+    title: string;
+    children: React.ReactNode;
+    style?: object;
+  }) => (
+    <View style={[ui.infoCard, style]}>
+      <View style={ui.cardHeader}>
+        <MaterialIcon name={icon} size={20} color={BRAND} />
+        <Text style={ui.infoCardTitle}>{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
 
-    console.log("pppppppppp", data);
-
-    console.log("ELVIS", data);
-
-    return (
-      <FlatList
-        data={data}
-        renderItem={({ index, item }) => {
-          const FechaInicio = item.FechaInicio;
-          const FechaFin = item.FechaFin;
-
-          const InicioReal = item?.RealFechaInicio
-            ? new Date(item?.RealFechaInicio)?.toLocaleString("en-GB", {
-                hour12: false,
-              })
-            : "";
-          const FinReal = item?.RealFechaFin
-            ? new Date(item?.RealFechaFin)?.toLocaleString("en-GB", {
-                hour12: false,
-              })
-            : "";
-
-          return (
-            <View style={modernStyles.activityCard}>
-              {/* Activity Header */}
-              <View style={modernStyles.activityHeader}>
-                <Text style={modernStyles.activityCode}>{item.Codigo}</Text>
-                <Text style={modernStyles.activityTitle}>
-                  {item.NombreServicio}
-                </Text>
-              </View>
-
-              {/* Dates Section */}
-              <View style={modernStyles.dateContainer}>
-                {/* Programmed Dates Column */}
-                <View style={modernStyles.dateColumn}>
-                  <Text style={modernStyles.dateLabel}>
-                    📅 Fechas Programadas
-                  </Text>
-
-                  <View style={{ marginBottom: 8 }}>
-                    <Text
-                      style={[
-                        modernStyles.dateLabel,
-                        { fontSize: 11, marginBottom: 2 },
-                      ]}
-                    >
-                      Inicio:
-                    </Text>
-                    <Text style={modernStyles.dateValue}>
-                      {formatDateDisplay(FechaInicio)}
-                    </Text>
-                  </View>
-
-                  <View>
-                    <Text
-                      style={[
-                        modernStyles.dateLabel,
-                        { fontSize: 11, marginBottom: 2 },
-                      ]}
-                    >
-                      Fin:
-                    </Text>
-                    <Text style={modernStyles.dateValue}>
-                      {formatDateDisplay(FechaFin)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Real Dates Column */}
-                <View style={modernStyles.dateColumn}>
-                  <Text style={modernStyles.dateLabel}>✅ Fechas Reales</Text>
-
-                  <View style={{ marginBottom: 8 }}>
-                    <Text
-                      style={[
-                        modernStyles.dateLabel,
-                        { fontSize: 11, marginBottom: 2 },
-                      ]}
-                    >
-                      Inicio:
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setRenderComponent(
-                          <ChangeDisplayFechaReal
-                            onClose={onCloseOpenModal}
-                            setData={setData}
-                            data={data}
-                            codigo={item.Codigo}
-                            tipo={"Inicio"}
-                          />
-                        );
-                        onCloseOpenModal();
-                      }}
-                    >
-                      <Text
-                        style={
-                          InicioReal
-                            ? modernStyles.dateValueReal
-                            : modernStyles.editableDate
-                        }
-                      >
-                        {InicioReal || "Tap para agregar"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View>
-                    <Text
-                      style={[
-                        modernStyles.dateLabel,
-                        { fontSize: 11, marginBottom: 2 },
-                      ]}
-                    >
-                      Fin:
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setRenderComponent(
-                          <ChangeDisplayFechaReal
-                            onClose={onCloseOpenModal}
-                            setData={setData}
-                            data={data}
-                            codigo={item.Codigo}
-                            tipo={"Fin"}
-                          />
-                        );
-                        onCloseOpenModal();
-                      }}
-                    >
-                      <Text
-                        style={
-                          FinReal
-                            ? modernStyles.dateValueReal
-                            : modernStyles.editableDate
-                        }
-                      >
-                        {FinReal || "Tap para agregar"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              {/* Status Indicator */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 12,
-                  paddingTop: 12,
-                  borderTopWidth: 1,
-                  borderTopColor: "#f0f0f0",
-                }}
-              >
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor:
-                      InicioReal && FinReal
-                        ? "#4caf50"
-                        : InicioReal
-                        ? "#ff9800"
-                        : "#f44336",
-                    marginRight: 8,
-                  }}
-                />
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#666",
-                    fontWeight: "500",
-                  }}
-                >
-                  {InicioReal && FinReal
-                    ? "Completado"
-                    : InicioReal
-                    ? "En progreso"
-                    : "Pendiente"}
-                </Text>
-              </View>
-            </View>
-          );
-        }}
-        keyExtractor={(item, index) => index.toString()}
-        scrollEnabled={true}
-        showsVerticalScrollIndicator={false}
-      />
-    );
-  };
+  const InfoRow = ({ label, value }: { label: string; value: any }) => (
+    <View style={ui.infoRow}>
+      <Text style={ui.infoLabel}>{label}</Text>
+      <Text style={ui.infoValue}>{value ?? "—"}</Text>
+    </View>
+  );
 
   // go to edit screen
   const goToEditAITScreen = () => {
@@ -919,7 +1234,7 @@ function MoreDetailScreenNoRedux(props: any) {
 
       // Operación updateDoc con manejo offline
       const updateDocOperation = async () => {
-        await updateServicioAit(idServiciosAIT, updatedData);
+        await updateServicioActivities(String(idServiciosAIT), data);
       };
 
       const isOnlineOperation = await handleFirebaseOperationWithOffline(
@@ -966,242 +1281,177 @@ function MoreDetailScreenNoRedux(props: any) {
   };
 
   return (
-    <View style={modernStyles.mainContainer}>
+    <View style={ui.mainContainer}>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={modernStyles.scrollContainer}
-        showsVerticalScrollIndicator={true}
-        bounces={true}
+        contentContainerStyle={ui.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        bounces
       >
-        {/* Indicador de estado offline */}
-        <OfflineFormsStatus onForceSync={handleForceSync} />
+        <View style={ui.page}>
+          <OfflineFormsStatus onForceSync={handleForceSync} />
 
-        {/* Header Section with Edit Button and Profile */}
-        <View style={modernStyles.headerContainer}>
-          {(props.email === emailPerfil ||
-            props.profile?.userType === "SuperUsuario") && (
-            <TouchableOpacity
-              style={modernStyles.editButton}
-              onPress={() => goToEditAITScreen()}
-            >
-              <Ionicons name="pencil" size={20} color="white" />
-            </TouchableOpacity>
-          )}
+          {/* Hero */}
+          <View style={ui.heroCard}>
+            {(props.email === emailPerfil ||
+              props.profile?.userType === "SuperUsuario") && (
+              <TouchableOpacity
+                style={ui.editButton}
+                onPress={() => goToEditAITScreen()}
+              >
+                <Ionicons name="pencil" size={18} color="white" />
+              </TouchableOpacity>
+            )}
 
-          {photoServiceURLDecoded ? (
-            <View style={modernStyles.profileImageContainer}>
+            {photoServiceURLDecoded ? (
               <ImageExpo
                 source={{ uri: photoServiceURLDecoded }}
-                style={modernStyles.profileImage}
-                cachePolicy={"memory-disk"}
+                style={ui.profileImage}
+                cachePolicy="memory-disk"
               />
-            </View>
-          ) : null}
+            ) : null}
 
-          <Text style={modernStyles.titleText}>{NombreServicio}</Text>
-        </View>
+            <Text style={ui.titleText}>{NombreServicio}</Text>
 
-        {/* Main Content */}
-        <View>
-          {/* Información General Card */}
-          <View style={modernStyles.infoCard}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcon
-                name="business"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>
-                Información General
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Empresa Minera:</Text>
-              <Text style={modernStyles.infoValue}>{EmpresaMinera}</Text>
+            <View style={ui.badgeRow}>
+              {TipoServicio ? (
+                <View style={ui.badge}>
+                  <Text style={ui.badgeText}>{TipoServicio}</Text>
+                </View>
+              ) : null}
+              {EmpresaMinera ? (
+                <View style={ui.badge}>
+                  <Text style={ui.badgeText}>{EmpresaMinera}</Text>
+                </View>
+              ) : null}
+              {NumeroAIT ? (
+                <View style={ui.badge}>
+                  <Text style={ui.badgeText}>OC {NumeroAIT}</Text>
+                </View>
+              ) : null}
             </View>
 
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Orden de servicio:</Text>
-              <Text style={modernStyles.infoValue}>{NumeroAIT}</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Tipo de Servicio:</Text>
-              <Text style={modernStyles.infoValue}>{TipoServicio}</Text>
+            <View style={ui.kpiRow}>
+              <View style={ui.kpiCard}>
+                <Text style={ui.kpiLabel}>Avance</Text>
+                <Text style={ui.kpiValue}>{avance}%</Text>
+                <View style={ui.progressBarTrack}>
+                  <View
+                    style={[
+                      ui.progressBarFill,
+                      { width: `${Math.min(avance, 100)}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+              <View style={ui.kpiCard}>
+                <Text style={ui.kpiLabel}>Monto ({Moneda || "—"})</Text>
+                <Text style={ui.kpiValue}>{formattedMonto}</Text>
+              </View>
+              <View style={ui.kpiCard}>
+                <Text style={ui.kpiLabel}>Horas planificadas</Text>
+                <Text style={ui.kpiValue}>
+                  {HorasTotales ? Number(HorasTotales).toFixed(0) : "—"}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* Fechas Card */}
-          <View style={modernStyles.infoCard}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcon
-                name="schedule"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
+          {/* Info cards grid */}
+          <View style={ui.cardsGrid}>
+            <SectionCard icon="business" title="Información general" style={ui.cardHalf}>
+              <InfoRow label="Empresa minera" value={EmpresaMinera} />
+              <InfoRow label="Orden de servicio" value={NumeroAIT} />
+              <InfoRow label="Tipo de servicio" value={TipoServicio} />
+              <InfoRow label="Área" value={AreaServicio} />
+              <InfoRow label="Cotización" value={NumeroCotizacion} />
+            </SectionCard>
+
+            <SectionCard icon="schedule" title="Cronograma" style={ui.cardHalf}>
+              <InfoRow
+                label="Inicio planeado"
+                value={formatDateDisplay(FechaInicioISO || FechaInicio)}
               />
-              <Text style={modernStyles.infoCardTitle}>Cronograma</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>
-                Fecha de Inicio Planeado:
-              </Text>
-              <Text style={modernStyles.infoValue}>
-                {typeof FechaInicio === "string"
-                  ? FechaInicio
-                  : new Date(FechaInicio.seconds * 1000).toISOString()}
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Fecha de Fin Planeado:</Text>
-              <Text style={modernStyles.infoValue}>
-                {typeof FechaFin === "string"
-                  ? FechaFin
-                  : new Date(FechaFin?.seconds * 1000).toLocaleString()}
-              </Text>
-            </View>
+              <InfoRow
+                label="Fin planeado"
+                value={formatDateDisplay(FechaFinISO || FechaFin)}
+              />
+            </SectionCard>
           </View>
 
-          {/* Personal Cotizado Card */}
-          <View style={modernStyles.infoCard}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcon
-                name="people"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>Personal Cotizado</Text>
-            </View>
+          <View style={ui.cardsGrid}>
+            <SectionCard icon="people" title="Personal cotizado" style={ui.cardHalf}>
+              {staffRoles.map((role) => (
+                <InfoRow key={role.label} label={role.label} value={role.qty} />
+              ))}
+            </SectionCard>
 
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Supervisor Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>{Supervisor}</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>
-                Supervisor de Seguridad:
-              </Text>
-              <Text style={modernStyles.infoValue}>{SupervisorSeguridad}</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Lider Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>{Lider}</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>{Tecnicos}</Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Soldador:</Text>
-              <Text style={modernStyles.infoValue}>{Soldador}</Text>
-            </View>
+            <SectionCard icon="access-time" title="Horas hombre cotizadas" style={ui.cardHalf}>
+              <View style={ui.hhTable}>
+                <View style={ui.hhTableHeader}>
+                  <Text style={[ui.hhColRole, ui.hhHeaderText]}>Rol</Text>
+                  <Text style={[ui.hhColQty, ui.hhHeaderText]}>Cant.</Text>
+                  <Text style={[ui.hhColTotal, ui.hhHeaderText]}>Total HH</Text>
+                </View>
+                {staffRoles.map((role, i) => (
+                  <View
+                    key={role.label}
+                    style={[
+                      ui.hhTableRow,
+                      i === staffRoles.length - 1 && ui.hhTableRowLast,
+                    ]}
+                  >
+                    <Text style={ui.hhColRole}>{role.label}</Text>
+                    <Text style={ui.hhColQty}>{role.qty ?? 0}</Text>
+                    <Text style={ui.hhColTotal}>
+                      {(Number(role.qty) * Number(HorasTotales)).toFixed(0)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </SectionCard>
           </View>
 
-          {/* Horas Hombre Card */}
-          <View style={modernStyles.infoCard}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcon
-                name="access-time"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>
-                Horas Hombre Cotizado
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Supervisor Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>
-                {Supervisor * Number(HorasTotales)}
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>
-                Supervisor de Seguridad:
-              </Text>
-              <Text style={modernStyles.infoValue}>
-                {SupervisorSeguridad * Number(HorasTotales)}
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Lider Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>
-                {Lider * Number(HorasTotales)}
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Mecánico:</Text>
-              <Text style={modernStyles.infoValue}>
-                {Tecnicos * Number(HorasTotales)}
-              </Text>
-            </View>
-
-            <View style={modernStyles.infoRow}>
-              <Text style={modernStyles.infoLabel}>Soldador:</Text>
-              <Text style={modernStyles.infoValue}>
-                {Soldador * Number(HorasTotales)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Diagramas Section */}
+          {/* Diagrams */}
           {TipoServicio === "Molino de Bolas" && (
-            <View style={modernStyles.diagramContainer}>
-              <Text style={modernStyles.chartTitle}>
-                DIAGRAMA - MOLINO DE BOLAS
-              </Text>
+            <View style={ui.diagramContainer}>
+              <Text style={ui.chartTitle}>Diagrama — Molino de bolas</Text>
               <TouchableOpacity onPress={() => graphScreen()}>
                 <ImageExpo
                   source={require("../../../assets/screens/mol2.jpg")}
-                  style={modernStyles.diagramImage}
-                  cachePolicy={"memory-disk"}
+                  style={ui.diagramImage}
+                  cachePolicy="memory-disk"
                 />
               </TouchableOpacity>
             </View>
           )}
 
           {TipoServicio === "Molino SAG" && (
-            <View style={modernStyles.diagramContainer}>
-              <Text style={modernStyles.chartTitle}>DIAGRAMA - MOLINO SAG</Text>
+            <View style={ui.diagramContainer}>
+              <Text style={ui.chartTitle}>Diagrama — Molino SAG</Text>
               <ImageExpo
                 source={require("../../../assets/screens/sag.png")}
-                style={modernStyles.diagramImage}
-                cachePolicy={"memory-disk"}
+                style={ui.diagramImage}
+                cachePolicy="memory-disk"
               />
             </View>
           )}
 
           {TipoServicio === "Chancadora Primaria" && (
-            <View style={modernStyles.diagramContainer}>
-              <Text style={modernStyles.chartTitle}>
-                DIAGRAMA - CHANCADORA PRIMARIA
-              </Text>
+            <View style={ui.diagramContainer}>
+              <Text style={ui.chartTitle}>Diagrama — Chancadora primaria</Text>
               <ImageExpo
                 source={require("../../../assets/screens/dumpPocket.png")}
-                style={modernStyles.diagramImage}
-                cachePolicy={"memory-disk"}
+                style={ui.diagramImage}
+                cachePolicy="memory-disk"
               />
             </View>
           )}
 
-          {/* Curva S Chart */}
-          <View style={modernStyles.chartContainer}>
-            <Text style={modernStyles.chartTitle}>CURVA S</Text>
-            <Text style={modernStyles.chartSubtitle}>
+          {/* Curva S */}
+          <View style={ui.chartContainer}>
+            <Text style={ui.chartTitle}>Curva S</Text>
+            <Text style={ui.chartSubtitle}>
               Avance programado vs. real — proyección de fin estimado
               {curvaSChartConfig?.fechaProyeccionFin
                 ? ` · Fin proyectado: ${curvaSChartConfig.fechaProyeccionFin.toLocaleDateString("es-ES")}`
@@ -1210,87 +1460,41 @@ function MoreDetailScreenNoRedux(props: any) {
             {ZingChartComponent && curvaSChartConfig ? (
               <ZingChartComponent data={curvaSChartConfig} />
             ) : (
-              <Text style={modernStyles.loadingText}>Cargando gráfico...</Text>
+              <Text style={ui.loadingText}>Cargando gráfico…</Text>
             )}
           </View>
 
-          <View style={modernStyles.infoCard}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <MaterialIcon
-                name="assignment"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>
-                REPORTE DE ACTIVIDADES
-              </Text>
-            </View>
+          {/* Activities */}
+          <SectionCard icon="assignment" title="Reporte de actividades">
+            {data?.length ? (
+              data.map(renderActivityCard)
+            ) : (
+              <Text style={ui.loadingText}>No hay actividades registradas</Text>
+            )}
+          </SectionCard>
 
-            <ScrollView
-            // style={modernStyles.activitiesScrollContainer}
-            // contentContainerStyle={modernStyles.activitiesScrollContent}
-            // showsVerticalScrollIndicator={true}
-            // nestedScrollEnabled={true}
-            // bounces={true}
-            >
-              {activitiesList()}
-            </ScrollView>
-          </View>
-
-          {/* Recursos Humanos Chart */}
-          {events && (
-            <View style={modernStyles.chartContainer}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <MaterialIcon
-                  name="bar-chart"
-                  size={20}
-                  color="#007AFF"
-                  style={modernStyles.iconStyle}
-                />
-                <Text style={modernStyles.chartTitle}>RECURSOS HUMANOS</Text>
+          {/* HR Chart */}
+          {events && tareo ? (
+            <View style={ui.chartContainer}>
+              <View style={ui.cardHeader}>
+                <MaterialIcon name="bar-chart" size={20} color={BRAND} />
+                <Text style={ui.infoCardTitle}>Recursos humanos</Text>
               </View>
               <BarChartTareo data={JSON.parse(tareo)} />
             </View>
-          )}
+          ) : null}
 
-          {/* Responsables Section */}
-          <View style={modernStyles.infoCard}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialIcon
-                name="supervisor-account"
-                size={20}
-                color="#007AFF"
-                style={modernStyles.iconStyle}
-              />
-              <Text style={modernStyles.infoCardTitle}>RESPONSABLES</Text>
-            </View>
-
-            <View style={{ marginBottom: 12 }}>
-              <Text style={modernStyles.infoLabel}>Mantenimiento Minera:</Text>
-              {ResposableList(UsuarioMantenimiento)}
-            </View>
-
-            <View>
-              <Text style={modernStyles.infoLabel}>
-                Supervisores Contratista:
-              </Text>
-              {ResposableList(ContratistaSupervisor)}
-            </View>
-          </View>
+          {/* Responsables */}
+          <SectionCard icon="supervisor-account" title="Responsables">
+            <Text style={[ui.infoLabel, { marginBottom: 8 }]}>
+              Mantenimiento minera
+            </Text>
+            {renderResponsables(UsuarioMantenimiento)}
+            <Text style={[ui.infoLabel, { marginTop: 12, marginBottom: 8 }]}>
+              Supervisores contratista
+            </Text>
+            {renderResponsables(ContratistaSupervisor)}
+          </SectionCard>
         </View>
 
         <Modal show={showModal} close={onCloseOpenModal}>
@@ -1298,20 +1502,14 @@ function MoreDetailScreenNoRedux(props: any) {
         </Modal>
       </KeyboardAwareScrollView>
 
-      {/* Floating save button */}
       <TouchableOpacity
-        style={[
-          modernStyles.floatingButton,
-          updateing && { backgroundColor: "#999" },
-        ]}
+        style={[ui.floatingButton, updateing && ui.floatingButtonDisabled]}
         onPress={() => updateDates()}
         disabled={updateing}
       >
-        <Text style={modernStyles.floatingButtonText}>
-          {updateing ? "⏳" : "💾"}
-        </Text>
-        <Text style={modernStyles.floatingButtonLabel}>
-          {updateing ? "Guardando..." : "Guardar fechas"}
+        <MaterialIcon name="save" size={20} color="white" />
+        <Text style={ui.floatingButtonLabel}>
+          {updateing ? "Guardando…" : "Guardar fechas"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -1330,350 +1528,5 @@ const MoreDetail = connect(mapStateToProps, {
   // saveActualEquipment,
   EquipmentListUpper,
 })(MoreDetailScreenNoRedux);
-
-// Modern styles for enhanced UI/UX
-const modernStyles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: isMobile ? 16 : isTablet ? 32 : 24,
-    paddingVertical: 20,
-  },
-  headerContainer: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  editButton: {
-    position: "absolute",
-    top: 15,
-    right: 15,
-    backgroundColor: "#007AFF",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 10,
-  },
-  profileImageContainer: {
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  profileImage: {
-    width: isMobile ? 120 : 150,
-    height: isMobile ? 120 : 150,
-    borderRadius: isMobile ? 60 : 75,
-    borderWidth: 4,
-    borderColor: "#007AFF",
-  },
-  titleText: {
-    fontSize: isMobile ? 24 : 28,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  infoCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  infoCardTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#007AFF",
-    marginBottom: 12,
-  },
-  infoCardTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-    flexWrap: "wrap",
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
-    flex: isMobile ? 1 : 0.4,
-    marginRight: 8,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: "#1a1a1a",
-    flex: isMobile ? 1 : 0.6,
-    fontWeight: "400",
-  },
-  chartContainer: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  chartTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  chartSubtitle: {
-    fontSize: 12,
-    color: "#6c757d",
-    textAlign: "center",
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  diagramContainer: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  diagramImage: {
-    width: isMobile ? windowWidth - 80 : 350,
-    height: isMobile ? windowWidth - 80 : 350,
-    borderRadius: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#007AFF",
-    marginTop: 8,
-    marginBottom: 12,
-    paddingLeft: 4,
-  },
-  loadingText: {
-    textAlign: "center",
-    color: "#666",
-    fontStyle: "italic",
-    padding: 20,
-  },
-  iconStyle: {
-    marginRight: 8,
-  },
-  // Estilos para Activities List
-  activityCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: "#007AFF",
-  },
-  activityHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  activityCode: {
-    backgroundColor: "#007AFF",
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8,
-    minWidth: 40,
-    textAlign: "center",
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    flex: 1,
-  },
-  dateContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  dateColumn: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  dateLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#666",
-    marginBottom: 4,
-  },
-  dateValue: {
-    fontSize: 13,
-    color: "#1a1a1a",
-    backgroundColor: "#f8f9fa",
-    padding: 8,
-    borderRadius: 6,
-    textAlign: "center",
-  },
-  dateValueReal: {
-    fontSize: 13,
-    color: "#007AFF",
-    backgroundColor: "#e3f2fd",
-    padding: 8,
-    borderRadius: 6,
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  editableDate: {
-    fontSize: 13,
-    color: "#ff6b35",
-    backgroundColor: "#fff3e0",
-    padding: 8,
-    borderRadius: 6,
-    textAlign: "center",
-    fontWeight: "500",
-    borderWidth: 1,
-    borderColor: "#ff6b35",
-    borderStyle: "dashed",
-  },
-  saveButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignSelf: "center",
-    marginTop: 16,
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  activitiesScrollContainer: {
-    maxHeight: isMobile ? windowHeight * 0.4 : windowHeight * 0.6, // 40% de altura en móvil, 60% en tablet
-    borderRadius: 8,
-    backgroundColor: "#f8f9fa",
-    marginBottom: 16,
-  },
-  activitiesScrollContent: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    flexGrow: 1,
-  },
-  floatingButton: {
-    position: "absolute",
-    bottom: 28,
-    right: 20,
-    backgroundColor: "#007AFF",
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  floatingButtonText: {
-    fontSize: 18,
-  },
-  floatingButtonLabel: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-});
-
-function parseCustomDate(dateStr: any) {
-  if (!dateStr) return null;
-
-  // Si es un Timestamp de Firebase
-  if (typeof dateStr === "object" && dateStr.seconds) {
-    return new Date(dateStr.seconds * 1000);
-  }
-
-  // Si es un número (timestamp en ms)
-  if (typeof dateStr === "number") {
-    // Si es muy grande, probablemente es timestamp en ms
-    if (dateStr > 1000000000000) return new Date(dateStr);
-    // Si es menor, podría ser serial Excel (no se soporta aquí)
-    return null;
-  }
-
-  // Forzar a string
-  const str = String(dateStr).trim();
-
-  // Intenta con segundos y AM/PM
-  let regex =
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?$/i;
-  let match = str.match(regex);
-  if (match) {
-    let [, day, month, year, hour, minute, second = "0", ampm] = match;
-    if (year?.length === 2) year = "20" + year;
-    if (ampm) {
-      hour = String(
-        ampm.toUpperCase() === "PM" && hour !== "12"
-          ? Number(hour) + 12
-          : hour === "12" && ampm.toUpperCase() === "AM"
-          ? 0
-          : hour
-      );
-    }
-    return new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      Number(hour),
-      Number(minute),
-      Number(second)
-    );
-  }
-  // fallback: try Date.parse
-  const fallback = new Date(str);
-  return isNaN(fallback.getTime()) ? null : fallback;
-}
 
 export default MoreDetail;

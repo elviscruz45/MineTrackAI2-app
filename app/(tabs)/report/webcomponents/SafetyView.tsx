@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 
 interface SafetyViewProps {
   data?: any[];
@@ -19,9 +20,6 @@ interface FieldEvent {
   fechaTs: number;
   hseTareo: number;
 }
-
-const isRutaCritica = (value: any): boolean =>
-  value === true || String(value || "").trim().toLowerCase() === "si";
 
 const getEventTimestamp = (event: any): number => {
   if (event?.createdAt?.seconds) return event.createdAt.seconds * 1000;

@@ -21,7 +21,8 @@
     "db:migrate": "node ./scripts/apply-supabase-migrations.js",
     "db:backfill-embeddings": "node ./scripts/backfill-embeddings.js",
     "supabase:login": "npx supabase login",
-    "supabase:deploy-functions": "bash ./scripts/deploy-edge-functions.sh"
+    "supabase:deploy-functions": "node ./scripts/deploy-supabase-functions.js",
+    "supabase:setup": "bash ./scripts/setup-supabase.sh"
   },
   "jest": {
     "preset": "jest-expo"
@@ -53,6 +54,7 @@
     "expo-image": "~2.1.7",
     "expo-image-manipulator": "~13.1.7",
     "expo-image-picker": "~16.1.4",
+    "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.5",
     "expo-mail-composer": "~14.1.4",
     "expo-network": "~7.1.5",
@@ -78,6 +80,7 @@
     "react-native-chart-kit": "^6.12.0",
     "react-native-dropdown-select-list": "^2.0.5",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-gifted-charts": "^1.4.77",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-paper": "^5.12.5",
     "react-native-progress": "^5.0.1",

@@ -36,6 +36,34 @@ async function embedText(text: string): Promise<number[]> {
   }
 }
 
+async function synthesizeAnswer(question: string, context: string): Promise<string | null> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY") ?? Deno.env.get("GOOGLE_API_KEY");
+  if (!apiKey || !context.trim()) return null;
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [{
+              text: `Eres MineTrack AI, asistente de mantenimiento en planta concentradora. Responde en español usando solo este contexto:\n\n${context.slice(0, 12000)}\n\nPregunta: ${question}`,
+            }],
+          }],
+          generationConfig: { temperature: 0.25, maxOutputTokens: 1200 },
+        }),
+      }
+    );
+    const json = await res.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return typeof text === "string" && text.trim() ? text.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseIntent(q: string) {
   const tagMatch = q.match(/\b([A-Z0-9]+-[A-Z0-9]+|\d{3}-[A-Z]{2}\d{3})\b/i);
   const lower = q.toLowerCase();
@@ -147,7 +175,10 @@ Deno.serve(async (req) => {
     }
 
     const context = parts.join("\n\n") || "Sin datos relevantes en la base.";
-    const answer = `Soy MineTrack AI, ingeniero de planificación de mantenimiento.\n\n${context}\n\nPregunta: ${question}`;
+    const synthesized = await synthesizeAnswer(question, context);
+    const answer =
+      synthesized ??
+      `Soy MineTrack AI, ingeniero de planificación de mantenimiento.\n\n${context}\n\nPregunta: ${question}`;
 
     return new Response(
       JSON.stringify({ answer, sources: parts.length, mode: "hybrid" }),

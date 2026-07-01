@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,11 @@ import {
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
 import styles from "./file.styles";
-import { addPdfToServicio, removePdfFromServicio } from "@/lib/db/serviciosAit";
+import {
+  removePdfFromServicio,
+  subscribeServicePdfsByServicio,
+} from "@/lib/db/serviciosAit";
+import { saveActualServiceAIT } from "@/redux/actions/post";
 import { deleteFile } from "@/lib/db/storage";
 import { connect } from "react-redux";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -26,9 +30,33 @@ function FileScreenBare(props: any) {
 
   // const userType = props.profile?.userType;
 
-  const documents = props.actualServiceAIT.pdfFile?.filter((item: any) => {
-    return typeof item !== "string";
-  });
+  const [documents, setDocuments] = useState<any[]>([]);
+
+  useEffect(() => {
+    const servicioId = props.actualServiceAIT?.idServiciosAIT;
+    if (!servicioId) {
+      setDocuments([]);
+      return;
+    }
+
+    const filterDocs = (items: any[]) =>
+      (items ?? []).filter((item) => typeof item !== "string");
+
+    setDocuments(filterDocs(props.actualServiceAIT?.pdfFile));
+
+    const unsubscribe = subscribeServicePdfsByServicio(servicioId, (pdfs) => {
+      const filtered = filterDocs(pdfs);
+      setDocuments(filtered);
+      if (props.actualServiceAIT) {
+        props.saveActualServiceAIT({
+          ...props.actualServiceAIT,
+          pdfFile: pdfs,
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [props.actualServiceAIT?.idServiciosAIT]);
 
   const documentsUserType = documents;
 
@@ -293,6 +321,8 @@ const mapStateToProps = (reducers: any) => {
   };
 };
 
-const FileScreen = connect(mapStateToProps, {})(FileScreenBare);
+const FileScreen = connect(mapStateToProps, { saveActualServiceAIT })(
+  FileScreenBare
+);
 
 export default FileScreen;

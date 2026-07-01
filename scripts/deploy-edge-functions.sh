@@ -11,6 +11,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT"
 
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ]; then
   npx supabase login --token "$SUPABASE_ACCESS_TOKEN"
 fi
@@ -23,5 +30,8 @@ npx supabase functions deploy on-event-created --project-ref "$PROJECT_REF"
 
 echo "→ Deploying rag-query..."
 npx supabase functions deploy rag-query --project-ref "$PROJECT_REF"
+
+echo "→ Deploying process-embeddings..."
+npx supabase functions deploy process-embeddings --project-ref "$PROJECT_REF"
 
 echo "Done. Check Dashboard → Edge Functions"

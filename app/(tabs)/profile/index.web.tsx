@@ -3,7 +3,6 @@ import {
   View,
   Text,
   SafeAreaView,
-  TextInput,
   TouchableOpacity,
   Platform,
 } from "react-native";
@@ -22,7 +21,7 @@ import { Redirect } from "expo-router";
 import { FeatherIcon } from "@/components/FeatherIcon";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { titulo_proyecto } from "../../../redux/actions/auth";
-import Toast from "react-native-toast-message";
+import { RagScreen } from "./components/RagScreen/RagScreen";
 
 function capitalizeFirstLetter(str: any) {
   return str?.charAt(0).toUpperCase() + str?.slice(1);
@@ -78,26 +77,9 @@ function startOfDay(d: Date) {
 
 const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-const AI_SUGGESTIONS = [
-  "¿Cuáles actividades están atrasadas?",
-  "Resumen de ruta crítica",
-  "Avance vs programado hoy",
-];
-
-function showAiDemoToast() {
-  Toast.show({
-    type: "info",
-    position: "bottom",
-    text1: "Asistente IA no disponible",
-    text2: "En la versión demo esta función está deshabilitada.",
-    visibilityTime: 4000,
-  });
-}
-
 function ProfileRaw(props: any) {
   const [showModal, setShowModal] = useState(false);
   const [renderComponent, setRenderComponent] = useState<any>(null);
-  const [pregunta, setPregunta] = useState("");
   const [loadingStats, setLoadingStats] = useState(true);
   const [allProjectEvents, setAllProjectEvents] = useState<any[]>([]);
 
@@ -268,20 +250,6 @@ function ProfileRaw(props: any) {
     };
   }, [allProjectEvents, props.email, props.servicesData]);
 
-  const handleAiSubmit = () => {
-    if (!pregunta.trim()) {
-      Toast.show({
-        type: "info",
-        position: "bottom",
-        text1: "Escribe una pregunta",
-        text2: "En demo el asistente no procesará la consulta.",
-      });
-      return;
-    }
-    showAiDemoToast();
-    setPregunta("");
-  };
-
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
@@ -314,52 +282,11 @@ function ProfileRaw(props: any) {
           />
         </View>
 
-        {/* IA — deshabilitada en demo */}
+        {/* Asistente IA — RAG + Gemini */}
         <View style={styles.aiCard}>
-          <View style={styles.aiCardHeader}>
-            <View style={styles.aiIconWrap}>
-              <FeatherIcon name="cpu" size={22} color="#fff" />
-            </View>
-            <View style={styles.aiTitleWrap}>
-              <Text style={styles.aiTitle}>Asistente de Mantenimiento IA</Text>
-              <View style={styles.aiBadge}>
-                <Text style={styles.aiBadgeText}>VERSIÓN DEMO · DESHABILITADO</Text>
-              </View>
-            </View>
+          <View style={{ height: 580 }}>
+            <RagScreen embedded />
           </View>
-          <Text style={styles.aiDescription}>
-            Consulta avances, rutas críticas y actividades atrasadas en lenguaje
-            natural. Disponible en la versión productiva de MineTrack.
-          </Text>
-          <View style={styles.aiChipsRow}>
-            {AI_SUGGESTIONS.map((s) => (
-              <TouchableOpacity
-                key={s}
-                style={styles.aiChip}
-                onPress={showAiDemoToast}
-              >
-                <Text style={styles.aiChipText}>{s}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.aiInputRow}>
-            <TextInput
-              style={styles.aiInput}
-              placeholder="Pregunta sobre paradas, avance o seguridad…"
-              placeholderTextColor="#9AA5B8"
-              value={pregunta}
-              onChangeText={setPregunta}
-              onSubmitEditing={handleAiSubmit}
-              editable
-              returnKeyType="send"
-            />
-            <TouchableOpacity style={styles.aiSendBtn} onPress={handleAiSubmit}>
-              <FeatherIcon name="send" size={18} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.aiDisabledNote}>
-            El envío mostrará un aviso: función no disponible en demo.
-          </Text>
         </View>
 
         {/* Estadísticas de uso */}

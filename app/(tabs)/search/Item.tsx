@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ScrollView,
-  Dimensions,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { MaterialIcon } from "@/components/MaterialIcon";
 import styles from "./Item.styles";
-import { screen } from "../../../utils";
 import { connect } from "react-redux";
 import { saveActualServiceAIT } from "../../../redux/actions/post";
 import { EquipmentListUpper } from "../../../redux/actions/home";
@@ -20,233 +17,26 @@ import CircularProgress from "./Item.circularProgress";
 import GanttHistorial from "./components/Gantt/Gantt";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
 import Toast from "react-native-toast-message";
-import { rootReducers } from "@/redux/reducers";
-import { useLocalSearchParams } from "expo-router";
-import { useRouter } from "expo-router";
-import * as Progress from "react-native-progress";
-// import { createDocxReport } from "../../../utils/createDocxReport";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { createEnhancedDocxReport } from "../../../utils/createDocxReport";
+import { subscribeServicioAitById } from "@/lib/db/serviciosAit";
+import {
+  parseActivityDate,
+  calculateAvanceFromActivities,
+} from "../../../utils/calculateAvance";
 
-const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
+const BRAND = "#2A3B76";
+const PAGE_BG = "#f1f5f9";
+const CARD_BG = "#ffffff";
+const BORDER = "#e2e8f0";
+const MUTED = "#64748b";
 
-// Responsive breakpoints
-const isTablet = windowWidth > 768;
-const isMobile = windowWidth <= 480;
-
-// Modern styles for enhanced UI/UX
-const modernStyles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  serviceCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  serviceHeader: {
-    flexDirection: isMobile ? "column" : "row",
-    alignItems: isMobile ? "center" : "flex-start",
-    marginBottom: 20,
-  },
-  progressContainer: {
-    alignItems: "center",
-    marginRight: isMobile ? 0 : 20,
-    marginBottom: isMobile ? 16 : 0,
-  },
-  serviceInfoContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  serviceName: {
-    fontSize: isMobile ? 20 : 24,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    marginBottom: 12,
-    textAlign: isMobile ? "center" : "left",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    flexWrap: "wrap",
-  },
-  infoIcon: {
-    marginRight: 8,
-    width: 20,
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#666",
-    marginRight: 4,
-  },
-  infoValue: {
-    fontSize: 14,
-    color: "#1a1a1a",
-    fontWeight: "400",
-    flex: 1,
-  },
-  progressSection: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginLeft: 8,
-  },
-  progressBarContainer: {
-    marginBottom: 12,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e9ecef",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  dateCard: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: "#007AFF",
-  },
-  actionButtonsContainer: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  actionButton: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 80,
-    flex: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  actionButtonIcon: {
-    width: 32,
-    height: 32,
-    marginBottom: 8,
-  },
-  actionButtonLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#666",
-    textAlign: "center",
-  },
-});
-// function parseCustomDate(dateStr: string) {
-//   // Try DD/MM/YYYY or D/M/YY
-//   const regex =
-//     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/;
-//   const match = dateStr?.match(regex);
-//   if (match) {
-//     let [, day, month, year, hour, minute, second, ampm] = match;
-//     // Handle 2-digit year
-//     if (year.length === 2) year = "20" + year;
-//     hour = String(
-//       ampm === "PM" && hour !== "12"
-//         ? Number(hour) + 12
-//         : hour === "12" && ampm === "AM"
-//         ? 0
-//         : hour
-//     );
-//     return new Date(
-//       Number(year),
-//       Number(month) - 1,
-//       Number(day),
-//       Number(hour),
-//       Number(minute),
-//       Number(second)
-//     );
-//   }
-//   // fallback: try Date.parse
-//   const fallback = new Date(dateStr);
-//   return isNaN(fallback.getTime()) ? null : fallback;
-// }
-function parseCustomDate(dateStr: string) {
-  if (!dateStr) return null;
-  // Intenta con segundos y AM/PM
-  let regex =
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}) (\d{1,2}):(\d{2})(?::(\d{2}))?\s?(AM|PM)?$/i;
-  let match = dateStr.match(regex);
-  if (match) {
-    let [, day, month, year, hour, minute, second = "0", ampm] = match;
-    if (year?.length === 2) year = "20" + year;
-    if (ampm) {
-      hour = String(
-        ampm.toUpperCase() === "PM" && hour !== "12"
-          ? Number(hour) + 12
-          : hour === "12" && ampm.toUpperCase() === "AM"
-          ? 0
-          : hour
-      );
-    }
-    return new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      Number(hour),
-      Number(minute),
-      Number(second)
-    );
-  }
-  // fallback: try Date.parse
-  const fallback = new Date(dateStr);
-  return isNaN(fallback.getTime()) ? null : fallback;
-}
-
-// Helper function to format dates in a cleaner way
 function formatDateDisplay(dateInput: any) {
   if (!dateInput) return "No definido";
 
-  if (dateInput?.seconds) {
-    const date = new Date(dateInput.seconds * 1000);
-    return date.toLocaleDateString("es-ES", {
+  const parsed = parseActivityDate(dateInput);
+  if (parsed) {
+    return parsed.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -255,249 +45,419 @@ function formatDateDisplay(dateInput: any) {
     });
   }
 
-  return dateInput;
+  if (typeof dateInput === "string") return dateInput;
+  return "No definido";
+}
+
+function formatDateForNav(dateInput: any): string {
+  const parsed = parseActivityDate(dateInput);
+  if (!parsed) return "";
+
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = parsed.getFullYear();
+  let hours = parsed.getHours();
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  const seconds = String(parsed.getSeconds()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${day}/${month}/${year} ${String(hours).padStart(2, "0")}:${minutes}:${seconds} ${ampm}`;
+}
+
+function getDateMs(dateInput: any): number {
+  return parseActivityDate(dateInput)?.getTime() ?? 0;
+}
+
+function createItemStyles(windowWidth: number) {
+  const isCompact = windowWidth < 640;
+  const isDesktop = windowWidth >= 1024;
+  const contentMaxWidth = Math.min(windowWidth, 960);
+  const horizontalPad = isCompact ? 16 : 24;
+
+  return StyleSheet.create({
+    mainContainer: {
+      flex: 1,
+      backgroundColor: PAGE_BG,
+    },
+    scrollContent: {
+      paddingVertical: isCompact ? 12 : 20,
+      paddingBottom: 40,
+    },
+    page: {
+      width: "100%",
+      maxWidth: contentMaxWidth,
+      alignSelf: "center",
+      paddingHorizontal: horizontalPad,
+      gap: isCompact ? 12 : 16,
+    },
+    heroCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 16,
+      padding: isCompact ? 16 : 24,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 16,
+      elevation: 3,
+    },
+    heroLayout: {
+      flexDirection: isCompact ? "column" : "row",
+      alignItems: isCompact ? "center" : "flex-start",
+      gap: isCompact ? 16 : 24,
+    },
+    progressWrap: {
+      alignItems: "center",
+      flexShrink: 0,
+    },
+    infoColumn: {
+      flex: 1,
+      minWidth: 0,
+      width: isCompact ? "100%" : undefined,
+    },
+    serviceName: {
+      fontSize: isCompact ? 20 : 26,
+      fontWeight: "800",
+      color: "#1e293b",
+      letterSpacing: -0.3,
+      marginBottom: 10,
+      textAlign: isCompact ? "center" : "left",
+    },
+    badgeRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 14,
+      justifyContent: isCompact ? "center" : "flex-start",
+    },
+    badge: {
+      backgroundColor: "#eef2ff",
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: "#c7d2fe",
+    },
+    badgeText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: BRAND,
+    },
+    tagLink: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#e0f2fe",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 14,
+      alignSelf: isCompact ? "center" : "flex-start",
+      borderWidth: 1,
+      borderColor: "#bae6fd",
+    },
+    tagLinkText: {
+      color: "#0369a1",
+      fontWeight: "600",
+      fontSize: 13,
+    },
+    progressSection: {
+      backgroundColor: "#f8fafc",
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: BORDER,
+    },
+    progressHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    progressLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: MUTED,
+    },
+    progressBarTrack: {
+      height: 8,
+      backgroundColor: "#e2e8f0",
+      borderRadius: 4,
+      overflow: "hidden",
+    },
+    progressBarFill: {
+      height: "100%",
+      backgroundColor: BRAND,
+      borderRadius: 4,
+    },
+    progressValue: {
+      fontSize: 15,
+      fontWeight: "800",
+      color: BRAND,
+    },
+    metaGrid: {
+      flexDirection: isDesktop ? "row" : "column",
+      gap: 10,
+      marginBottom: 14,
+    },
+    metaItem: {
+      flex: isDesktop ? 1 : undefined,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#f8fafc",
+      borderRadius: 10,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: BORDER,
+      gap: 8,
+    },
+    metaLabel: {
+      fontSize: 12,
+      color: MUTED,
+      fontWeight: "500",
+    },
+    metaValue: {
+      fontSize: 14,
+      color: "#1e293b",
+      fontWeight: "600",
+      flex: 1,
+    },
+    datesRow: {
+      flexDirection: isCompact ? "column" : "row",
+      gap: 10,
+    },
+    dateCard: {
+      flex: isCompact ? undefined : 1,
+      backgroundColor: "#f8fafc",
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: BORDER,
+      borderLeftWidth: 3,
+    },
+    dateCardStart: {
+      borderLeftColor: "#22c55e",
+    },
+    dateCardEnd: {
+      borderLeftColor: "#ef4444",
+    },
+    dateLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: MUTED,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    dateValue: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#1e293b",
+    },
+    actionsCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 16,
+      padding: isCompact ? 16 : 20,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    sectionTitle: {
+      fontSize: isCompact ? 15 : 17,
+      fontWeight: "700",
+      color: "#1e293b",
+      marginBottom: 14,
+      textAlign: isCompact ? "center" : "left",
+    },
+    actionsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
+    actionButton: {
+      flex: isCompact ? undefined : 1,
+      minWidth: isCompact ? "100%" : 140,
+      backgroundColor: "#f8fafc",
+      borderRadius: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: BORDER,
+      gap: 8,
+    },
+    actionButtonPrimary: {
+      backgroundColor: "#eef2ff",
+      borderColor: "#c7d2fe",
+    },
+    actionButtonLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#334155",
+      textAlign: "center",
+    },
+    actionButtonLabelPrimary: {
+      color: BRAND,
+    },
+    historyCard: {
+      backgroundColor: CARD_BG,
+      borderRadius: 16,
+      padding: isCompact ? 16 : 20,
+      borderWidth: 1,
+      borderColor: BORDER,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    historyHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+      justifyContent: isCompact ? "center" : "flex-start",
+      gap: 8,
+    },
+    historyTitle: {
+      fontSize: isCompact ? 17 : 19,
+      fontWeight: "700",
+      color: "#1e293b",
+    },
+    daysLeftChip: {
+      alignSelf: isCompact ? "center" : "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: "#fef3c7",
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginBottom: 14,
+    },
+    daysLeftText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#475569",
+    },
+  });
 }
 
 function ItemScreenNotRedux(props: any) {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const ui = useMemo(() => createItemStyles(windowWidth), [windowWidth]);
+
   const [loadingReport, setLoadingReport] = useState(false);
-
-  //global state management for the user_uid
   const { Item }: any = useLocalSearchParams();
-
-  let AITServiceList;
-
-  const [post, setPost] = useState(null);
+  const [post, setPost] = useState<any[] | null>(null);
   const [serviceInfo, setServiceInfo] = useState<any>();
 
-  //Data about the company belong this event
-  function capitalizeFirstLetter(str: string) {
-    return str?.charAt(0).toUpperCase() + str?.slice(1);
-  }
-  const regex = /@(.+?)\./i;
-
-  ///the algoritm to retrieve the image source to render the icon
   const area = serviceInfo?.AreaServicio;
   const indexareaList = areaLists?.findIndex((item) => item.value === area);
   const imageSource =
     areaLists[indexareaList]?.image ||
     require("../../../assets/equipmentplant/poderosa.png");
-  // require("../../../assets/equipmentplant/ImageIcons/confipetrolLogos.png");
-  /// the algorithm to retrieve the amount with format
-  const formattedAmount = new Intl.NumberFormat("en-US", {
-    style: "decimal",
-    useGrouping: true,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(serviceInfo?.Monto);
 
-  ///function to change the format of FechaFin from ServiciosAIT firebase collection
-  const formatDate = (item: any) => {
-    if (!item) return;
-    const date = new Date(item);
+  const formattedAmount = serviceInfo?.Monto
+    ? new Intl.NumberFormat("es-PE", {
+        style: "decimal",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(Number(serviceInfo.Monto))
+    : "—";
 
-    const monthNames = [
-      "ene.",
-      "feb.",
-      "mar.",
-      "abr.",
-      "may.",
-      "jun.",
-      "jul.",
-      "ago.",
-      "sep.",
-      "oct.",
-      "nov.",
-      "dic.",
-    ];
-    const day = date.getDate();
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const formattedDate = `${day} ${month} ${year}`;
-    return formattedDate;
-  };
+  const avance = useMemo(
+    () =>
+      calculateAvanceFromActivities(
+        serviceInfo?.activitiesData,
+        serviceInfo?.AvanceEjecucion
+      ),
+    [serviceInfo?.activitiesData, serviceInfo?.AvanceEjecucion]
+  );
 
-  // Considering if there are a modification in the service
-  const HHModificado = serviceInfo?.HHModificado ?? 0;
-  const MontoModificado = serviceInfo?.MontoModificado ?? 0;
-  const NuevaFechaEstimada = serviceInfo?.NuevaFechaEstimada ?? 0;
-
-  const HHtoRender =
-    HHModificado > serviceInfo?.HorasHombre
-      ? HHModificado
-      : serviceInfo?.HorasHombre;
-  const MontoModificadotoRender =
-    MontoModificado > serviceInfo?.Monto ? MontoModificado : serviceInfo?.Monto;
-  const NuevaFechaEstimadatoRender =
-    NuevaFechaEstimada > serviceInfo?.FechaFin
-      ? formatDate(NuevaFechaEstimada?.seconds * 1000)
-      : formatDate(serviceInfo?.FechaFin?.seconds * 1000);
-
-  const NuevaFechaEstimadatoCalculate =
-    NuevaFechaEstimada > serviceInfo?.FechaFin
-      ? NuevaFechaEstimada
-      : serviceInfo?.FechaFin;
-
-  const dateString = serviceInfo?.FechaFin;
-  let daysLeft = 0;
-  if (!dateString || typeof dateString !== "string") {
-    daysLeft = 0;
-  } else {
-    const [day, month, year, time] = dateString.split(/[/ ]/);
-    const date = new Date(`${year}-${month}-${day}T${time}`);
-    const milliseconds = date.getTime();
-    // Calculate the amount of hours left until the service ends
-    const hoursLeft = (milliseconds - Date.now()) / 3600000;
-    daysLeft = isNaN(hoursLeft) ? 0 : Math.round(hoursLeft);
-  }
-  //calculate the amount of days to finish the service based if there are a new modification or not
-  // let daysLeft = ((milliseconds - Date.now()) / 3600000).toFixed(0);
-
-  // Get the current date
-  const currentDate = new Date();
-
-  // Subtract 30 days from the current date
-  const pastDate = new Date();
-  pastDate.setDate(currentDate.getDate() - 30);
-
-  const [startDate, setStartDate] = useState(pastDate);
-  const [endDate, setEndDate] = useState(currentDate);
-  const [removeFilter, setRemoveFilter] = useState(true);
-
-  //Using navigation.navigate I send it to another screen (post)
-  const goToPublicar = () => {
-    if (!imageSource && !serviceInfo.photoServiceURL) {
-      Toast.show({
-        type: "error",
-        text1: "Actualizar foto del servicio para continuar",
-        visibilityTime: 2000,
-        autoHide: true,
-        topOffset: 30,
-        bottomOffset: 40,
-      });
-      return;
-    }
-
-    router.back();
-  };
+  const daysLeft = useMemo(() => {
+    const endDate = parseActivityDate(serviceInfo?.FechaFin);
+    if (!endDate) return null;
+    const hoursLeft = (endDate.getTime() - Date.now()) / 3600000;
+    return Math.round(hoursLeft);
+  }, [serviceInfo?.FechaFin]);
 
   useEffect(() => {
-    const companyName =
-      capitalizeFirstLetter(props.email?.match(regex)?.[1]) || "Anonimo";
-    AITServiceList = props.servicesData;
+    if (!Item) return;
 
-    let service = AITServiceList.filter(
+    const applyService = (service: any) => {
+      if (!service) return;
+
+      const lista: any[] = [];
+      service?.events?.forEach((event: any) => {
+        lista.push({
+          ...event,
+          time: "01 Ene",
+          title: event.titulo,
+          description: event.comentarios,
+          lineColor: "skyblue",
+          icon: require("../../../assets/pictures/empresa.png"),
+          imageUrl: event.fotoUsuarioPerfil,
+          idDocAITFirestoreDB: Item,
+        });
+      });
+
+      setPost(lista);
+      setServiceInfo(service);
+      props.saveActualServiceAIT(service);
+    };
+
+    const fromRedux = props.servicesData?.find(
       (item: any) => item.idServiciosAIT === Item
-    )[0];
+    );
+    if (fromRedux) {
+      applyService(fromRedux);
+    }
 
-    const lista: any = [];
-    service?.events?.forEach((item: any) => {
-      const dataschema = {
-        ...item,
-        time: "01 Ene",
-        title: item.titulo,
-        description: item.comentarios,
-        lineColor: "skyblue",
-        icon: require("../../../assets/pictures/empresa.png"),
-        imageUrl: item.fotoUsuarioPerfil,
-        idDocAITFirestoreDB: Item,
-      };
-      lista.push(dataschema);
-    });
+    const unsubscribe = subscribeServicioAitById(
+      String(Item),
+      (service) => applyService(service),
+      (error) => console.error("Error en realtime Item:", error)
+    );
 
-    setPost(lista);
+    return unsubscribe;
+  }, [Item]);
 
-    setServiceInfo(service);
-    props.saveActualServiceAIT(service);
-  }, [props.servicesData, Item]);
-
-  //this function goes to another screen to get more detail about the service state
-
-  console.log("serviceInfo", serviceInfo);
   const Detalles = (data: any) => {
-    const tareosEvents = data?.events?.map((item: any) => {
-      return {
-        supervisores: item.supervisores,
-        soldador: item.soldador,
-        liderTecnico: item.liderTecnico,
-        ayudante: item.ayudante,
-        HSE: item.HSE,
-        tecnico: item.tecnico,
-      };
-    });
+    const tareosEvents = data?.events?.map((item: any) => ({
+      supervisores: item.supervisores,
+      soldador: item.soldador,
+      liderTecnico: item.liderTecnico,
+      ayudante: item.ayudante,
+      HSE: item.HSE,
+      tecnico: item.tecnico,
+    }));
 
-    const FechaInicio = data?.FechaInicio?.seconds
-      ? (() => {
-          const date = new Date(serviceInfo.FechaInicio.seconds * 1000);
-          const day = String(date.getDate()).padStart(2, "0");
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const year = date.getFullYear();
-          let hours = date.getHours();
-          const minutes = String(date.getMinutes()).padStart(2, "0");
-          const seconds = String(date.getSeconds()).padStart(2, "0");
-          const ampm = hours >= 12 ? "PM" : "AM";
-          hours = hours % 12;
-          hours = hours ? hours : 12; // the hour '0' should be '12'
-          return `${day}/${month}/${year} ${String(hours).padStart(
-            2,
-            "0"
-          )}:${minutes}:${seconds} ${ampm}`;
-        })()
-      : data?.FechaInicio;
-
-    const FechaFin = data?.FechaFin?.seconds
-      ? (() => {
-          const date = new Date(serviceInfo.FechaFin.seconds * 1000);
-          const day = String(date.getDate()).padStart(2, "0");
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const year = date.getFullYear();
-          let hours = date.getHours();
-          const minutes = String(date.getMinutes()).padStart(2, "0");
-          const seconds = String(date.getSeconds()).padStart(2, "0");
-          const ampm = hours >= 12 ? "PM" : "AM";
-          hours = hours % 12;
-          hours = hours ? hours : 12; // the hour '0' should be '12'
-          return `${day}/${month}/${year} ${String(hours).padStart(
-            2,
-            "0"
-          )}:${minutes}:${seconds} ${ampm}`;
-        })()
-      : data?.FechaFin;
-
-    //new Date(item.createdAt.seconds * 1000)
-
-    console.log("FechaInicio PROGRAMADO", FechaInicio);
-    console.log("FechaFin PROGRAMADO", FechaFin);
-
-    // const DiasTotales = Number(FechaFin) - Number(FechaInicio);
-
-    const fechaInicioDate = parseCustomDate(FechaInicio);
-    const fechaFinDate = parseCustomDate(FechaFin);
+    const fechaInicioDate = parseActivityDate(data?.FechaInicio);
+    const fechaFinDate = parseActivityDate(data?.FechaFin);
+    const FechaInicio = formatDateForNav(data?.FechaInicio);
+    const FechaFin = formatDateForNav(data?.FechaFin);
 
     let HorasTotales = 0;
     if (fechaInicioDate && fechaFinDate) {
       HorasTotales =
-        (fechaFinDate.getTime() - fechaInicioDate.getTime()) / 3600000; // hours
+        (fechaFinDate.getTime() - fechaInicioDate.getTime()) / 3600000;
     }
-    console.log("fechaInicioDate", fechaInicioDate);
-    console.log("fechaFinDate", fechaFinDate);
-    console.log("HorasTotales", HorasTotales);
 
     const AvanceEventos = data?.events?.map((item: any) => {
-      // Build Date directly from Firestore timestamp
-      const FechaAvanceDate =
-        item.createdAt?.seconds != null
-          ? new Date(item.createdAt.seconds * 1000)
-          : null;
-
+      const FechaAvanceDate = parseActivityDate(item.createdAt);
       let horasdesdeFechaInicio = 0;
       if (FechaAvanceDate && fechaInicioDate) {
         horasdesdeFechaInicio =
           (FechaAvanceDate.getTime() - fechaInicioDate.getTime()) / 3600000;
       }
-
       return {
         fechaAvance: FechaAvanceDate,
         porcentajeAvance: item.porcentajeAvance,
@@ -515,13 +475,10 @@ function ItemScreenNotRedux(props: any) {
         HHModificado: data?.HHModificado,
         MontoModificado: data?.MontoModificado,
         NuevaFechaEstimada: data?.NuevaFechaEstimada,
-        FechaFin: FechaFin,
-        // FechaInicio: new Date(
-        //   data?.FechaInicio.seconds * 1000
-        // ).toLocaleString(),
-        FechaInicio: FechaInicio,
-        FechaFinISO: data?.FechaFin?.seconds * 1000,
-        FechaInicioISO: data?.FechaInicio?.seconds * 1000,
+        FechaFin,
+        FechaInicio,
+        FechaFinISO: getDateMs(data?.FechaFin),
+        FechaInicioISO: getDateMs(data?.FechaInicio),
         createdAt: data?.createdAt,
         ResponsableEmpresaUsuario: data?.ResponsableEmpresaUsuario,
         ResponsableEmpresaUsuario2: data?.ResponsableEmpresaUsuario2,
@@ -549,13 +506,12 @@ function ItemScreenNotRedux(props: any) {
         Lider: data?.Lider,
         Tecnicos: data?.Tecnicos,
         Soldador: data?.Soldador,
-        HorasTotales: HorasTotales,
+        HorasTotales,
         AvanceEventos: JSON.stringify(AvanceEventos),
       },
     });
   };
 
-  //this function goes to homeTab=>commentScreen
   const comentPost = (data: any) => {
     router.push({
       pathname: "/search/CommentSearch",
@@ -566,17 +522,6 @@ function ItemScreenNotRedux(props: any) {
     });
   };
 
-  //this function goes to homeTab=>commentScreen
-  const goToDocsToApprove = (data: any) => {
-    router.push({
-      pathname: "/search/DocstoApprove",
-      params: {
-        idServiciosAIT: data?.idServiciosAIT,
-      },
-    });
-  };
-
-  //Using navigation.navigate I send it to another screen (post)
   const goToDocs = (item: any) => {
     router.push({
       pathname: "/search/file",
@@ -584,16 +529,14 @@ function ItemScreenNotRedux(props: any) {
     });
   };
 
-  const createReport = async (post: any, serviceInfo: any) => {
+  const createReport = async (postData: any, info: any) => {
     setLoadingReport(true);
     try {
-      const blob = await createEnhancedDocxReport(post, serviceInfo);
+      const blob = await createEnhancedDocxReport(postData, info);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Reporte_${serviceInfo.NombreServicio}.docx`;
-      //  a.download = "Reporte_de_Servicio.docx";
-
+      a.download = `Reporte_${info.NombreServicio}.docx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -621,28 +564,36 @@ function ItemScreenNotRedux(props: any) {
     }
     setLoadingReport(false);
   };
-  // serviceInfo
-  if (!serviceInfo || !post) {
+
+  if (!serviceInfo || !post || loadingReport) {
     return <LoadingSpinner />;
-  } else if (loadingReport) {
-    return <LoadingSpinner />;
-  } else {
-    return (
-      <View style={modernStyles.mainContainer}>
-        <ScrollView
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 16 }}
-        >
-          {/* Service Information Card */}
-          <View style={modernStyles.serviceCard}>
-            <View style={modernStyles.serviceHeader}>
-              {/* Progress Circle */}
-              <View style={modernStyles.progressContainer}>
+  }
+
+  const daysLeftLabel =
+    daysLeft === null
+      ? null
+      : daysLeft > 0
+      ? `${daysLeft} h restantes`
+      : daysLeft === 0
+      ? "Finaliza hoy"
+      : `Vencido hace ${Math.abs(daysLeft)} h`;
+
+  return (
+    <View style={ui.mainContainer}>
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={ui.scrollContent}
+      >
+        <View style={ui.page}>
+          {/* Hero */}
+          <View style={ui.heroCard}>
+            <View style={ui.heroLayout}>
+              <View style={ui.progressWrap}>
                 <CircularProgress
                   imageSourceDefault={imageSource}
                   imageStyle={styles.roundImage}
-                  avance={serviceInfo.AvanceEjecucion}
+                  avance={avance}
                   idait={serviceInfo.idServiciosAIT}
                   image={serviceInfo.photoServiceURL}
                   titulo={serviceInfo.NombreServicio}
@@ -651,11 +602,33 @@ function ItemScreenNotRedux(props: any) {
                 />
               </View>
 
-              {/* Service Info */}
-              <View style={modernStyles.serviceInfoContainer}>
-                <Text style={modernStyles.serviceName}>
-                  {serviceInfo.NombreServicio}
-                </Text>
+              <View style={ui.infoColumn}>
+                <Text style={ui.serviceName}>{serviceInfo.NombreServicio}</Text>
+
+                <View style={ui.badgeRow}>
+                  {serviceInfo.Codigo ? (
+                    <View style={ui.badge}>
+                      <Text style={ui.badgeText}>{serviceInfo.Codigo}</Text>
+                    </View>
+                  ) : null}
+                  {serviceInfo.TipoServicio ? (
+                    <View style={ui.badge}>
+                      <Text style={ui.badgeText}>{serviceInfo.TipoServicio}</Text>
+                    </View>
+                  ) : null}
+                  {serviceInfo.EmpresaMinera ? (
+                    <View style={ui.badge}>
+                      <Text style={ui.badgeText}>{serviceInfo.EmpresaMinera}</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {daysLeftLabel ? (
+                  <View style={ui.daysLeftChip}>
+                    <MaterialIcon name="schedule" size={14} color="#92400e" />
+                    <Text style={ui.daysLeftText}>{daysLeftLabel}</Text>
+                  </View>
+                ) : null}
 
                 {serviceInfo?.TagEquipo ? (
                   <TouchableOpacity
@@ -665,72 +638,73 @@ function ItemScreenNotRedux(props: any) {
                         params: { tagCode: serviceInfo.TagEquipo },
                       })
                     }
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: "#e3f2fd",
-                      borderRadius: 8,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      marginBottom: 12,
-                      alignSelf: "flex-start",
-                    }}
+                    style={ui.tagLink}
                   >
                     <MaterialIcon
                       name="history"
                       size={16}
-                      color="#1565c0"
+                      color="#0369a1"
                       style={{ marginRight: 6 }}
                     />
-                    <Text style={{ color: "#1565c0", fontWeight: "600", fontSize: 13 }}>
-                      Ver historial del equipo ({serviceInfo.TagEquipo})
+                    <Text style={ui.tagLinkText}>
+                      Historial del equipo · {serviceInfo.TagEquipo}
                     </Text>
                   </TouchableOpacity>
                 ) : null}
 
-                {/* Service Number */}
-                <View style={modernStyles.infoRow}>
-                  <MaterialIcon
-                    name="confirmation-number"
-                    size={16}
-                    color="#007AFF"
-                    style={modernStyles.infoIcon}
-                  />
-                  <Text style={modernStyles.infoLabel}>
-                    Número de Servicio:
-                  </Text>
-                  <Text style={modernStyles.infoValue}>
-                    {serviceInfo.NumeroAIT}
-                  </Text>
-                </View>
-
-                {/* Start Date */}
-                <View style={modernStyles.dateCard}>
-                  <View style={modernStyles.infoRow}>
-                    <MaterialIcon
-                      name="play-arrow"
-                      size={16}
-                      color="#4caf50"
-                      style={modernStyles.infoIcon}
+                <View style={ui.progressSection}>
+                  <View style={ui.progressHeader}>
+                    <Text style={ui.progressLabel}>Avance de ejecución</Text>
+                    <Text style={ui.progressValue}>{avance}%</Text>
+                  </View>
+                  <View style={ui.progressBarTrack}>
+                    <View
+                      style={[
+                        ui.progressBarFill,
+                        { width: `${Math.min(avance, 100)}%` },
+                      ]}
                     />
-                    <Text style={modernStyles.infoLabel}>Inicio:</Text>
-                    <Text style={modernStyles.infoValue}>
-                      {formatDateDisplay(serviceInfo?.FechaInicio)}
-                    </Text>
                   </View>
                 </View>
 
-                {/* End Date */}
-                <View style={modernStyles.dateCard}>
-                  <View style={modernStyles.infoRow}>
-                    <MaterialIcon
-                      name="stop"
-                      size={16}
-                      color="#f44336"
-                      style={modernStyles.infoIcon}
-                    />
-                    <Text style={modernStyles.infoLabel}>Fin:</Text>
-                    <Text style={modernStyles.infoValue}>
+                <View style={ui.metaGrid}>
+                  <View style={ui.metaItem}>
+                    <MaterialIcon name="confirmation-number" size={18} color={BRAND} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={ui.metaLabel}>N° Servicio</Text>
+                      <Text style={ui.metaValue}>{serviceInfo.NumeroAIT || "—"}</Text>
+                    </View>
+                  </View>
+                  <View style={ui.metaItem}>
+                    <MaterialIcon name="payments" size={18} color={BRAND} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={ui.metaLabel}>
+                        Monto ({serviceInfo.Moneda || "—"})
+                      </Text>
+                      <Text style={ui.metaValue}>{formattedAmount}</Text>
+                    </View>
+                  </View>
+                  {serviceInfo.HorasHombre ? (
+                    <View style={ui.metaItem}>
+                      <MaterialIcon name="engineering" size={18} color={BRAND} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={ui.metaLabel}>Horas hombre</Text>
+                        <Text style={ui.metaValue}>{serviceInfo.HorasHombre}</Text>
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+
+                <View style={ui.datesRow}>
+                  <View style={[ui.dateCard, ui.dateCardStart]}>
+                    <Text style={ui.dateLabel}>Inicio programado</Text>
+                    <Text style={ui.dateValue}>
+                      {formatDateDisplay(serviceInfo?.FechaInicio)}
+                    </Text>
+                  </View>
+                  <View style={[ui.dateCard, ui.dateCardEnd]}>
+                    <Text style={ui.dateLabel}>Fin programado</Text>
+                    <Text style={ui.dateValue}>
                       {formatDateDisplay(serviceInfo?.FechaFin)}
                     </Text>
                   </View>
@@ -739,95 +713,56 @@ function ItemScreenNotRedux(props: any) {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View style={modernStyles.actionButtonsContainer}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: "#1a1a1a",
-                marginBottom: 16,
-                textAlign: "center",
-              }}
-            >
-              Acciones Rápidas
-            </Text>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-around",
-              }}
-            >
+          {/* Actions */}
+          <View style={ui.actionsCard}>
+            <Text style={ui.sectionTitle}>Acciones rápidas</Text>
+            <View style={ui.actionsGrid}>
               <TouchableOpacity
-                style={modernStyles.actionButton}
+                style={[ui.actionButton, ui.actionButtonPrimary]}
                 onPress={() => Detalles(serviceInfo)}
               >
-                <MaterialIcon name="info" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>
-                  Más Información
+                <MaterialIcon name="info" size={24} color={BRAND} />
+                <Text style={[ui.actionButtonLabel, ui.actionButtonLabelPrimary]}>
+                  Más información
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={modernStyles.actionButton}
+                style={ui.actionButton}
                 onPress={() => goToDocs(serviceInfo)}
               >
-                <MaterialIcon name="folder" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>Documentos</Text>
+                <MaterialIcon name="folder" size={24} color="#475569" />
+                <Text style={ui.actionButtonLabel}>Documentos</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={modernStyles.actionButton}
+                style={ui.actionButton}
                 onPress={() => createReport(post, serviceInfo)}
               >
-                <MaterialIcon name="description" size={24} color="#007AFF" />
-                <Text style={modernStyles.actionButtonLabel}>
-                  Generar Reporte
-                </Text>
+                <MaterialIcon name="description" size={24} color="#475569" />
+                <Text style={ui.actionButtonLabel}>Generar reporte</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* History Section */}
-          <View style={modernStyles.serviceCard}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-                justifyContent: "center",
-              }}
-            >
-              <MaterialIcon name="history" size={20} color="#007AFF" />
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "600",
-                  color: "#1a1a1a",
-                  marginLeft: 8,
-                }}
-              >
-                Historial de Eventos
-              </Text>
+          {/* History */}
+          <View style={ui.historyCard}>
+            <View style={ui.historyHeader}>
+              <MaterialIcon name="history" size={22} color={BRAND} />
+              <Text style={ui.historyTitle}>Historial de eventos</Text>
             </View>
-
             <GanttHistorial datas={post} comentPost={comentPost} />
           </View>
-        </ScrollView>
-      </View>
-    );
-  }
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
 
-const mapStateToProps = (reducers: any) => {
-  return {
-    servicesData: reducers.home.servicesData,
-    email: reducers.profile.email,
-    // servicesData: reducers.home.servicesData,
-    // totalEventServiceAITLIST: reducers.home.totalEventServiceAITLIST
-  };
-};
+const mapStateToProps = (reducers: any) => ({
+  servicesData: reducers.home.servicesData,
+  email: reducers.profile.email,
+});
 
 const Item = connect(mapStateToProps, {
   saveActualServiceAIT,

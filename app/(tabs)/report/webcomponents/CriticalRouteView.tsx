@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { calculateAvanceFromMappedTasks } from "@/utils/calculateAvance";
+import { calculateCriticalPath } from "@/utils/criticalPath";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 import { sortByCodigo } from "@/utils/sortByCodigo";
 import { getTagEquipoLabel } from "@/utils/tagEquipoList";
+import CriticalPathGantt from "./CriticalPathGantt";
 
 interface CriticalRouteViewProps {
   data: any;
@@ -36,9 +39,6 @@ interface MappedSection {
 }
 
 type StatusFilter = "all" | "pendiente" | "progreso" | "retrasada" | "completada";
-
-const isRutaCritica = (value: any): boolean =>
-  value === true || String(value || "").trim().toLowerCase() === "si";
 
 function toDateTimeObj(fecha: any): { date: string; time: string } {
   if (!fecha) return { date: "", time: "" };
@@ -223,6 +223,11 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
     [sections]
   );
 
+  const cpmResult = useMemo(
+    () => (Array.isArray(data) ? calculateCriticalPath(data) : null),
+    [data]
+  );
+
   const kpis = useMemo(() => {
     const completed = allTasks.filter((t) => t.status === "Completada").length;
     const delayed = allTasks.filter((t) => (t.delayHours ?? 0) > 0).length;
@@ -241,6 +246,9 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
     const finPlanificado = lastEnd
       ? formatDateTime(lastEnd.endDateProg)
       : "—";
+    const finProyectado = cpmResult?.projectedEnd
+      ? cpmResult.projectedEnd.toLocaleString("es-ES")
+      : "—";
 
     return {
       totalTasks: allTasks.length,
@@ -253,8 +261,12 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
       totalHours: Math.round(totalHours * 10) / 10,
       completedHours: Math.round(completedHours * 10) / 10,
       finPlanificado,
+      finProyectado,
+      extensionHours: cpmResult?.extensionHours ?? 0,
+      drivingActivity: cpmResult?.drivingActivity ?? null,
+      newlyCritical: cpmResult?.newlyCritical.length ?? 0,
     };
-  }, [allTasks, sections.length]);
+  }, [allTasks, sections.length, cpmResult]);
 
   const timelineTasks = useMemo(
     () =>
@@ -382,7 +394,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
           ⛓️ Ruta Crítica — Panel del Planificador
         </h2>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.75)" }}>
-          Solo actividades con <strong>esRutaCritica = Sí</strong> · Plan vs. ejecución ·{" "}
+          Gantt CPM · Plan vs. real · Extensión de parada ·{" "}
           {new Date().toLocaleDateString("es-ES")}
         </p>
       </div>
@@ -392,12 +404,12 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
         {[
           { label: "Actividades Críticas", value: `${kpis.totalTasks}`, icon: "⛓️", color: "#c62828", sub: `${kpis.totalSections} paquetes WBS` },
           { label: "Avance Crítico", value: `${kpis.avanceCritico}%`, icon: "📊", color: "#1976d2", sub: "Por horas programadas" },
-          { label: "Completadas", value: `${kpis.completed}`, icon: "✅", color: "#198754", sub: `De ${kpis.totalTasks} tareas` },
           { label: "Con Retraso", value: `${kpis.delayed}`, icon: "⚠️", color: "#f9a825", sub: "Fuera de fin programado" },
-          { label: "En Progreso", value: `${kpis.inProgress}`, icon: "🔵", color: "#1565c0", sub: "Ejecutándose ahora" },
-          { label: "Pendientes", value: `${kpis.pending}`, icon: "⏳", color: "#6c757d", sub: "Sin iniciar" },
-          { label: "HH Críticas", value: `${kpis.totalHours}h`, icon: "⏱️", color: "#4527a0", sub: `${kpis.completedHours}h ejecutadas` },
-          { label: "Fin Planificado", value: kpis.finPlanificado.split(" ")[0], icon: "📅", color: "#37474f", sub: kpis.finPlanificado.split(" ")[1] || "—" },
+          { label: "Extensión Parada", value: kpis.extensionHours > 0 ? `+${kpis.extensionHours}h` : "0h", icon: "⏱️", color: kpis.extensionHours > 0 ? "#e65100" : "#198754", sub: "CPM con fechas reales" },
+          { label: "Fin Proyectado", value: kpis.finProyectado.split(",")[0], icon: "📅", color: "#4527a0", sub: kpis.finProyectado.split(",")[1]?.trim() || "CPM dinámico" },
+          { label: "Nuevas Críticas", value: `${kpis.newlyCritical}`, icon: "★", color: "#6a1b9a", sub: "No marcadas en Gantt" },
+          { label: "HH Críticas", value: `${kpis.totalHours}h`, icon: "🕐", color: "#37474f", sub: `${kpis.completedHours}h ejecutadas` },
+          { label: "Fin Planificado", value: kpis.finPlanificado.split(" ")[0], icon: "🗓️", color: "#1565c0", sub: kpis.finPlanificado.split(" ")[1] || "—" },
         ].map((k, i) => (
           <div
             key={i}
@@ -441,32 +453,59 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
         ))}
       </div>
 
-      {/* Alert banner if delays */}
-      {kpis.delayed > 0 && (
+      {/* Alert banner if delays or extension */}
+      {(kpis.delayed > 0 || kpis.extensionHours > 0) && (
         <div
           style={{
             margin: "16px 16px 0",
             padding: "12px 16px",
-            background: "#fff3cd",
-            border: "1px solid #ffc107",
+            background: kpis.extensionHours > 0 ? "#fdecea" : "#fff3cd",
+            border: `1px solid ${kpis.extensionHours > 0 ? "#f5c6cb" : "#ffc107"}`,
             borderRadius: 8,
             display: "flex",
             alignItems: "center",
             gap: 10,
             fontSize: 13,
-            color: "#856404",
+            color: kpis.extensionHours > 0 ? "#842029" : "#856404",
           }}
         >
           <span style={{ fontSize: 18 }}>⚠️</span>
           <span>
-            <strong>{kpis.delayed} actividad(es) crítica(s)</strong> con retraso respecto al
-            fin programado. Priorice su cierre para no impactar la parada.
+            {kpis.extensionHours > 0 ? (
+              <>
+                La parada se extendería <strong>+{kpis.extensionHours}h</strong> según CPM.
+                {kpis.drivingActivity ? (
+                  <>
+                    {" "}
+                    Actividad conductora:{" "}
+                    <strong>
+                      {kpis.drivingActivity.codigo} — {kpis.drivingActivity.nombre}
+                    </strong>
+                    {kpis.drivingActivity.delayHours > 0
+                      ? ` (+${kpis.drivingActivity.delayHours}h)`
+                      : ""}
+                    .
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <strong>{kpis.delayed} actividad(es) crítica(s)</strong> con retraso respecto al
+                fin programado. Priorice su cierre para no impactar la parada.
+              </>
+            )}
           </span>
         </div>
       )}
 
       <div style={{ padding: "16px" }}>
-        {/* Timeline */}
+        {cpmResult ? (
+          <div style={{ marginBottom: 16 }}>
+            <CriticalPathGantt result={cpmResult} />
+          </div>
+        ) : null}
+
+        {/* Legacy compact timeline for quick scan */}
         <div
           style={{
             background: "white",
@@ -498,7 +537,7 @@ const CriticalRouteView: React.FC<CriticalRouteViewProps> = ({ data }) => {
               />
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a2e" }}>
-                  Secuencia Crítica — Línea de Tiempo
+                  Vista Rápida — Secuencia Crítica
                 </div>
                 <div style={{ fontSize: 11, color: "#6c757d" }}>
                   Barras azules = plan · Barras verdes/rojas = ejecución real

@@ -19,6 +19,7 @@ import { saveTotalUsers } from "../../../redux/actions/post";
 import Toast from "react-native-toast-message";
 import { Image as ImageExpo } from "expo-image";
 import { useRouter } from "expo-router";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 
 const REQUIRED_KEYS = [...AIT_REQUIRED_FIELDS];
 
@@ -60,8 +61,7 @@ function buildFirebasePayload(formValue: any, props: any, projectId: string) {
     `ADT-${Date.now().toString().slice(-8)}`;
   const fechaInicioTs = fechaInicio ?? null;
   const fechaFinTs = fechaFin ?? null;
-  const esRutaCritica =
-    String(formValue.esRutaCritica || "").trim().toLowerCase() === "si";
+  const esRutaCritica = isRutaCritica(formValue.esRutaCritica);
 
   const activityEntry = {
     Codigo: codigo,

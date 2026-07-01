@@ -1,107 +1,32 @@
-import React from "react";
-import { View, StyleSheet, Text, Dimensions, Platform } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { BarChart } from "react-native-gifted-charts";
 
-import { tipoServicioList } from "../../../utils/tipoServicioList";
-import {
-  LineChart,
-  BarChart,
-  PieChart,
-  ProgressChart,
-  ContributionGraph,
-  StackedBarChart,
-} from "react-native-chart-kit";
-// import { pad } from "lodash";
+const BRAND = "#2A3B76";
+const MUTED = "#64748b";
 
-const BarChartTareo = (props: any) => {
-  //pie configuration
-  const screenWidth = Dimensions.get("window").width;
-  const chartConfig = {
-    backgroundGradientFrom: "white", // Negro puro
-    backgroundGradientFromOpacity: 1,
-    backgroundGradientTo: "white",
-    backgroundGradientToOpacity: 1,
-    color: (opacity = 1) => `blue`, // Gris claro para contraste sin ser blanco puro
-    strokeWidth: 1, // optional, default 3
-    barPercentage: 0.5,
-    useShadowColorFromDataset: false, // optional
-  };
-  //data for the bar chart
-  const { data } = props;
-  // const cleanedData = JSON.parse(jsonString).map(({ fotoUsuarioPerfil, fotoPrincipal, ...rest }) => rest);
+const ROLE_LABELS = [
+  { key: "Sup", full: "Supervisor", field: "supervisores" },
+  { key: "HSE", full: "HSE", field: "HSE" },
+  { key: "Lider", full: "Líder", field: "liderTecnico" },
+  { key: "Sold", full: "Soldador", field: "soldador" },
+  { key: "Tecn", full: "Técnico", field: "tecnico" },
+  { key: "Ayud", full: "Ayudante", field: "ayudante" },
+] as const;
 
-  let datas;
+const BAR_COLORS = [
+  "#2A3B76",
+  "#1565c0",
+  "#00838f",
+  "#2e7d32",
+  "#f9a825",
+  "#6a1b9a",
+];
 
-  let sumByTipoServicio;
+type TareoEntry = Record<string, string | number | undefined>;
 
-  if (data) {
-    sumByTipoServicio = {
-      Sup: 0,
-      HSE: 0,
-      Lider: 0,
-      Sold: 0,
-      Tecn: 0,
-      Ayud: 0,
-    };
-
-    const totalEntries = data?.length;
-
-    for (let i = 0; i < totalEntries; i++) {
-      if (data[i]["supervisores"]) {
-        sumByTipoServicio["Sup"] += parseInt(data[i].supervisores) * 12;
-      }
-      if (data[i]["HSE"]) {
-        sumByTipoServicio["HSE"] += parseInt(data[i].HSE) * 12;
-      }
-      if (data[i]["liderTecnico"]) {
-        sumByTipoServicio["Lider"] += parseInt(data[i].liderTecnico) * 12;
-      }
-      if (data[i]["soldador"]) {
-        sumByTipoServicio["Sold"] += parseInt(data[i].soldador) * 12;
-      }
-      if (data[i]["tecnico"]) {
-        sumByTipoServicio["Tecn"] += parseInt(data[i].tecnico) * 12;
-      }
-      if (data[i]["ayudante"]) {
-        sumByTipoServicio["Ayud"] += parseInt(data[i].ayudante) * 12;
-      }
-    }
-
-    //"Tareo"
-    datas = [
-      {
-        label: "Sup",
-        value: sumByTipoServicio["Sup"] ?? 0,
-        unidad: "Soles",
-      },
-      {
-        label: "HSE",
-        value: sumByTipoServicio["HSE"] ?? 0,
-        unidad: "Soles",
-      },
-      {
-        label: "Lider",
-        value: sumByTipoServicio["Lider"] ?? 0,
-        unidad: "Soles",
-      },
-      {
-        label: "Sold",
-        value: sumByTipoServicio["Sold"] ?? 0,
-        unidad: "Soles",
-      },
-      {
-        label: "Tecn",
-        value: sumByTipoServicio["Tecn"] ?? 0,
-        unidad: "Soles",
-      },
-      {
-        label: "Ayud",
-        value: sumByTipoServicio["Ayud"] ?? 0,
-        unidad: "Soles",
-      },
-    ];
-  }
-
-  let datainaObject: any = {
+function aggregateTareoHours(data: TareoEntry[]) {
+  const totals: Record<string, number> = {
     Sup: 0,
     HSE: 0,
     Lider: 0,
@@ -110,96 +35,177 @@ const BarChartTareo = (props: any) => {
     Ayud: 0,
   };
 
-  datas?.forEach((element: any) => {
-    datainaObject[element.label] = element?.value;
-  });
-
-  if (data.events?.length === 0) {
-    return (
-      <>
-        <Text></Text>
-        <Text style={{ alignSelf: "center" }}>
-          No hay datos para mostrar grafica
-        </Text>
-      </>
-    );
+  for (const entry of data) {
+    if (entry.supervisores) totals.Sup += parseInt(String(entry.supervisores), 10) * 12;
+    if (entry.HSE) totals.HSE += parseInt(String(entry.HSE), 10) * 12;
+    if (entry.liderTecnico) totals.Lider += parseInt(String(entry.liderTecnico), 10) * 12;
+    if (entry.soldador) totals.Sold += parseInt(String(entry.soldador), 10) * 12;
+    if (entry.tecnico) totals.Tecn += parseInt(String(entry.tecnico), 10) * 12;
+    if (entry.ayudante) totals.Ayud += parseInt(String(entry.ayudante), 10) * 12;
   }
 
-  const datass = {
-    labels: ["Sup", "HSE", "Lider", "Sold", "Tecn", "Ayud"],
-    datasets: [
-      {
-        // data: [20, 45, 28, 80, 99, 430],
-        data: [
-          datainaObject["Sup"],
-          datainaObject["HSE"],
-          datainaObject["Lider"],
-          datainaObject["Sold"],
-          datainaObject["Tecn"],
-          datainaObject["Ayud"],
-        ],
-      },
-    ],
-  };
+  return totals;
+}
+
+interface BarChartTareoProps {
+  data?: TareoEntry[];
+}
+
+const BarChartTareo = ({ data }: BarChartTareoProps) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const isCompact = screenWidth < 640;
+
+  const totals = useMemo(
+    () => (Array.isArray(data) ? aggregateTareoHours(data) : null),
+    [data]
+  );
+
+  const chartLayout = useMemo(() => {
+    const horizontalPadding = isCompact ? 24 : 40;
+    const chartWidth = Math.max(260, screenWidth - horizontalPadding);
+    const barCount = ROLE_LABELS.length;
+    const barWidth = isCompact ? 28 : Math.min(52, Math.floor((chartWidth - 48) / (barCount * 1.6)));
+    const spacing = isCompact ? 12 : 20;
+
+    return { chartWidth, barWidth, spacing };
+  }, [screenWidth, isCompact]);
+
+  const barData = useMemo(() => {
+    if (!totals) return [];
+
+    return ROLE_LABELS.map((role, index) => ({
+      value: totals[role.key] ?? 0,
+      label: role.key,
+      frontColor: BAR_COLORS[index],
+      topLabelComponent: () => (
+        <Text style={styles.barTopLabel}>{totals[role.key] ?? 0}</Text>
+      ),
+    }));
+  }, [totals]);
+
+  const maxValue = useMemo(() => {
+    const peak = Math.max(...barData.map((item) => item.value), 0);
+    if (peak <= 0) return 10;
+    return Math.ceil(peak * 1.15);
+  }, [barData]);
+
+  const hasData = barData.some((item) => item.value > 0);
+
+  if (!data?.length) {
+    return <Text style={styles.emptyText}>No hay datos para mostrar gráfica</Text>;
+  }
+
+  if (!hasData) {
+    return <Text style={styles.emptyText}>Sin horas registradas en tareo</Text>;
+  }
 
   return (
-    <View style={{ alignItems: "center", backgroundColor: "white" }}>
-      <BarChart
-        style={graphStyle}
-        data={datass}
-        width={
-          screenWidth > 1500
-            ? screenWidth * 0.6
-            : screenWidth > 800
-            ? screenWidth * 0.8
-            : screenWidth * 1
-        }
-        height={320}
-        yAxisLabel=""
-        yAxisSuffix=""
-        chartConfig={chartConfig}
-        verticalLabelRotation={30}
-      />
-      <Text style={{ marginHorizontal: 15 }}>
-        Supervisor: {datass.datasets[0].data[0]}
-      </Text>
-      <Text style={{ marginHorizontal: 15 }}>
-        HSE:{datass.datasets[0].data[1]}
-      </Text>
-      <Text style={{ marginHorizontal: 15 }}>
-        Lider:{datass.datasets[0].data[2]}
-      </Text>
-      <Text style={{ marginHorizontal: 15 }}>
-        Soldador:{datass.datasets[0].data[3]}
-      </Text>
-      <Text style={{ marginHorizontal: 15 }}>
-        Tecnico:{datass.datasets[0].data[4]}
-      </Text>
-      <Text style={{ marginHorizontal: 15 }}>
-        Ayudante:{datass.datasets[0].data[5]}
-      </Text>
-      <Text> </Text>
+    <View style={styles.container}>
+      <Text style={styles.subtitle}>Horas acumuladas por rol (tareo × 12 h)</Text>
+
+      <View style={styles.chartWrap}>
+        <BarChart
+          data={barData}
+          width={chartLayout.chartWidth}
+          height={isCompact ? 200 : 240}
+          barWidth={chartLayout.barWidth}
+          spacing={chartLayout.spacing}
+          initialSpacing={isCompact ? 8 : 16}
+          endSpacing={isCompact ? 8 : 16}
+          maxValue={maxValue}
+          noOfSections={4}
+          yAxisTextStyle={styles.axisText}
+          xAxisLabelTextStyle={styles.axisText}
+          rulesColor="#e2e8f0"
+          yAxisColor="#e2e8f0"
+          xAxisColor="#e2e8f0"
+          isAnimated
+          animationDuration={500}
+          disableScroll={!isCompact}
+          scrollToEnd
+          showScrollIndicator={isCompact}
+        />
+      </View>
+
+      <View style={styles.legendGrid}>
+        {ROLE_LABELS.map((role, index) => (
+          <View key={role.key} style={styles.legendItem}>
+            <View
+              style={[styles.legendDot, { backgroundColor: BAR_COLORS[index] }]}
+            />
+            <Text style={styles.legendLabel} numberOfLines={1}>
+              {role.full}:{" "}
+              <Text style={styles.legendValue}>{totals?.[role.key] ?? 0} h</Text>
+            </Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
 
-const graphStyle = {
-  marginVertical: 8,
-  // paddingRight: 100,
-  // borderRadius: 16,
-
-  backgroundColor: "white",
-  // marginHorizontal: "20%",
-};
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    // marginLeft: -50,
-
-    justifyContent: "center",
+    width: "100%",
     alignItems: "center",
-    backgroundColor: "white",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: MUTED,
+    textAlign: "center",
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  chartWrap: {
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  axisText: {
+    color: MUTED,
+    fontSize: 11,
+  },
+  barTopLabel: {
+    fontSize: 10,
+    color: BRAND,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  legendGrid: {
+    width: "100%",
+    marginTop: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minWidth: "42%",
+    maxWidth: "48%",
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    fontSize: 12,
+    color: "#334155",
+    flexShrink: 1,
+  },
+  legendValue: {
+    fontWeight: "700",
+    color: BRAND,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: MUTED,
+    fontStyle: "italic",
+    paddingVertical: 24,
   },
 });
+
 export default BarChartTareo;

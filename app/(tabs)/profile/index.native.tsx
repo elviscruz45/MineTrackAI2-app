@@ -135,6 +135,9 @@ function ProfileRaw(props: any) {
           />
         </View>
         {/* <RagScreen /> */}
+        <View style={{ height: Platform.OS === "web" ? 600 : 500, marginTop: 8 }}>
+          <RagScreen embedded />
+        </View>
         {/* <ProfileDateScreen
           filterButton={filter}
           quitFilterButton={quitfilter}

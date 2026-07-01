@@ -198,6 +198,53 @@ export async function addEventComment(
   if (error) throw error;
 }
 
+export async function getEventComments(
+  eventId: string
+): Promise<Record<string, unknown>[]> {
+  const { data, error } = await supabase
+    .from("event_comments")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(commentToFirebase);
+}
+
+export function subscribeEventComments(
+  eventId: string,
+  onData: (comments: Record<string, unknown>[]) => void,
+  onError?: (error: Error) => void
+) {
+  const load = async () => {
+    try {
+      const data = await getEventComments(eventId);
+      onData(data);
+    } catch (e) {
+      onError?.(e as Error);
+    }
+  };
+
+  load();
+
+  const channel = supabase
+    .channel(`event_comments:${eventId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "event_comments",
+        filter: `event_id=eq.${eventId}`,
+      },
+      () => load()
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
 export function subscribeAllEvents(
   onData: (data: FirebaseEventDoc[]) => void,
   onError?: (error: Error) => void,

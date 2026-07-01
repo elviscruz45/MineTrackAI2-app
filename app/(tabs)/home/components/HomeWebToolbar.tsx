@@ -40,12 +40,12 @@ export default function HomeWebToolbar({
   };
 
   const title =
-    mode === "project" ? projectName || "Proyecto activo" : "Equipos de planta";
+    mode === "project" ? projectName || "Proyecto activo" : "MineTrack AI";
 
   const subtitle =
     mode === "project"
       ? "Panel de actividad y eventos del proyecto"
-      : "Explora equipos o selecciona un proyecto para ver eventos";
+      : "Gestión integral de mantenimiento y paradas de planta";
 
   return (
     <div

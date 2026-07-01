@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { calculateAvanceFromMappedTasks } from "@/utils/calculateAvance";
+import {
+  calculateAvanceFromActivities,
+  getActivityPlannedHours,
+  isActivityCompleted,
+  parseActivityDate,
+} from "@/utils/calculateAvance";
+import { isRutaCritica } from "@/utils/isRutaCritica";
 import { getTagEquipoLabel } from "@/utils/tagEquipoList";
 
 // Define types for our mock data
@@ -58,9 +64,6 @@ const getProgressColor = (percent: number) => {
   if (percent > 0) return "#ffc107";
   return "#dc3545";
 };
-
-const isRutaCritica = (value: any): boolean =>
-  value === true || String(value || "").trim().toLowerCase() === "si";
 
 const sortByCodigo = (arr: any[], key: string = "Codigo") => {
   return arr.sort((a, b) => {
@@ -128,25 +131,51 @@ const buttonStyle = (active: boolean) => ({
   fontWeight: active ? 600 : 400,
 });
 
-// Utilidad para convertir Timestamp o string a {date, time}
+// Utilidad para convertir cualquier formato de fecha a {date, time}
 function toDateTimeObj(fecha: any): { date: string; time: string } {
-  if (!fecha) return { date: "", time: "" };
-  let d: Date;
-  if (typeof fecha === "string") {
-    d = new Date(fecha);
-  } else if (fecha.seconds) {
-    d = new Date(fecha.seconds * 1000);
-  } else {
-    return { date: "", time: "" };
-  }
+  const d = parseActivityDate(fecha);
+  if (!d) return { date: "", time: "" };
   return {
     date: d.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "2-digit",
     }),
-    time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+    time: d.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
   };
+}
+
+function getHoursBetween(fechaInicio: any, fechaFin: any): number | null {
+  const start = parseActivityDate(fechaInicio);
+  const end = parseActivityDate(fechaFin);
+  if (!start || !end) return null;
+  const hours = (end.getTime() - start.getTime()) / 3600000;
+  return hours > 0 ? Math.round(hours * 10) / 10 : null;
+}
+
+function getExpectedProgress(fechaInicio: any, fechaFin: any): string {
+  const start = parseActivityDate(fechaInicio);
+  const end = parseActivityDate(fechaFin);
+  if (!start || !end) return "N/A";
+
+  const now = new Date();
+  if (now <= start) return "0%";
+  if (now >= end) return "100%";
+
+  const total = end.getTime() - start.getTime();
+  if (total <= 0) return "N/A";
+
+  const pct = Math.round(((now.getTime() - start.getTime()) / total) * 100);
+  return `${Math.max(0, Math.min(100, pct))}%`;
+}
+
+function formatPlannedHours(hours: number): string | number {
+  if (hours < 0 || Number.isNaN(hours)) return "N/A";
+  return Math.round(hours * 10) / 10;
 }
 
 const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
@@ -181,7 +210,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
         wbs: act.Codigo || "",
         tag: act.TagEquipo || "—",
         status:
-          act.avance === "100%" || act.RealFechaFin
+          act.avance === "100%" || act.RealFechaFin || isActivityCompleted(act)
             ? "Completada"
             : act.RealFechaInicio
             ? "En Progreso"
@@ -194,23 +223,37 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
         endDateProg: toDateTimeObj(act.FechaFin),
         startDateReal: toDateTimeObj(act.RealFechaInicio),
         endDateReal: toDateTimeObj(act.RealFechaFin),
+        fechaInicio: act.FechaInicio,
+        fechaFin: act.FechaFin,
+        fechaInicioReal: act.RealFechaInicio,
+        fechaFinReal: act.RealFechaFin,
+        plannedHours: getActivityPlannedHours(act),
+        realHours: getHoursBetween(act.RealFechaInicio, act.RealFechaFin),
         deltaWork: { hours: 0, percent: "0%" },
         deltaStart: { hours: 0, percent: "0%" },
         duration: {},
-        avance:
-          act.avance ||
-          (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
-        expected: "100%",
+        avance: isActivityCompleted(act)
+          ? "100%"
+          : act.avance ||
+            (act.RealFechaFin ? "100%" : act.RealFechaInicio ? "50%" : "0%"),
+        expected: getExpectedProgress(act.FechaInicio, act.FechaFin),
         actions: ["edit", "notes", "photos", "delete"],
         esRutaCritica: isRutaCritica(act.esRutaCritica),
       }));
+
+      const activitiesData = Array.isArray(section.activitiesData)
+        ? section.activitiesData
+        : [];
 
       return {
         id: section.Codigo || section.id || `section-${idx + 1}`,
         title: section.NombreServicio || "",
         type: section.TipoServicio || "Actividad",
         isOpen: idx === 0,
-        progressPercent: calculateAvanceFromMappedTasks(tasks),
+        progressPercent: calculateAvanceFromActivities(
+          activitiesData,
+          section.AvanceEjecucion
+        ),
         esRutaCritica: isRutaCritica(section.esRutaCritica),
         tagEquipo: getTagEquipoLabel(section.TagEquipo),
         tasks,
@@ -747,90 +790,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                             textAlign: "center",
                           }}
                         >
-                          {(() => {
-                            // Validar que existan las fechas y horas
-                            const startDate = task.startDateProg?.date;
-                            const startTime = task.startDateProg?.time;
-                            const endDate = task.endDateProg?.date;
-                            const endTime = task.endDateProg?.time;
-
-                            if (
-                              !startDate ||
-                              !startTime ||
-                              !endDate ||
-                              !endTime ||
-                              startDate === "" ||
-                              endDate === ""
-                            ) {
-                              return "N/A";
-                            }
-
-                            // Convertir "DD/MM/YY" a "YYYY-MM-DD"
-                            const toISO = (d: string, t: string) => {
-                              try {
-                                // Validar que la fecha tenga el formato correcto
-                                if (
-                                  !d ||
-                                  typeof d !== "string" ||
-                                  !d.includes("/")
-                                ) {
-                                  return null;
-                                }
-
-                                const parts = d.split("/");
-                                if (parts.length !== 3) {
-                                  return null;
-                                }
-
-                                const [day, month, year] = parts;
-
-                                // Validar que todas las partes existan y no sean undefined
-                                if (!day || !month || !year) {
-                                  return null;
-                                }
-
-                                // Si el año es de 2 dígitos, asume 2000+
-                                const fullYear =
-                                  year.length === 2 ? `20${year}` : year;
-
-                                return `${fullYear}-${month.padStart(
-                                  2,
-                                  "0"
-                                )}-${day.padStart(2, "0")}T${t}`;
-                              } catch (error) {
-                                console.error("Error parsing date:", d, error);
-                                return null;
-                              }
-                            };
-
-                            const startISO = toISO(startDate, startTime);
-                            const endISO = toISO(endDate, endTime);
-
-                            // Validar que las conversiones fueron exitosas
-                            if (!startISO || !endISO) {
-                              return "N/A";
-                            }
-
-                            const startProg = new Date(startISO);
-                            const endProg = new Date(endISO);
-
-                            // Validar que las fechas sean válidas
-                            if (
-                              isNaN(startProg.getTime()) ||
-                              isNaN(endProg.getTime())
-                            ) {
-                              return "N/A";
-                            }
-
-                            const horasProgramadas =
-                              (endProg.getTime() - startProg.getTime()) /
-                              (1000 * 60 * 60);
-
-                            return isNaN(horasProgramadas) ||
-                              horasProgramadas < 0
-                              ? "N/A"
-                              : Math.round(horasProgramadas * 10) / 10;
-                          })()}
+                          {formatPlannedHours(task.plannedHours)}
                         </td>
                         <td
                           style={{
@@ -839,47 +799,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                             textAlign: "center",
                           }}
                         >
-                          {(() => {
-                            // Calcular horas reales
-                            const startDate = task.startDateReal?.date;
-                            const startTime = task.startDateReal?.time;
-                            const endDate = task.endDateReal?.date;
-                            const endTime = task.endDateReal?.time;
-
-                            if (
-                              !startDate ||
-                              !startTime ||
-                              !endDate ||
-                              !endTime ||
-                              startDate === "" ||
-                              endDate === ""
-                            ) {
-                              return "";
-                            }
-
-                            // Convertir "DD/MM/YY" a "YYYY-MM-DD"
-                            const toISO = (d: string, t: string) => {
-                              const [day, month, year] = d.split("/");
-                              const fullYear =
-                                year?.length === 2 ? `20${year}` : year;
-                              return `${fullYear}-${month.padStart(
-                                2,
-                                "0"
-                              )}-${day.padStart(2, "0")}T${t}`;
-                            };
-
-                            const startReal = new Date(
-                              toISO(startDate, startTime)
-                            );
-                            const endReal = new Date(toISO(endDate, endTime));
-                            const horasReales =
-                              (endReal.getTime() - startReal.getTime()) /
-                              (1000 * 60 * 60);
-
-                            return isNaN(horasReales)
-                              ? "N/A"
-                              : Math.round(horasReales * 10) / 10;
-                          })()}
+                          {task.realHours ?? ""}
                         </td>
                         <td
                           style={{
@@ -961,109 +881,7 @@ const ActivityView: React.FC<{ data?: any }> = ({ data }) => {
                               display: "inline-block",
                             }}
                           >
-                            {(() => {
-                              const startDate = task.startDateProg?.date;
-                              const startTime = task.startDateProg?.time;
-                              const endDate = task.endDateProg?.date;
-                              const endTime = task.endDateProg?.time;
-
-                              if (
-                                !startDate ||
-                                !startTime ||
-                                !endDate ||
-                                !endTime ||
-                                startDate === "" ||
-                                endDate === ""
-                              ) {
-                                return "N/A";
-                              }
-
-                              // Convertir "DD/MM/YY" a "YYYY-MM-DD"
-                              const toISO = (d: string, t: string) => {
-                                try {
-                                  // Validar que la fecha tenga el formato correcto
-                                  if (
-                                    !d ||
-                                    typeof d !== "string" ||
-                                    !d.includes("/")
-                                  ) {
-                                    return null;
-                                  }
-
-                                  const parts = d.split("/");
-                                  if (parts.length !== 3) {
-                                    return null;
-                                  }
-
-                                  const [day, month, year] = parts;
-
-                                  // Validar que todas las partes existan y no sean undefined
-                                  if (!day || !month || !year) {
-                                    return null;
-                                  }
-
-                                  // Si el año es de 2 dígitos, asume 2000+
-                                  const fullYear =
-                                    year.length === 2 ? `20${year}` : year;
-
-                                  return `${fullYear}-${month.padStart(
-                                    2,
-                                    "0"
-                                  )}-${day.padStart(2, "0")}T${t}`;
-                                } catch (error) {
-                                  console.error(
-                                    "Error parsing date:",
-                                    d,
-                                    error
-                                  );
-                                  return null;
-                                }
-                              };
-
-                              const startISO = toISO(startDate, startTime);
-                              const endISO = toISO(endDate, endTime);
-
-                              // Validar que las conversiones fueron exitosas
-                              if (!startISO || !endISO) {
-                                return "N/A";
-                              }
-
-                              const startProg = new Date(startISO);
-                              const endProg = new Date(endISO);
-
-                              // Validar que las fechas sean válidas
-                              if (
-                                isNaN(startProg.getTime()) ||
-                                isNaN(endProg.getTime())
-                              ) {
-                                return "N/A";
-                              }
-
-                              const now = new Date();
-
-                              if (now <= startProg) return "0%";
-                              if (now >= endProg) return "100%";
-
-                              const total =
-                                endProg.getTime() - startProg.getTime();
-                              const transcurrido =
-                                now.getTime() - startProg.getTime();
-
-                              // Validar que total sea mayor que 0 para evitar división por 0
-                              if (total <= 0) {
-                                return "N/A";
-                              }
-
-                              const porcentaje = Math.max(
-                                0,
-                                Math.min(
-                                  100,
-                                  Math.round((transcurrido / total) * 100)
-                                )
-                              );
-
-                              return `${porcentaje}%`;
-                            })()}
+                            {task.expected}
                           </div>
                         </td>
                       </tr>
