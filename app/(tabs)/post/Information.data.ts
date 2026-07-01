@@ -9,6 +9,7 @@ export default function initialValues() {
     porcentajeAvance: "0",
     aprobacion: "",
     pdfFile: "",
+    pdfFileSource: null as Blob | null,
     FilenameTitle: "",
     MontoModificado: "",
     NuevaFechaEstimada: null,

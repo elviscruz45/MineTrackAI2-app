@@ -145,6 +145,13 @@ export interface EventRow {
   event_origin: string | null;
   activity_id: string | null;
   activity_codigo: string | null;
+  attached_documents: EventAttachedDocument[] | null;
+}
+
+export interface EventAttachedDocument {
+  url: string;
+  filename: string;
+  tipoFile?: string;
 }
 
 export interface EventCommentRow {

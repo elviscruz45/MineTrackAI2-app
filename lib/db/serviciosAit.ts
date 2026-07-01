@@ -14,12 +14,7 @@ import { getEventsByServicioAitId } from "./events";
 import { upsertKnowledgeChunk } from "./knowledgeEmbeddings";
 import { buildActivityChunk, buildServiceSummaryChunk } from "@/lib/rag/chunkText";
 import { runWithConcurrency } from "@/lib/utils/runWithConcurrency";
-
-let realtimeChannelSeq = 0;
-function uniqueRealtimeChannel(base: string): string {
-  realtimeChannelSeq += 1;
-  return `${base}:${realtimeChannelSeq}`;
-}
+import { uniqueRealtimeChannel } from "@/lib/utils/realtimeChannel";
 
 const EMBEDDING_CONCURRENCY = 3;
 

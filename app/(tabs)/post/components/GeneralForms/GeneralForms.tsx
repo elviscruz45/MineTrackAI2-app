@@ -34,8 +34,8 @@ function GeneralFormsBare(props: any) {
     () => createGeneralFormsStyles(windowWidth),
     [windowWidth],
   );
-  const { formik, setMoreImages, agregarImagenes } = props;
-  const [pickedDocument, setPickedDocument] = useState(null);
+  const { formik, setMoreImages, agregarImagenes, initialImages, allowAddImages } =
+    props;
   const [renderComponent, setRenderComponent] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [fechafin, setFechafin] = useState(null);
@@ -48,8 +48,15 @@ function GeneralFormsBare(props: any) {
   const [tipoEvento, setTipoEvento] = useState("");
   const [clasificacionHSE, setClasificacionHSE] = useState("");
   const [shortNameFileUpdated, setShortNameFileUpdated] = useState("");
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<string[]>(initialImages ?? []);
   const [pdfFileURL, setPdfFileURL] = useState("");
+
+  React.useEffect(() => {
+    if (initialImages?.length) {
+      setImages(initialImages);
+      setMoreImages?.(initialImages);
+    }
+  }, [initialImages, setMoreImages]);
 
   //Data about the company belong this event
   const regex = /@(.+?)\./i;
@@ -62,17 +69,22 @@ function GeneralFormsBare(props: any) {
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
-        copyToCacheDirectory: false,
+        type: "application/pdf",
+        copyToCacheDirectory: true,
       });
-      if (result.assets) {
-        setShortNameFileUpdated(result?.assets[0]?.name);
-        formik.setFieldValue("pdfFile", result?.assets[0]?.uri);
-        setPdfFileURL(result?.assets[0]?.uri);
-
-        formik.setFieldValue("FilenameTitle", result?.assets[0]?.name);
+      const asset = result.canceled ? null : result.assets?.[0];
+      if (asset) {
+        const name = asset.name ?? "documento.pdf";
+        setShortNameFileUpdated(name);
+        formik.setFieldValue("pdfFile", asset.uri);
+        formik.setFieldValue("pdfFileSource", asset.file ?? null);
+        setPdfFileURL(asset.uri);
+        formik.setFieldValue("FilenameTitle", name);
       } else {
         setShortNameFileUpdated("");
+        formik.setFieldValue("pdfFile", "");
+        formik.setFieldValue("pdfFileSource", null);
+        setPdfFileURL("");
       }
     } catch (err) {
       Toast.show({
@@ -209,8 +221,8 @@ function GeneralFormsBare(props: any) {
 
       uriImages = await Promise.all(imageManipulationPromises);
     }
-    setImages(uriImages);
-    setMoreImages(uriImages);
+    setImages((prev) => [...prev, ...uriImages]);
+    setMoreImages?.((prev: string[]) => [...(prev ?? []), ...uriImages]);
     // setImages(result.assets ? [result.assets] : result.assets);
 
     // const resizedPhoto = await ImageManipulator.manipulateAsync(
@@ -386,7 +398,7 @@ function GeneralFormsBare(props: any) {
         />
         <Text> </Text>
 
-        {agregarImagenes !== "editar" && (
+        {(agregarImagenes !== "editar" || allowAddImages) && (
           <View style={styles.pickImagesButton}>
             <Button
               title="Agregar imágenes"

@@ -69,37 +69,53 @@ export const uploadImage = async (uri: any): Promise<string> => {
   return uploadEventImage(path, blob, blob.type || "image/jpeg");
 };
 
+export type PdfUploadSource = string | Blob;
+
+async function resolvePdfBlob(source: PdfUploadSource): Promise<Blob> {
+  if (source instanceof Blob) {
+    return source;
+  }
+
+  const response = await fetch(source);
+  if (!response.ok) {
+    throw new Error(`No se pudo leer el archivo PDF (${response.status})`);
+  }
+  return response.blob();
+}
+
 export const uploadPdf = async (
-  uri: any,
-  FilenameTitle: any,
-  formattedDate: any
+  source: PdfUploadSource,
+  FilenameTitle: string,
+  _formattedDate?: string
 ): Promise<string> => {
   try {
-    const blob: Blob = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onload = function () {
-        resolve(xhr.response);
-      };
-      xhr.onerror = function () {
-        reject(new Error("Error converting file URI to Blob"));
-      };
-      xhr.responseType = "blob";
-      xhr.open("GET", uri, true);
-      xhr.send(null);
-    });
+    const blob = await resolvePdfBlob(source);
     const fileSize = blob.size ?? 0;
+
+    if (fileSize === 0) {
+      throw new Error("El archivo PDF está vacío o no se pudo leer");
+    }
 
     if (fileSize > 25 * 1024 * 1024) {
       throw new Error("El archivo excede los 25 MB");
     }
 
-    const path = `${Date.now()}-${FilenameTitle}`;
-    return uploadPdfToStorage(path, blob);
+    const safeName = String(FilenameTitle || "documento.pdf").replace(
+      /[/\\?%*:|"<>]/g,
+      "_"
+    );
+    const path = `${Date.now()}-${safeName}`;
+    return uploadPdfToStorage(path, blob, blob.type || "application/pdf");
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Error al subir el PDF";
     Toast.show({
       type: "error",
       position: "bottom",
-      text1: "El archivo excede los 25 MB",
+      text1: message.includes("25 MB")
+        ? "El archivo excede los 25 MB"
+        : "No se pudo subir el PDF",
+      text2: message.includes("25 MB") ? undefined : message,
     });
     throw error;
   }

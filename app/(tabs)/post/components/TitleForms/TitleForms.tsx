@@ -13,7 +13,7 @@ function TitleFormsBare(props: any) {
     () => createTitleFormsStyles(windowWidth),
     [windowWidth],
   );
-  const { formik, id, idServiciosAIT } = props;
+  const { formik, id, idServiciosAIT, photoUri } = props;
   const [renderComponent, setRenderComponent] = useState<any>(null);
   const [showModal, setShowModal] = useState<any>(false);
   const [titulo, setTitulo] = useState<any>("");
@@ -39,7 +39,7 @@ function TitleFormsBare(props: any) {
     <View style={styles.equipments}>
       <Image
         source={{
-          uri: props.savePhotoUri,
+          uri: photoUri || props.savePhotoUri,
         }}
         style={styles.postPhoto}
         resizeMode="cover"

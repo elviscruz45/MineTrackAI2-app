@@ -9,6 +9,7 @@ import {
 } from "./mappers";
 import { upsertKnowledgeChunk, deleteKnowledgeChunk } from "./knowledgeEmbeddings";
 import { buildEventChunk } from "@/lib/rag/chunkText";
+import { uniqueRealtimeChannel } from "@/lib/utils/realtimeChannel";
 
 async function enrichEvent(row: Record<string, unknown>): Promise<FirebaseEventDoc> {
   const id = String(row.id);
@@ -210,24 +211,64 @@ export async function getEventComments(
   return (data ?? []).map(commentToFirebase);
 }
 
-export function subscribeEventComments(
+export function subscribeEventById(
   eventId: string,
-  onData: (comments: Record<string, unknown>[]) => void,
+  onData: (event: FirebaseEventDoc) => void,
   onError?: (error: Error) => void
 ) {
+  let cancelled = false;
+
   const load = async () => {
     try {
-      const data = await getEventComments(eventId);
-      onData(data);
+      const data = await getEventById(eventId);
+      if (!cancelled && data) onData(data);
     } catch (e) {
-      onError?.(e as Error);
+      if (!cancelled) onError?.(e as Error);
     }
   };
 
   load();
 
   const channel = supabase
-    .channel(`event_comments:${eventId}`)
+    .channel(uniqueRealtimeChannel(`event:${eventId}`))
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "events",
+        filter: `id=eq.${eventId}`,
+      },
+      () => load()
+    )
+    .subscribe();
+
+  return () => {
+    cancelled = true;
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeEventComments(
+  eventId: string,
+  onData: (comments: Record<string, unknown>[]) => void,
+  onError?: (error: Error) => void
+) {
+  let cancelled = false;
+
+  const load = async () => {
+    try {
+      const data = await getEventComments(eventId);
+      if (!cancelled) onData(data);
+    } catch (e) {
+      if (!cancelled) onError?.(e as Error);
+    }
+  };
+
+  load();
+
+  const channel = supabase
+    .channel(uniqueRealtimeChannel(`event_comments:${eventId}`))
     .on(
       "postgres_changes",
       {
@@ -241,7 +282,8 @@ export function subscribeEventComments(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    cancelled = true;
+    void supabase.removeChannel(channel);
   };
 }
 

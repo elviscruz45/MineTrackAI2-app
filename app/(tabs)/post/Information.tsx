@@ -25,7 +25,13 @@ import { findActivityByTitulo } from "@/lib/db/activities";
 import TitleForms from "./components/TitleForms/TitleForms";
 import { resetPostPerPageHome } from "../../../redux/actions/home";
 import { saveTotalUsers } from "../../../redux/actions/post";
-import { dateFormat, uploadPdf, uploadImage } from "./Information.calc";
+import {
+  dateFormat,
+  uploadPdf,
+  uploadImage,
+  type PdfUploadSource,
+} from "./Information.calc";
+import type { EventAttachedDocument } from "@/lib/db/types";
 import useUserData from "./Information.calc";
 import Toast from "react-native-toast-message";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -281,7 +287,7 @@ const handleImageUploadWithOffline = async (
 
 // Función para manejar subida de PDFs con fallback offline
 const handlePdfUploadWithOffline = async (
-  pdfFile: any,
+  pdfSource: PdfUploadSource,
   filename: string,
   date: string
 ): Promise<string> => {
@@ -289,7 +295,7 @@ const handlePdfUploadWithOffline = async (
 
   if (isOnline) {
     try {
-      const pdfUrl = await uploadPdf(pdfFile, filename, date);
+      const pdfUrl = await uploadPdf(pdfSource, filename, date);
       console.log("✅ PDF subido online:", pdfUrl);
       return pdfUrl;
     } catch (error) {
@@ -516,17 +522,30 @@ function InformationRaw(props: any) {
         console.log("dddddddd");
 
         //manage the file updated to ask for aprovals
+        const pdfSource =
+          (newData as Record<string, unknown>).pdfFileSource ??
+          newData.pdfFile;
         let imageUrlPDF = "";
-        if (newData.pdfFile) {
+        if (pdfSource) {
           imageUrlPDF = await handlePdfUploadWithOffline(
-            newData.pdfFile,
-            newData.FilenameTitle,
+            pdfSource as PdfUploadSource,
+            newData.FilenameTitle || "documento.pdf",
             newData.fechaPostFormato
           );
         }
+        (newData as Record<string, unknown>).pdfFileSource = null;
         newData.pdfFile = "";
-
         newData.pdfPrincipal = imageUrlPDF;
+        (newData as Record<string, unknown>).attachedDocuments =
+          imageUrlPDF && !imageUrlPDF.startsWith("local_pdf_")
+            ? ([
+                {
+                  url: imageUrlPDF,
+                  filename: newData.FilenameTitle || "Documento adjunto",
+                  tipoFile: newData.tipoFile || "",
+                },
+              ] satisfies EventAttachedDocument[])
+            : [];
         //preparing data to upload to  firestore Database
         newData.fotoPrincipal = imageUrl;
         newData.createdAt = new Date();
@@ -597,7 +616,7 @@ function InformationRaw(props: any) {
           updateDataLasEventPost.aprobacion = [newData.aprobacion];
         }
         let pdfFileToAdd: Record<string, unknown> | null = null;
-        if (imageUrlPDF) {
+        if (imageUrlPDF && !imageUrlPDF.startsWith("local_pdf_")) {
           pdfFileToAdd = {
             FilenameTitle: newData.FilenameTitle,
             pdfPrincipal: imageUrlPDF,
@@ -605,7 +624,6 @@ function InformationRaw(props: any) {
             email: props.email,
             fecha: new Date(),
             fechaPostFormato: dateFormat(),
-            pdfFile: newData.pdfFile,
           };
         }
 

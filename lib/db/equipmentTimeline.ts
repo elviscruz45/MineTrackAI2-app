@@ -43,7 +43,7 @@ export async function getEquipmentDetailTimeline(
     const { data: events } = await supabase
       .from("events")
       .select(
-        "id, tag_equipo, created_at, titulo, comentarios, nombre_perfil, email_perfil, foto_principal, etapa, total_hh, project_id, servicio_ait_id, causa, tipo_evento, clasificacion_hse, event_origin",
+        "id, tag_equipo, created_at, titulo, comentarios, nombre_perfil, email_perfil, foto_principal, new_images, etapa, total_hh, project_id, servicio_ait_id, causa, tipo_evento, clasificacion_hse, event_origin",
       )
       .eq("tag_equipo", tagCode)
       .order("created_at", { ascending: false })
@@ -62,7 +62,9 @@ export async function getEquipmentDetailTimeline(
         autor: e.nombre_perfil,
         autor_email: e.email_perfil,
         detalle_extra: e.etapa,
-        foto_url: e.foto_principal,
+        foto_url:
+          e.foto_principal ||
+          ((e.new_images as string[] | null)?.find(Boolean) ?? null),
         tipo_mantenimiento: e.etapa,
         estado_equipo: null,
         horas: e.total_hh,

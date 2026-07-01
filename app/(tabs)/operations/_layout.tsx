@@ -7,6 +7,8 @@ export default function OperationsLayout() {
       <Stack.Screen name="new" />
       <Stack.Screen name="equipment/index" />
       <Stack.Screen name="equipment/[tagCode]" />
+      <Stack.Screen name="equipment/event/[eventId]/index" />
+      <Stack.Screen name="equipment/event/[eventId]/edit" />
     </Stack>
   );
 }

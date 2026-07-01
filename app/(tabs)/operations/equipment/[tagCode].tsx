@@ -150,8 +150,8 @@ function EquipmentManagementRaw({
   const openEntry = (entry: EquipmentDetailEntry) => {
     if (entry.source === "parada") {
       router.push({
-        pathname: "/home/comment",
-        params: { idDocFirestoreDB: entry.record_id },
+        pathname: "/operations/equipment/event/[eventId]",
+        params: { eventId: entry.record_id, tagCode: code },
       });
     }
   };
