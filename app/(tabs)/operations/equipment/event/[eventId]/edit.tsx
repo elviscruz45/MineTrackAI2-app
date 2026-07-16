@@ -16,7 +16,7 @@ import { Button } from "@rneui/themed";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useFormik } from "formik";
 import Toast from "react-native-toast-message";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcon as MaterialIcons } from "@/components/MaterialIcon";
 import { Image as ImageExpo } from "expo-image";
 import * as DocumentPicker from "expo-document-picker";
 

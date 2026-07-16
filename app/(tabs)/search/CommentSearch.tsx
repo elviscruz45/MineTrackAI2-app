@@ -11,9 +11,9 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { connect } from "react-redux";
-import { Icon } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import styles from "./CommentSearch.styles";
 import {
   addEventComment,
@@ -195,7 +195,7 @@ function CommentSearchScreen(props: any) {
                 marginRight: "2%",
               }}
             >
-              <Icon type="material-community" name="paperclip" />
+              <MaterialCommunityIcon name="paperclip" size={24} color="#86939e" />
             </TouchableOpacity>
           )}
         </View>

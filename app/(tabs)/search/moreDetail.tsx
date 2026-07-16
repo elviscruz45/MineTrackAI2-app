@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Image as ImageExpo } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import { MaterialIcon } from "@/components/MaterialIcon";
 import { connect } from "react-redux";
 import { EquipmentListUpper } from "../../../redux/actions/home";

@@ -1,121 +1,223 @@
-import { StyleSheet, Dimensions, Platform } from "react-native";
+import { StyleSheet, Platform, ViewStyle, TextStyle, ImageStyle } from "react-native";
 
-const { width, height } = Dimensions.get("window");
-const isTablet = width > 768;
-
-// Modern color palette
-const COLORS = {
-  primary: "#2A3B76", // Pandora primary blue
-  primaryLight: "#3e5fa0", // Lighter blue for hover states
-  secondary: "#f8f9fa", // Light background
-  accent: "#ff6b6b", // Accent color for highlights
+export const COLORS = {
+  primary: "#1D2D5B",
+  primaryDeep: "#152447",
+  primaryMid: "#243A6E",
+  accent: "#2CC9D9",
   white: "#ffffff",
-  lightGray: "#f0f2f5",
-  mediumGray: "#e1e4e8",
-  darkGray: "#6c757d",
-  textDark: "#343a40",
+  panelBg: "#F3F4F6",
+  textDark: "#111827",
+  textMuted: "#6B7280",
+  textSoft: "#9CA3AF",
+  border: "#E5E7EB",
+  iconBox: "rgba(255,255,255,0.12)",
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  gradientBackground: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    height: height * 0.4,
-  },
-  headerContainer: {
-    width: "100%",
-    paddingTop: isTablet ? 120 : 80,
-    paddingBottom: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  image: {
-    resizeMode: "contain",
-    width: "100%",
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  logoContainer: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  mainLogo: {
-    marginBottom: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  secondaryLogo: {
-    marginTop: 10,
-  },
-  formContainer: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: isTablet ? width * 0.02 : width * 0.05,
-    marginTop: -30,
-    borderRadius: 20,
-    paddingVertical: 30,
-    paddingHorizontal: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  textRegister: {
-    marginTop: 15,
-    marginHorizontal: 10,
-    textAlign: "center",
-  },
-  btnRegister: {
-    color: COLORS.primary,
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  content: {
-    alignItems: "center",
-  },
-  footerContainer: {
-    paddingTop: 30,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
-  footerLogo: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 15,
-    borderWidth: 2,
-    borderColor: COLORS.lightGray,
-  },
-  footerText: {
-    color: COLORS.darkGray,
-    fontSize: 14,
-    marginBottom: 5,
-    textAlign: "center",
-  },
-  versionText: {
-    color: COLORS.darkGray,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-});
+type AuthStyles = {
+  container: ViewStyle;
+  split: ViewStyle;
+  leftPanel: ViewStyle;
+  brandRow: ViewStyle;
+  brandMark: ViewStyle;
+  brandMarkImage: ImageStyle;
+  brandWordmark: ViewStyle;
+  brandTitleRow: ViewStyle;
+  brandTitle: TextStyle;
+  brandTitleAccent: TextStyle;
+  brandAiRow: ViewStyle;
+  brandAiLine: ViewStyle;
+  brandAi: TextStyle;
+  headline: TextStyle;
+  featureList: ViewStyle;
+  featureItem: ViewStyle;
+  featureIconBox: ViewStyle;
+  featureText: TextStyle;
+  rightPanel: ViewStyle;
+  loginCard: ViewStyle;
+  loginTitle: TextStyle;
+  loginSubtitle: TextStyle;
+  formWrap: ViewStyle;
+  cardFooter: ViewStyle;
+  secureText: TextStyle;
+  salesRow: ViewStyle;
+  salesText: TextStyle;
+  salesLink: TextStyle;
+};
 
-export default styles;
+export function createAuthStyles(isWide: boolean): AuthStyles {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: COLORS.panelBg,
+    },
+    split: {
+      flex: 1,
+      flexDirection: isWide ? "row" : "column",
+    },
+    leftPanel: {
+      flex: isWide ? 1 : undefined,
+      width: isWide ? ("50%" as const) : ("100%" as const),
+      paddingHorizontal: isWide ? 56 : 28,
+      paddingVertical: isWide ? 48 : 36,
+      justifyContent: "center",
+    },
+    brandRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: isWide ? 40 : 24,
+    },
+    brandMark: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: "rgba(44,201,217,0.15)",
+      borderWidth: 1.5,
+      borderColor: COLORS.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 14,
+      overflow: "hidden",
+    },
+    brandMarkImage: {
+      width: 52,
+      height: 52,
+    },
+    brandWordmark: {
+      justifyContent: "center",
+    },
+    brandTitleRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+    },
+    brandTitle: {
+      color: COLORS.white,
+      fontSize: 26,
+      fontWeight: "700",
+      letterSpacing: -0.3,
+    },
+    brandTitleAccent: {
+      color: COLORS.accent,
+      fontSize: 26,
+      fontWeight: "700",
+      letterSpacing: -0.3,
+    },
+    brandAiRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 2,
+    },
+    brandAiLine: {
+      width: 18,
+      height: 1,
+      backgroundColor: "rgba(255,255,255,0.45)",
+      marginHorizontal: 8,
+    },
+    brandAi: {
+      color: "rgba(255,255,255,0.85)",
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 2,
+    },
+    headline: {
+      color: COLORS.white,
+      fontSize: isWide ? 36 : 26,
+      fontWeight: "700",
+      lineHeight: isWide ? 44 : 34,
+      marginBottom: isWide ? 36 : 24,
+      maxWidth: 420,
+    },
+    featureList: {
+      marginTop: 0,
+    },
+    featureItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    featureIconBox: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      backgroundColor: "rgba(44,201,217,0.12)",
+      borderWidth: 1,
+      borderColor: "rgba(44,201,217,0.28)",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 14,
+    },
+    featureText: {
+      color: COLORS.white,
+      fontSize: 15,
+      fontWeight: "500",
+      flexShrink: 1,
+    },
+    rightPanel: {
+      flex: isWide ? 1 : undefined,
+      width: isWide ? ("50%" as const) : ("100%" as const),
+      backgroundColor: COLORS.panelBg,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: isWide ? 48 : 20,
+      paddingVertical: isWide ? 48 : 28,
+    },
+    loginCard: {
+      width: "100%",
+      maxWidth: 420,
+      backgroundColor: COLORS.white,
+      borderRadius: 20,
+      paddingHorizontal: isWide ? 36 : 24,
+      paddingVertical: isWide ? 40 : 28,
+      shadowColor: "#0f172a",
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.1,
+      shadowRadius: 24,
+      elevation: 8,
+      ...Platform.select({
+        web: {
+          boxShadow: "0 16px 40px rgba(15, 23, 42, 0.08)",
+        } as object,
+      }),
+    },
+    loginTitle: {
+      color: COLORS.textDark,
+      fontSize: 28,
+      fontWeight: "700",
+      marginBottom: 8,
+    },
+    loginSubtitle: {
+      color: COLORS.textMuted,
+      fontSize: 15,
+      marginBottom: 8,
+    },
+    formWrap: {
+      width: "100%",
+    },
+    cardFooter: {
+      marginTop: 28,
+      alignItems: "center",
+    },
+    secureText: {
+      color: COLORS.textSoft,
+      fontSize: 12,
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    salesRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+    },
+    salesText: {
+      color: COLORS.textMuted,
+      fontSize: 14,
+    },
+    salesLink: {
+      color: COLORS.textDark,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+  });
+}
+
+export default createAuthStyles;

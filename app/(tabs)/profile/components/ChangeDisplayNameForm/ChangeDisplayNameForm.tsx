@@ -1,6 +1,7 @@
 import React from "react";
 import { View, KeyboardAvoidingView } from "react-native";
 import { Input, Button } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import { useFormik } from "formik";
 import { getAuth, updateProfile, User } from "firebase/auth";
 import Toast from "react-native-toast-message";
@@ -103,11 +104,7 @@ function ChangeDisplayNameForm(props: any) {
         value={formik.values.displayNameform}
         placeholder="Nombre y apellidos"
         multiline={true}
-        rightIcon={{
-          type: "material-community",
-          name: "account-circle-outline",
-          color: "#c2c2c2",
-        }}
+        rightIcon={<MaterialCommunityIcon name="account-circle-outline" color="#c2c2c2" />}
         onChangeText={(text) => formik.setFieldValue("displayNameform", text)}
         errorMessage={formik.errors.displayNameform}
       />
@@ -116,11 +113,7 @@ function ChangeDisplayNameForm(props: any) {
         value={formik.values.cargo}
         placeholder="Escribe tu cargo"
         multiline={true}
-        rightIcon={{
-          type: "material-community",
-          name: "account-circle-outline",
-          color: "#c2c2c2",
-        }}
+        rightIcon={<MaterialCommunityIcon name="account-circle-outline" color="#c2c2c2" />}
         onChangeText={(text) => formik.setFieldValue("cargo", text)}
         errorMessage={formik.errors.cargo}
       />
@@ -129,11 +122,7 @@ function ChangeDisplayNameForm(props: any) {
         value={formik.values.descripcion}
         placeholder="Descripcion"
         multiline={true}
-        rightIcon={{
-          type: "material-community",
-          name: "account-circle-outline",
-          color: "#c2c2c2",
-        }}
+        rightIcon={<MaterialCommunityIcon name="account-circle-outline" color="#c2c2c2" />}
         onChangeText={(text) => formik.setFieldValue("descripcion", text)}
         errorMessage={formik.errors.descripcion}
       /> */}

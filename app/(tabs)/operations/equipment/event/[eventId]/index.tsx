@@ -20,7 +20,9 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from "react-native";
-import { Feather, MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { MaterialIcon as MaterialIcons } from "@/components/MaterialIcon";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import { connect } from "react-redux";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Image as ImageExpo } from "expo-image";

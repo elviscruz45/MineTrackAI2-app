@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Alert, Platform } from "react-native";
-import { Icon } from "@rneui/themed";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import * as Network from "expo-network";
 import {
   getOfflineQueueStatus,
@@ -172,9 +172,8 @@ const OfflineStatus: React.FC<OfflineStatusProps> = ({
         shadowRadius: 2.22,
       }}
     >
-      <Icon
+      <MaterialIcon
         name={getStatusIcon()}
-        type="material"
         color="white"
         size={16}
         style={{ marginRight: 6 }}

@@ -13,7 +13,7 @@ import {
 import { Image as ImageExpo } from "expo-image";
 import { styles } from "./RagScreen.styles";
 import { connect } from "react-redux";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { queryRag } from "@/lib/rag/queryRag";
 import { supabase } from "@/lib/supabase";

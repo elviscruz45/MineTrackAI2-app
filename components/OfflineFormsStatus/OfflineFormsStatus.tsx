@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
-import { Icon } from "@rneui/themed";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import { Platform } from "react-native";
 
 interface OfflineFormOperation {
@@ -153,9 +153,8 @@ const OfflineFormsStatus: React.FC<OfflineFormsStatusProps> = ({
         shadowRadius: 3.84,
       }}
     >
-      <Icon
+      <MaterialIcon
         name={getStatusIcon()}
-        type="material"
         color="white"
         size={18}
         style={{ marginRight: 8 }}

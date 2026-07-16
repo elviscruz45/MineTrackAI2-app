@@ -6,6 +6,7 @@ import {
   Text,
   SafeAreaView,
   TextInput,
+  Platform,
 } from "react-native";
 import { Button } from "@rneui/themed";
 import { getAuth, signOut } from "firebase/auth";
@@ -21,7 +22,7 @@ import { screen } from "../../../utils";
 import ProfileDateScreen from "./components/ProfileDateScreen/ProfileDateScreen";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Tabs, Redirect } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
 // import OpenAI from "openai";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RagScreen } from "./components/RagScreen/RagScreen";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Image } from "react-native";
-import { Avatar, Text, Icon } from "@rneui/themed";
+import { Avatar, Text } from "@rneui/themed";
 import * as ImagePicker from "expo-image-picker";
 import { getAuth, updateProfile } from "firebase/auth";
 import { uploadAvatar } from "@/lib/db/storage";
@@ -17,6 +17,7 @@ import {
 import ChangeManPower from "@/app/(tabs)/profile/components/ManPowerForm/ChangeManPower";
 import { userTypeList } from "@/utils/userTypeList";
 import { useRouter } from "expo-router";
+import { FeatherIcon } from "@/components/FeatherIcon";
 
 interface InfoUserProps {
   imageUrl: string;
@@ -83,22 +84,37 @@ function InfoUser(props: any) {
       }}
     >
       <Text> </Text>
-      <Avatar
-        size="large"
-        rounded
-        containerStyle={styles.avatar}
-        source={
-          props.user_photo
-            ? { uri: props.user_photo }
-            : require("../../assets/pictures/splash.png")
-        }
-      >
-        <Avatar.Accessory
-          testID="avatar-accessory"
-          size={24}
-          onPress={() => changeAvatar()}
+      <View>
+        <Avatar
+          size="large"
+          rounded
+          containerStyle={styles.avatar}
+          source={
+            props.user_photo
+              ? { uri: props.user_photo }
+              : require("../../assets/pictures/splash.png")
+          }
         />
-      </Avatar>
+        <TouchableOpacity
+          testID="avatar-accessory"
+          onPress={() => changeAvatar()}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 26,
+            height: 26,
+            borderRadius: 13,
+            backgroundColor: "#2A3B76",
+            borderWidth: 2,
+            borderColor: "#fff",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <FeatherIcon name="edit-2" size={12} color="#fff" />
+        </TouchableOpacity>
+      </View>
       <View style={styles.content}>
         <View>
           {props.profile?.displayNameform && (

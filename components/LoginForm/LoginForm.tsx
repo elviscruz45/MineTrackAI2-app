@@ -108,9 +108,11 @@ function LoginForm(props: any) {
     <View style={styles.content}>
       <Input
         value={formik.values.email}
-        placeholder="Correo electronico"
+        placeholder="Correo electrónico"
         autoCapitalize="none"
         containerStyle={styles.input}
+        inputContainerStyle={styles.inputInner}
+        inputStyle={{ color: "#111827", fontSize: 15 }}
         rightIcon={<MaterialCommunityIcon name="at" iconStyle={styles.icon} />}
         onChangeText={(text) => formik.setFieldValue("email", text)}
         errorMessage={formik.errors.email}
@@ -120,6 +122,8 @@ function LoginForm(props: any) {
         placeholder="Contraseña"
         autoCapitalize="none"
         containerStyle={styles.input}
+        inputContainerStyle={styles.inputInner}
+        inputStyle={{ color: "#111827", fontSize: 15 }}
         secureTextEntry={showPassword ? false : true}
         rightIcon={
           <MaterialCommunityIcon
@@ -133,11 +137,11 @@ function LoginForm(props: any) {
       />
       <Button
         title="Iniciar sesión"
-        testID="submitButton" // Add testID here
+        testID="submitButton"
         containerStyle={styles.btnContainer}
         buttonStyle={styles.btn}
+        titleStyle={{ fontWeight: "700", fontSize: 16 }}
         onPress={() => formik.handleSubmit()}
-        // onPress={holatu}
         loading={formik.isSubmitting}
       />
     </View>

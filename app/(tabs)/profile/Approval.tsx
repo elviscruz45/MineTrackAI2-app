@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, Linking, FlatList, Text } from "react-native";
-import { Button, Icon } from "@rneui/themed";
+import { Button } from "@rneui/themed";
+import { MaterialIcon } from "@/components/MaterialIcon";
 import { getAuth, signOut } from "firebase/auth";
 import styles from "./Approval.styles";
 import { connect } from "react-redux";
@@ -82,9 +83,8 @@ function ApprovalScreenBare(props: any) {
               <View />
               <View>
                 <View style={styles.equipments2}>
-                  <Icon
+                  <MaterialIcon
                     name="unarchive"
-                    type="material"
                     color="skyblue"
                     size={40}
                     style={styles.icon}

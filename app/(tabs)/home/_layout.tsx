@@ -8,7 +8,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { Link, Tabs } from "expo-router";
 import { Stack } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import { connect } from "react-redux";
 import { update_firebasePhoto } from "../../../redux/actions/profile";
 import { update_firebaseUserName } from "../../../redux/actions/profile";

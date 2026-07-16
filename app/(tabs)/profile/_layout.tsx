@@ -8,7 +8,7 @@ import {
 import React from "react";
 import { Link, Tabs } from "expo-router";
 import { Stack } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 
 import { useState } from "react";
 

@@ -16,7 +16,7 @@ import {
 } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import styles2 from "./Camera.styles";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import { connect } from "react-redux";
 import { savePhotoUri } from "../../../redux/actions/post";
 import { screen } from "../../../utils";

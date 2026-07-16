@@ -20,7 +20,9 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
-import { Feather, MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { MaterialIcon as MaterialIcons } from "@/components/MaterialIcon";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import { connect } from "react-redux";
 import { createCommentStyles } from "./_styles/comment.styles";
 import {

@@ -16,6 +16,11 @@ import { Provider } from "react-redux";
 import Toast from "react-native-toast-message";
 import { Platform } from "react-native";
 import React from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import "@/firebaseConfig";
 import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen";
 
@@ -29,6 +34,11 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    ...Ionicons.font,
+    ...Feather.font,
+    ...MaterialIcons.font,
+    ...MaterialCommunityIcons.font,
+    ...FontAwesome.font,
   });
   const [appReady, setAppReady] = useState(false);
 

@@ -2,6 +2,7 @@ import { View, Image } from "react-native";
 import React, { useMemo, useState } from "react";
 import { createTitleFormsStyles } from "./TitleForms.styles";
 import { Input } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import { Modal } from "@/components/Modal/Modal";
 import ChangeDisplayTitulo from "../ChangeTitulo/ChangeDisplayTitulo";
 import { connect } from "react-redux";
@@ -57,13 +58,13 @@ function TitleFormsBare(props: any) {
             formik.setFieldValue("titulo", text);
             setTitulo(text);
           }}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => {
-              selectComponent("titulo");
-            },
-          }}
+          rightIcon={
+            <MaterialCommunityIcon
+              name="arrow-right-circle-outline"
+              color="#c2c2c2"
+              onPress={() => selectComponent("titulo")}
+            />
+          }
         />
         <Input
           value={formik.values.comentarios}

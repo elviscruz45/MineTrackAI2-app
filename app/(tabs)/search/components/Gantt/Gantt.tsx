@@ -13,7 +13,9 @@ import { Image as ImageExpo } from "expo-image";
 import styles from "./Gantt.styles";
 import { screen } from "../../../../../utils";
 import { SearchBar, Icon } from "@rneui/themed";
-import { MaterialIcons, Feather, Ionicons } from "@expo/vector-icons";
+import { MaterialIcon as MaterialIcons } from "@/components/MaterialIcon";
+import { FeatherIcon as Feather } from "@/components/FeatherIcon";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 
 // Initial width setup with responsive approach
 const windowWidth = Dimensions.get("window").width;

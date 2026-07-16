@@ -8,8 +8,9 @@ import {
 import React, { useState } from "react";
 import styles from "./AITForms.styles";
 import { Input } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import { Modal } from "@/components/Modal/Modal";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 import ChangeDisplayEmpresaMinera from "../FormsAIT/ChangeEmpresaMinera/ChangeDisplayEmpresaMinera";
 import ChangeDisplayArea from "../FormsAIT/ChangeArea/ChangeDisplayArea";
 import ChangeDisplayTipoServicio from "../FormsAIT/ChangeTipoServicio/ChangeDisplayTipoServicio";
@@ -35,7 +36,7 @@ function SectionCard({
   hint,
   children,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   title: string;
   hint?: string;
   children: React.ReactNode;
@@ -173,11 +174,13 @@ function AITForms(props: any) {
     onCloseOpenModal();
   };
 
-  const pickerIcon = (key: string) => ({
-    type: "material-community" as const,
-    name: "arrow-right-circle-outline",
-    onPress: () => selectComponent(key),
-  });
+  const pickerIcon = (key: string) => (
+    <MaterialCommunityIcon
+      name="arrow-right-circle-outline"
+      color="#c2c2c2"
+      onPress={() => selectComponent(key)}
+    />
+  );
 
   const handleDateChange = (
     field: "FechaInicio" | "FechaFin",

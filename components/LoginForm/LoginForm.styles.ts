@@ -1,27 +1,36 @@
-import { StyleSheet, Dimensions } from "react-native";
-const windowWidth = Dimensions.get("window").width;
+import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: windowWidth > 1500 ? 550 : windowWidth > 800 ? 200 : 0,
-    // marginTop: 30,
+    width: "100%",
+    alignItems: "stretch",
   },
   input: {
     width: "100%",
-    marginTop: 20,
+    marginTop: 16,
+    paddingHorizontal: 0,
+  },
+  inputInner: {
+    borderWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    minHeight: 48,
+    backgroundColor: "#FFFFFF",
   },
   icon: {
-    color: "#c1c1c1",
+    color: "#9CA3AF",
   },
   btnContainer: {
-    marginTop: 20,
-    width: "95%",
+    marginTop: 24,
+    width: "100%",
   },
   btn: {
-    backgroundColor: "black",
+    backgroundColor: "#1D2D5B",
+    borderRadius: 10,
+    paddingVertical: 14,
   },
 });
+
 export default styles;

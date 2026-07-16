@@ -15,7 +15,7 @@ import { EquipmentListUpper } from "@/redux/actions/home";
 import { areaLists } from "@/utils/areaList";
 import { useRouter } from "expo-router";
 import { titulo_proyecto } from "@/redux/actions/auth";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicon as Ionicons } from "@/components/icons/AppIcon";
 
 const getRandomPastelColor = () => {
   const hue = Math.floor(Math.random() * 360);

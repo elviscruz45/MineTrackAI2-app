@@ -1,82 +1,148 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Platform,
+  Pressable,
+  useWindowDimensions,
 } from "react-native";
-import styles from "./index.styles";
+import { LinearGradient } from "expo-linear-gradient";
 import { Image as ImageExpo } from "expo-image";
 import { Linking } from "react-native";
 import { ConnectedLoginForm } from "@/components/LoginForm";
-// import { LinearGradient } from "expo-linear-gradient";
+import { FeatherIcon } from "@/components/FeatherIcon";
+import createAuthStyles, { COLORS } from "./index.styles";
+
+const FEATURES = [
+  {
+    icon: "tool" as const,
+    label: "Planificación y ejecución de mantenimiento",
+  },
+  {
+    icon: "activity" as const,
+    label: "Disponibilidad y confiabilidad de planta",
+  },
+  {
+    icon: "file-text" as const,
+    label: "Eventos de campo y reportes centralizados",
+  },
+];
 
 export default function AuthScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
+  const styles = useMemo(() => createAuthStyles(isWide), [isWide]);
+
   const goToRegister = () => {
-    Linking.openURL("https://www.teseosoftwarecompany.com/"); // to register a new user, it shows how to get in touch with a personnel from Teseo
+    Linking.openURL("https://www.teseosoftwarecompany.com/");
   };
 
+  const brandBlock = (
+    <>
+      <View style={styles.brandRow}>
+        <View style={styles.brandMark}>
+          <ImageExpo
+            source={require("../assets/login/logoPandora_1024.jpg")}
+            style={styles.brandMarkImage}
+            cachePolicy="memory-disk"
+            contentFit="cover"
+            transition={200}
+          />
+        </View>
+        <View style={styles.brandWordmark}>
+          <View style={styles.brandTitleRow}>
+            <Text style={styles.brandTitle}>Mine</Text>
+            <Text style={styles.brandTitleAccent}>Track</Text>
+          </View>
+          <View style={styles.brandAiRow}>
+            <View style={styles.brandAiLine} />
+            <Text style={styles.brandAi}>AI</Text>
+            <View style={styles.brandAiLine} />
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.headline}>
+        Optimización de mantenimiento en plantas mineras
+      </Text>
+
+      <View style={styles.featureList}>
+        {FEATURES.map((item) => (
+          <View key={item.label} style={styles.featureItem}>
+            <View style={styles.featureIconBox}>
+              <FeatherIcon name={item.icon} size={20} color={COLORS.accent} />
+            </View>
+            <Text style={styles.featureText}>{item.label}</Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+
+  const loginCard = (
+    <View style={styles.loginCard}>
+      <Text style={styles.loginTitle}>Iniciar sesión</Text>
+      <Text style={styles.loginSubtitle}>
+        Accede a tu panel de mantenimiento
+      </Text>
+
+      <View style={styles.formWrap}>
+        <ConnectedLoginForm />
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.secureText}>Conexión segura · MineTrack AI</Text>
+        <View style={styles.salesRow}>
+          <Text style={styles.salesText}>¿Nuevo cliente? </Text>
+          <Pressable onPress={goToRegister}>
+            <Text style={styles.salesLink}>Contactar ventas</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={Platform.OS === "ios" ? "transparent" : "#2A3B76"}
+        backgroundColor={COLORS.primary}
         translucent={Platform.OS === "ios"}
       />
 
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-        {/* Header with logos */}
-        <View style={styles.headerContainer}>
-          <View style={styles.logoContainer}>
-            <ImageExpo
-              source={require("../assets/login/Pandora.png")}
-              style={[styles.mainLogo, { width: 350, height: 60 }]}
-              cachePolicy={"memory-disk"}
-              contentFit="contain"
-              transition={300}
-            />
+      {isWide ? (
+        <View style={styles.split}>
+          <LinearGradient
+            colors={[COLORS.primaryMid, COLORS.primary, COLORS.primaryDeep]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={styles.leftPanel}
+          >
+            {brandBlock}
+          </LinearGradient>
 
-            {/* <ImageExpo
-              source={require("../assets/login/logoMetso3.png")}
-              style={[styles.secondaryLogo, { width: 480, height: 120 }]}
-              cachePolicy={"memory-disk"}
-              contentFit="contain"
-              transition={300}
-            /> */}
-          </View>
+          <View style={styles.rightPanel}>{loginCard}</View>
         </View>
+      ) : (
+        <ScrollView
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <LinearGradient
+            colors={[COLORS.primaryMid, COLORS.primary, COLORS.primaryDeep]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={styles.leftPanel}
+          >
+            {brandBlock}
+          </LinearGradient>
 
-        {/* Login form in a card */}
-        <View style={styles.formContainer}>
-          <ConnectedLoginForm />
-        </View>
-
-        {/* Footer with company info */}
-        <View style={styles.footerContainer}>
-          {/* <ImageExpo
-            testID="image"
-            source={require("../assets/login/confipetrol.png")}
-            style={[styles.mainLogo, { width: 200, height: 120 }]}
-            cachePolicy={"memory-disk"}
-            contentFit="cover"
-            transition={300}
-          /> */}
-          <ImageExpo
-            testID="image"
-            source={require("../assets/login/logoPandora_1024.jpg")}
-            style={styles.footerLogo}
-            cachePolicy={"memory-disk"}
-            contentFit="cover"
-            transition={300}
-          />
-          <Text style={styles.footerText}>
-            Powered by Pandora Software Company
-          </Text>
-          <Text style={styles.versionText}>Version 2.0.1</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.rightPanel}>{loginCard}</View>
+        </ScrollView>
+      )}
+    </View>
   );
 }

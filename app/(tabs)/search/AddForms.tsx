@@ -2,6 +2,7 @@ import { View, Text } from "react-native";
 import React, { useState } from "react";
 import styles from "./AddForms.styles";
 import { Input, Button } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import * as DocumentPicker from "expo-document-picker";
 import { Modal } from "@/components/Modal/Modal";
 import ChangeDisplayFileTipo from "@/app/(tabs)/post/components/FormsGeneral/ChangeFIleTipo/ChangeDisplayFileTipo";
@@ -191,13 +192,13 @@ function AddDocsFormBare(props: any) {
           placeholder="Adjuntar Archivo"
           multiline={true}
           editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => {
-              pickDocument();
-            },
-          }}
+          rightIcon={
+            <MaterialCommunityIcon
+              name="arrow-right-circle-outline"
+              color="#c2c2c2"
+              onPress={() => pickDocument()}
+            />
+          }
         />
 
         <Input
@@ -216,11 +217,7 @@ function AddDocsFormBare(props: any) {
           placeholder="Tipo de Archivo Adjunto"
           multiline={true}
           editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("tipoFile"),
-          }}
+          rightIcon={<MaterialCommunityIcon name="arrow-right-circle-outline" color="#c2c2c2" onPress={() => selectComponent("tipoFile")} />}
         />
       </View>
       <Button

@@ -9,6 +9,7 @@ import {
 import React, { useMemo, useState } from "react";
 import { createGeneralFormsStyles } from "./GeneralForms.styles";
 import { Input, Button } from "@rneui/themed";
+import { MaterialCommunityIcon } from "@/components/MaterialCommunityIcon";
 import * as DocumentPicker from "expo-document-picker";
 import { Modal } from "../../../../../components/Modal/Modal";
 import ChangeDisplayMonto from "../FormsGeneral/ChangeNumeroMonto/ChangeDisplayMonto";
@@ -316,11 +317,7 @@ function GeneralFormsBare(props: any) {
             label="Tipo de Archivo Adjunto"
             multiline={true}
             editable={false}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => selectComponent("tipoFile"),
-            }}
+            rightIcon={<MaterialCommunityIcon name="arrow-right-circle-outline" color="#c2c2c2" onPress={() => selectComponent("tipoFile")} />}
           />
         )}
 
@@ -328,22 +325,14 @@ function GeneralFormsBare(props: any) {
           value={formik.values.tipoEvento}
           label="Tipo de Evento"
           editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("tipoEvento"),
-          }}
+          rightIcon={<MaterialCommunityIcon name="arrow-right-circle-outline" color="#c2c2c2" onPress={() => selectComponent("tipoEvento")} />}
         />
 
         <Input
           value={formik.values.causa}
           label="Causa del evento"
           editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => selectComponent("causa"),
-          }}
+          rightIcon={<MaterialCommunityIcon name="arrow-right-circle-outline" color="#c2c2c2" onPress={() => selectComponent("causa")} />}
         />
 
         {tipoEvento === "HSE" && (
@@ -351,11 +340,7 @@ function GeneralFormsBare(props: any) {
             value={formik.values.clasificacionHSE}
             label="Clasificación HSE"
             editable={false}
-            rightIcon={{
-              type: "material-community",
-              name: "arrow-right-circle-outline",
-              onPress: () => selectComponent("clasificacionHSE"),
-            }}
+            rightIcon={<MaterialCommunityIcon name="arrow-right-circle-outline" color="#c2c2c2" onPress={() => selectComponent("clasificacionHSE")} />}
           />
         )}
 
@@ -388,13 +373,13 @@ function GeneralFormsBare(props: any) {
           label="Adjuntar PDF (Opcional)"
           multiline={true}
           editable={false}
-          rightIcon={{
-            type: "material-community",
-            name: "arrow-right-circle-outline",
-            onPress: () => {
-              pickDocument();
-            },
-          }}
+          rightIcon={
+            <MaterialCommunityIcon
+              name="arrow-right-circle-outline"
+              color="#c2c2c2"
+              onPress={() => pickDocument()}
+            />
+          }
         />
         <Text> </Text>
 
